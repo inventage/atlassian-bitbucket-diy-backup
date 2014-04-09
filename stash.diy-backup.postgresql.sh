@@ -1,5 +1,9 @@
 #!/bin/bash
 
+check_command "pg_dump"
+check_command "psql"
+check_command "pg_restore"
+
 function stash_prepare_db {
     info "Prepared backup of DB ${STASH_DB} in ${STASH_BACKUP_DB}"
 }

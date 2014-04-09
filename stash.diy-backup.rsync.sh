@@ -1,5 +1,7 @@
 #!/bin/bash
 
+check_command "rsync"
+
 function stash_perform_rsync {
     mkdir -p ${STASH_BACKUP_HOME}
     rsync -avh --delete --delete-excluded --exclude=/caches/ --exclude=/data/db.* --exclude=/export/ --exclude=/log/ --exclude=/plugins/.*/ --exclude=/tmp --exclude=/.lock ${STASH_HOME} ${STASH_BACKUP_HOME}
