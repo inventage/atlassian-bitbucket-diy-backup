@@ -1,5 +1,8 @@
 #!/bin/bash
 
+check_command "curl"
+check_command "jq"
+
 STASH_HTTP_AUTH="-u ${STASH_BACKUP_USER}:${STASH_BACKUP_PASS}"
 
 function stash_lock {

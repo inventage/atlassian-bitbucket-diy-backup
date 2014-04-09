@@ -20,3 +20,7 @@ function print {
         echo $*
     fi
 }
+
+function check_command {
+    type -P $1 &>/dev/null || bail "Unable to find $1, please install it and run this script again"
+}

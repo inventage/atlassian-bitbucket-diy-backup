@@ -1,5 +1,7 @@
 #!/bin/bash
 
+check_command "tar"
+
 function stash_backup_archive {
     mkdir -p ${STASH_BACKUP_ARCHIVE_ROOT}
     STASH_BACKUP_ARCHIVE_NAME=`perl -we 'use Time::Piece; my $sydTime = localtime; print "stash-", $sydTime->strftime("%Y%m%d-%H%M%S-"), substr($sydTime->epoch, -3), ".tar.gz"'`
