@@ -23,16 +23,16 @@ source ${SCRIPT_DIR}/stash.diy-backup.common.sh
 # Exports the following functions
 #     stash_prepare_db     - for making a backup of the DB if differential backups a possible. Can be empty
 #     stash_backup_db      - for making a backup of the stash DB
-source ${SCRIPT_DIR}/stash.diy-backup.postgresql.sh
+source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_DATABASE_TYPE}.sh
 
 # Exports the following functions
 #     stash_prepare_home   - for preparing the filesystem for the backup
 #     stash_backup_home    - for making the actual filesystem backup
-source ${SCRIPT_DIR}/stash.diy-backup.rsync.sh
+source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_HOME_TYPE}.sh
 
 # Exports the following functions
 #     stash_backup_archive - for archiving the backup folder and puting the archive in archive folder
-source ${SCRIPT_DIR}/stash.diy-backup.tar.sh
+source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_ARCHIVE_TYPE}.sh
 
 ##########################################################
 # The actual proposed backup process. It has the following steps
