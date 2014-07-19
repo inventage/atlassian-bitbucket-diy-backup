@@ -51,3 +51,6 @@ MYSQL_BACKUP_OPTIONS=
 HIPCHAT_URL=https://api.hipchat.com
 HIPCHAT_ROOM=
 HIPCHAT_TOKEN=
+
+# Options for the tar-gpg archive type
+STASH_BACKUP_GPG_RECIPIENT=
