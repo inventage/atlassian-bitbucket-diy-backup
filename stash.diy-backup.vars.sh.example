@@ -1,5 +1,9 @@
 #!/bin/bash
 
+##
+# It is recomended to `chmod 600 stash.diy-backup.vars.sh` after copying the template.
+##
+
 # Used by the scripts for verbose logging. If not true only errors will be shown.
 STASH_VERBOSE_BACKUP=TRUE
 
