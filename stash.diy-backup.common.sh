@@ -38,7 +38,7 @@ function stash_backup_wait {
     STASH_PROGRESS_SCM_STATE="AVAILABLE"
 
     print -n "[${STASH_URL}] .INFO: Waiting for DRAINED state "
-    while [ ${STASH_PROGRESS_DB_STATE} != "DRAINED" -a ${STASH_PROGRESS_SCM_STATE} != "DRAINED" ]; do
+    while [ "${STASH_PROGRESS_DB_STATE}_${STASH_PROGRESS_SCM_STATE}" != "DRAINED_DRAINED" ]; do
         print -n "."
 
         STASH_PROGRESS_RESULT=`curl -s -f ${STASH_HTTP_AUTH} -X GET -H "X-Atlassian-Maintenance-Token: ${STASH_LOCK_TOKEN}" -H "Accept: application/json" -H "Content-type: application/json" "${STASH_URL}/mvc/maintenance"`
