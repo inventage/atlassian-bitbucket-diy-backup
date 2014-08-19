@@ -48,6 +48,13 @@ function stash_backup_wait {
 
         STASH_PROGRESS_DB_STATE=`echo ${STASH_PROGRESS_RESULT} | jq -r '.["db-state"]'`
         STASH_PROGRESS_SCM_STATE=`echo ${STASH_PROGRESS_RESULT} | jq -r '.["scm-state"]'`
+        STASH_PROGRESS_STATE=`echo ${STASH_PROGRESS_RESULT} | jq -r '.task.state'`
+
+        if [ "${STASH_PROGRESS_STATE}" != "RUNNING" ]; then
+            error "Unable to start backup, try unlocking"
+            stash_unlock
+            bail "Failed to start backup"
+        fi
     done
 
     print "done"
