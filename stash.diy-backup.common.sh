@@ -38,7 +38,7 @@ function stash_backup_wait {
     STASH_PROGRESS_SCM_STATE="AVAILABLE"
 
     print -n "[${STASH_URL}] .INFO: Waiting for DRAINED state "
-    while [ ${STASH_PROGRESS_DB_STATE} != "DRAINED" -a ${STASH_PROGRESS_SCM_STATE} != "DRAINED" ]; do
+    while [ "${STASH_PROGRESS_DB_STATE}_${STASH_PROGRESS_SCM_STATE}" != "DRAINED_DRAINED" ]; do
         print -n "."
 
         STASH_PROGRESS_RESULT=`curl -s -f ${STASH_HTTP_AUTH} -X GET -H "X-Atlassian-Maintenance-Token: ${STASH_LOCK_TOKEN}" -H "Accept: application/json" -H "Content-type: application/json" "${STASH_URL}/mvc/maintenance"`
@@ -48,6 +48,13 @@ function stash_backup_wait {
 
         STASH_PROGRESS_DB_STATE=`echo ${STASH_PROGRESS_RESULT} | jq -r '.["db-state"]'`
         STASH_PROGRESS_SCM_STATE=`echo ${STASH_PROGRESS_RESULT} | jq -r '.["scm-state"]'`
+        STASH_PROGRESS_STATE=`echo ${STASH_PROGRESS_RESULT} | jq -r '.task.state'`
+
+        if [ "${STASH_PROGRESS_STATE}" != "RUNNING" ]; then
+            error "Unable to start backup, try unlocking"
+            stash_unlock
+            bail "Failed to start backup"
+        fi
     done
 
     print "done"
