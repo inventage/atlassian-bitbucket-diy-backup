@@ -5,8 +5,9 @@ check_command "tar"
 function stash_backup_archive {
     mkdir -p ${STASH_BACKUP_ARCHIVE_ROOT}
     STASH_BACKUP_ARCHIVE_NAME=`perl -we 'use Time::Piece; my $sydTime = localtime; print "stash-", $sydTime->strftime("%Y%m%d-%H%M%S-"), substr($sydTime->epoch, -3), ".tar.gz"'`
-    tar -czf ${STASH_BACKUP_ARCHIVE_ROOT}/${STASH_BACKUP_ARCHIVE_NAME} -C ${STASH_BACKUP_ROOT} .
 
+    info "Archiving ${STASH_BACKUP_ROOT} into ${STASH_BACKUP_ARCHIVE_ROOT}/${STASH_BACKUP_ARCHIVE_NAME}"
+    tar -czf ${STASH_BACKUP_ARCHIVE_ROOT}/${STASH_BACKUP_ARCHIVE_NAME} -C ${STASH_BACKUP_ROOT} .
     info "Archived ${STASH_BACKUP_ROOT} into ${STASH_BACKUP_ARCHIVE_ROOT}/${STASH_BACKUP_ARCHIVE_NAME}"
 }
 

@@ -1,5 +1,18 @@
 #!/bin/bash
 
+##
+# It is recomended to `chmod 600 stash.diy-backup.vars.sh` after copying the template.
+##
+
+# Which database backup script to use (ex: mssql, postgresql)
+BACKUP_DATABASE_TYPE=postgresql
+
+# Which filesystem backup script to use (ex: rsync)
+BACKUP_HOME_TYPE=rsync
+
+# Which archive backup script to use (ex: tar)
+BACKUP_ARCHIVE_TYPE=tar
+
 # Used by the scripts for verbose logging. If not true only errors will be shown.
 STASH_VERBOSE_BACKUP=TRUE
 
@@ -22,3 +35,8 @@ STASH_BACKUP_HOME=${STASH_BACKUP_ROOT}/stash-home/
 
 # The path to where the backup archives are stored
 STASH_BACKUP_ARCHIVE_ROOT=
+
+# PostgreSQL options
+POSTGRES_HOST=
+POSTGRES_USERNAME=
+POSTGRES_PORT=5432

@@ -1,10 +1,19 @@
 #!/bin/bash
 
 SCRIPT_DIR=$(dirname $0)
-# Contains all variables used by the other scripts
-source ${SCRIPT_DIR}/stash.diy-backup.vars.sh
+
 # Contains util functions (bail, info, print)
 source ${SCRIPT_DIR}/stash.diy-backup.utils.sh
+
+# Declares other scripts which provide required backup/archive functionality
+# Contains all variables used by the other scripts
+if [[ -f ${SCRIPT_DIR}/stash.diy-backup.vars.sh ]]; then
+    source ${SCRIPT_DIR}/stash.diy-backup.vars.sh
+else
+    error "${SCRIPT_DIR}/stash.diy-backup.vars.sh not found"
+    bail "You should create it using ${SCRIPT_DIR}/stash.diy-backup.vars.sh.example as a template"
+fi
+
 # Contains functions that perform lock/unlock and backup of a stash instance
 source ${SCRIPT_DIR}/stash.diy-backup.common.sh
 
@@ -14,16 +23,16 @@ source ${SCRIPT_DIR}/stash.diy-backup.common.sh
 # Exports the following functions
 #     stash_prepare_db     - for making a backup of the DB if differential backups a possible. Can be empty
 #     stash_backup_db      - for making a backup of the stash DB
-source ${SCRIPT_DIR}/stash.diy-backup.postgresql.sh
+source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_DATABASE_TYPE}.sh
 
 # Exports the following functions
 #     stash_prepare_home   - for preparing the filesystem for the backup
 #     stash_backup_home    - for making the actual filesystem backup
-source ${SCRIPT_DIR}/stash.diy-backup.rsync.sh
+source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_HOME_TYPE}.sh
 
 # Exports the following functions
 #     stash_backup_archive - for archiving the backup folder and puting the archive in archive folder
-source ${SCRIPT_DIR}/stash.diy-backup.tar.sh
+source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_ARCHIVE_TYPE}.sh
 
 ##########################################################
 # The actual proposed backup process. It has the following steps
