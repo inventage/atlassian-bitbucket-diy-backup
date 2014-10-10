@@ -4,7 +4,7 @@
 # It is recomended to `chmod 600 stash.diy-backup.vars.sh` after copying the template.
 ##
 
-# Which database backup script to use (ex: mssql, postgresql)
+# Which database backup script to use (ex: mssql, postgresql, mysql)
 BACKUP_DATABASE_TYPE=postgresql
 
 # Which filesystem backup script to use (ex: rsync)
