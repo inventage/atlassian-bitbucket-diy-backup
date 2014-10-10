@@ -4,6 +4,10 @@ check_command "tar"
 check_command "gpg-zip"
 
 function stash_backup_archive {
+    if [[ -z ${STASH_BACKUP_GPG_RECIPIENT} ]]; then
+        error "In order to encrypt the backup you must set the 'STASH_BACKUP_GPG_RECIPIENT' configuration variable"
+        bail "Exiting..."
+    fi
     mkdir -p ${STASH_BACKUP_ARCHIVE_ROOT}
     STASH_BACKUP_ARCHIVE_NAME=`perl -we 'use Time::Piece; my $sydTime = localtime; print "stash-", $sydTime->strftime("%Y%m%d-%H%M%S-"), substr($sydTime->epoch, -3), ".tar.gz.gpg"'`
 
