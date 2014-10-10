@@ -2,7 +2,7 @@
 
 function error {
     echo "[${STASH_URL}] ERROR: $*"
-    hc_announce "[${STASH_URL}] ERROR: $*" "red"
+    hc_announce "[${STASH_URL}] ERROR: $*" "red" 1
 }
 
 function bail {
@@ -34,22 +34,15 @@ function check_command {
 
 # $1 = message, $2 = color (yellow/green/red/purple/gray/random), $3 = notify (0/1)
 function hc_announce {
-    if [ -z "$1" ]; then
-        if [ "${STASH_VERBOSE_BACKUP}" == "TRUE" ]; then
-            echo "HipChat notification message is missing."
-        fi
-        return 1
-    fi
     if [ -z "${HIPCHAT_ROOM}" ]; then
-        if [ "${STASH_VERBOSE_BACKUP}" == "TRUE" ]; then
-            echo "HipChat notification not send as the HIPCHAT_ROOM is not configured."
-        fi
         return 1
     fi
     if [ -z "${HIPCHAT_TOKEN}" ]; then
-        if [ "${STASH_VERBOSE_BACKUP}" == "TRUE" ]; then
-            echo "HipChat notification not send as the HIPCHAT_TOKEN is not configured."
-        fi
+        return 1
+    fi
+
+    if [ -z "$1" ]; then
+        echo "ERROR: HipChat notification message is missing."
         return 1
     fi
 
