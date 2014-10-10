@@ -2,9 +2,6 @@
 
 SCRIPT_DIR=$(dirname $0)
 
-# Contains util functions (bail, info, print)
-source ${SCRIPT_DIR}/stash.diy-backup.utils.sh
-
 # Declares other scripts which provide required backup/archive functionality
 # Contains all variables used by the other scripts
 if [[ -f ${SCRIPT_DIR}/stash.diy-backup.vars.sh ]]; then
@@ -13,6 +10,9 @@ else
     error "${SCRIPT_DIR}/stash.diy-backup.vars.sh not found"
     bail "You should create it using ${SCRIPT_DIR}/stash.diy-backup.vars.sh.example as a template"
 fi
+
+# Contains util functions (bail, info, print)
+source ${SCRIPT_DIR}/stash.diy-backup.utils.sh
 
 # Contains functions that perform lock/unlock and backup of a stash instance
 source ${SCRIPT_DIR}/stash.diy-backup.common.sh

@@ -1,8 +1,16 @@
 #!/bin/bash
 
 SCRIPT_DIR=$(dirname $0)
+
+# Declares other scripts which provide required backup/archive functionality
 # Contains all variables used by the other scripts
-source ${SCRIPT_DIR}/stash.diy-backup.vars.sh
+if [[ -f ${SCRIPT_DIR}/stash.diy-backup.vars.sh ]]; then
+    source ${SCRIPT_DIR}/stash.diy-backup.vars.sh
+else
+    error "${SCRIPT_DIR}/stash.diy-backup.vars.sh not found"
+    bail "You should create it using ${SCRIPT_DIR}/stash.diy-backup.vars.sh.example as a template"
+fi
+
 # Contains util functions (bail, info, print)
 source ${SCRIPT_DIR}/stash.diy-backup.utils.sh
 
@@ -11,15 +19,15 @@ source ${SCRIPT_DIR}/stash.diy-backup.utils.sh
 
 # Exports the following functions
 #     stash_restore_db     - for restoring the stash DB
-source ${SCRIPT_DIR}/stash.diy-backup.postgresql.sh
+source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_DATABASE_TYPE}.sh
 
 # Exports the following functions
 #     stash_restore_home   -  for restoring the filesystem backup
-source ${SCRIPT_DIR}/stash.diy-backup.rsync.sh
+source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_HOME_TYPE}.sh
 
 # Exports the following functions
 #     stash_restore_archive - for un-archiving the archive folder
-source ${SCRIPT_DIR}/stash.diy-backup.tar.sh
+source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_ARCHIVE_TYPE}.sh
 
 ##########################################################
 # The actual restore process. It has the following steps
