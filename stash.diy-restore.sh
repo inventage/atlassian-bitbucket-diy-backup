@@ -2,17 +2,22 @@
 
 SCRIPT_DIR=$(dirname $0)
 
-# Declares other scripts which provide required backup/archive functionality
-# Contains all variables used by the other scripts
-if [[ -f ${SCRIPT_DIR}/stash.diy-backup.vars.sh ]]; then
-    source ${SCRIPT_DIR}/stash.diy-backup.vars.sh
-else
-    error "${SCRIPT_DIR}/stash.diy-backup.vars.sh not found"
-    bail "You should create it using ${SCRIPT_DIR}/stash.diy-backup.vars.sh.example as a template"
-fi
-
 # Contains util functions (bail, info, print)
 source ${SCRIPT_DIR}/stash.diy-backup.utils.sh
+
+# BACKUP_VARS_FILE - allows override for stash.diy-backup.vars.sh
+if [ -z "${BACKUP_VARS_FILE}" ]; then
+    BACKUP_VARS_FILE=${SCRIPT_DIR}/stash.diy-backup.vars.sh
+fi
+
+# Declares other scripts which provide required backup/archive functionality
+# Contains all variables used by the other scripts
+if [[ -f ${BACKUP_VARS_FILE} ]]; then
+    source ${BACKUP_VARS_FILE}
+else
+    error "${BACKUP_VARS_FILE} not found"
+    bail "You should create it using ${SCRIPT_DIR}/stash.diy-backup.vars.sh.example as a template"
+fi
 
 # The following scripts contain functions which are dependant on the configuration of this stash instance.
 # Generally every each of them exports certain functions, which can be implemented in different ways
