@@ -19,5 +19,5 @@ function stash_restore_archive {
     fi
     tar -xzf ${STASH_BACKUP_ARCHIVE_NAME} -C ${STASH_RESTORE_ROOT}
 
-    info "Extracted ${STASH_BACKUP_ARCHIVE_ROOT}/${STASH_BACKUP_ARCHIVE_NAME} into ${STASH_RESTORE_ROOT}"
+    info "Extracted ${STASH_BACKUP_ARCHIVE_NAME} into ${STASH_RESTORE_ROOT}"
 }

@@ -21,6 +21,8 @@ function stash_backup_home {
 }
 
 function stash_restore_home {
-    cp -rf ${STASH_RESTORE_HOME}/`basename ${STASH_HOME}` `dirname ${STASH_HOME}`
-    info "Performed restore of ${STASH_RESTORE_ROOT} to ${STASH_HOME}"
+    mkdir -p ${STASH_HOME}
+    chown stash:stash ${STASH_HOME}
+    cp -a ${STASH_RESTORE_HOME}/* ${STASH_HOME}
+    info "Performed restore of ${STASH_RESTORE_HOME} to ${STASH_HOME}"
 }
