@@ -16,7 +16,7 @@ function stash_backup_archive {
     (
         # in a subshell to avoid changing working dir on the caller
         cd ${STASH_BACKUP_ROOT}
-        gpg-zip --tar-args "-z -C ${STASH_BACKUP_ROOT}" --encrypt --recipient ${STASH_BACKUP_GPG_RECIPIENT} \
+        gpg-zip --encrypt --recipient ${STASH_BACKUP_GPG_RECIPIENT} \
             --output ${STASH_BACKUP_ARCHIVE_ROOT}/${STASH_BACKUP_ARCHIVE_NAME} .
     )
     info "Archived ${STASH_BACKUP_ROOT} into ${STASH_BACKUP_ARCHIVE_ROOT}/${STASH_BACKUP_ARCHIVE_NAME}"
@@ -28,7 +28,7 @@ function stash_restore_archive {
     else
         STASH_BACKUP_ARCHIVE_NAME=${STASH_BACKUP_ARCHIVE_ROOT}/${STASH_BACKUP_ARCHIVE_NAME}
     fi
-    gpg-zip --tar-args "-z -C ${STASH_RESTORE_ROOT}" --decrypt ${STASH_BACKUP_ARCHIVE_ROOT}/${STASH_BACKUP_ARCHIVE_NAME}
+    gpg-zip --tar-args "-C ${STASH_RESTORE_ROOT}" --decrypt ${STASH_BACKUP_ARCHIVE_NAME}
 
-    info "Extracted ${STASH_BACKUP_ARCHIVE_ROOT}/${STASH_BACKUP_ARCHIVE_NAME} into ${STASH_RESTORE_ROOT}"
+    info "Extracted ${STASH_BACKUP_ARCHIVE_NAME} into ${STASH_RESTORE_ROOT}"
 }
