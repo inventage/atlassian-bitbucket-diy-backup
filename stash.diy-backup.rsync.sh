@@ -23,6 +23,6 @@ function stash_backup_home {
 function stash_restore_home {
     mkdir -p ${STASH_HOME}
     chown stash:stash ${STASH_HOME}
-    cp -a ${STASH_RESTORE_HOME}/* ${STASH_HOME}
+    rsync -av ${STASH_RESTORE_HOME}/ ${STASH_HOME}/
     info "Performed restore of ${STASH_RESTORE_HOME} to ${STASH_HOME}"
 }
