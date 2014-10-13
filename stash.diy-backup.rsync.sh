@@ -6,7 +6,7 @@ function stash_perform_rsync {
     mkdir -p ${STASH_BACKUP_HOME}
     rsync -avh --delete --delete-excluded --exclude=/caches/ --exclude=/data/db.* --exclude=/export/ --exclude=/log/ --exclude=/plugins/.*/ --exclude=/tmp --exclude=/.lock ${STASH_HOME} ${STASH_BACKUP_HOME}
     if [ $? != 0 ]; then
-        bail "Unable to rsynch from ${STASH_HOME} to ${STASH_BACKUP_HOME}"
+        bail "Unable to rsync from ${STASH_HOME} to ${STASH_BACKUP_HOME}"
     fi
 }
 
@@ -21,8 +21,6 @@ function stash_backup_home {
 }
 
 function stash_restore_home {
-    mkdir -p ${STASH_HOME}
-    chown stash:stash ${STASH_HOME}
     rsync -av ${STASH_RESTORE_HOME}/ ${STASH_HOME}/
     info "Performed restore of ${STASH_RESTORE_HOME} to ${STASH_HOME}"
 }

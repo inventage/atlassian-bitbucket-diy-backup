@@ -57,10 +57,19 @@ if [ ! -f ${STASH_BACKUP_ARCHIVE_ROOT}/${STASH_BACKUP_ARCHIVE_NAME} ]; then
 	available_backups
 	exit 99
 fi
+
 stash_bail_if_db_exists
+
+# Check and create STASH_HOME
 if [ -e ${STASH_HOME} ]; then
 	bail "Cannot restore over existing contents of ${STASH_HOME}. Please rename or delete this first."
 fi
+mkdir -p ${STASH_HOME}
+if [[ -n ${STASH_UID} && -n ${STASH_GID} ]]; then
+  chown ${STASH_UID}:${STASH_GID} ${STASH_HOME}
+fi
+
+# Setup restore paths
 STASH_RESTORE_ROOT=`mktemp -d /tmp/stash.diy-restore.XXXXXX`
 STASH_RESTORE_DB=${STASH_RESTORE_ROOT}/stash-db
 STASH_RESTORE_HOME=${STASH_RESTORE_ROOT}/stash-home
