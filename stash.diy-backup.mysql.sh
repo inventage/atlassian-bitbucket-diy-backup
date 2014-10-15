@@ -30,7 +30,7 @@ function stash_bail_if_db_exists {
 }
 
 function stash_restore_db {
-    mysql ${MYSQL_HOST_CMD} -u ${MYSQL_USERNAME} -p${MYSQL_PASSWORD} ${STASH_DB} < ${STASH_BACKUP_DB}
+    mysql ${MYSQL_HOST_CMD} -u ${MYSQL_USERNAME} -p${MYSQL_PASSWORD} ${STASH_DB} < ${STASH_RESTORE_DB}
     if [ $? != 0 ]; then
         bail "Unable to restore ${STASH_RESTORE_DB} to ${STASH_DB}"
     fi
