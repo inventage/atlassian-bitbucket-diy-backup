@@ -28,6 +28,10 @@ STASH_DB=stash
 # The path to stash home folder (with trailing /)
 STASH_HOME=
 
+# OS level user and group information (typically: 'stash' for both)
+STASH_UID=stash
+STASH_GID=stash
+
 # The path to working folder for the backup
 STASH_BACKUP_ROOT=
 STASH_BACKUP_DB=${STASH_BACKUP_ROOT}/stash-db/

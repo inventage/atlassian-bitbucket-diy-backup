@@ -47,7 +47,7 @@ function stash_bail_if_db_exists {
 }
 
 function stash_restore_db {
-    pg_restore ${PG_USER} ${PG_HOST} --port=${POSTGRES_PORT} -C -Fd ${PG_PARALLEL} ${STASH_RESTORE_DB} | psql -q
+    pg_restore ${PG_USER} ${PG_HOST} --port=${POSTGRES_PORT} -d postgres -C -Fd ${PG_PARALLEL} ${STASH_RESTORE_DB}
     if [ $? != 0 ]; then
         bail "Unable to restore ${STASH_RESTORE_DB} to ${STASH_DB}"
     fi

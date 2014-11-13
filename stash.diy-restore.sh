@@ -16,7 +16,13 @@ if [[ -f ${BACKUP_VARS_FILE} ]]; then
     source ${BACKUP_VARS_FILE}
 else
     error "${BACKUP_VARS_FILE} not found"
-    bail "You should create it using ${SCRIPT_DIR}/stash.diy-backup.vars.sh.example as a template"
+    bail "You should create it using ${SCRIPT_DIR}/stash.diy-backup.vars.sh.example as a template."
+fi
+
+# Ensure we know which user:group things should be owned as
+if [[ -z ${STASH_UID} || -z ${STASH_GID} ]]; then
+  error "Both STASH_UID and STASH_GID must be set in stash.diy-backup.vars.sh"
+  bail "See stash.diy-backup.vars.sh.example for the defaults."
 fi
 
 # The following scripts contain functions which are dependant on the configuration of this stash instance.
@@ -57,10 +63,17 @@ if [ ! -f ${STASH_BACKUP_ARCHIVE_ROOT}/${STASH_BACKUP_ARCHIVE_NAME} ]; then
 	available_backups
 	exit 99
 fi
+
 stash_bail_if_db_exists
+
+# Check and create STASH_HOME
 if [ -e ${STASH_HOME} ]; then
 	bail "Cannot restore over existing contents of ${STASH_HOME}. Please rename or delete this first."
 fi
+mkdir -p ${STASH_HOME}
+chown ${STASH_UID}:${STASH_GID} ${STASH_HOME}
+
+# Setup restore paths
 STASH_RESTORE_ROOT=`mktemp -d /tmp/stash.diy-restore.XXXXXX`
 STASH_RESTORE_DB=${STASH_RESTORE_ROOT}/stash-db
 STASH_RESTORE_HOME=${STASH_RESTORE_ROOT}/stash-home
