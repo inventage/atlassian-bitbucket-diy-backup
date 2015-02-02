@@ -3,9 +3,8 @@
 check_command "rsync"
 
 function stash_perform_rsync {
-    for a in ${STASH_BACKUP_EXCLUDE_REPOS[@]}
-    do
-      RSYNC_EXCLUDE_REPOS="--exclude=/shared/data/repositories/${a} ${RSYNC_EXCLUDE_REPOS}"
+    for repo_id in ${STASH_BACKUP_EXCLUDE_REPOS[@]}; do
+      RSYNC_EXCLUDE_REPOS="${RSYNC_EXCLUDE_REPOS} --exclude=/shared/data/repositories/${repo_id}"
     done
 
     mkdir -p ${STASH_BACKUP_HOME}
