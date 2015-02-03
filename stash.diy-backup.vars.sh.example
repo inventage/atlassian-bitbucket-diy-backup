@@ -40,7 +40,7 @@ STASH_BACKUP_HOME=${STASH_BACKUP_ROOT}/stash-home/
 # The path to where the backup archives are stored
 STASH_BACKUP_ARCHIVE_ROOT=
 
-# List of repo IDs which should not be excluded from backup
+# List of repo IDs which should be excluded from the backup
 # It should be space separated: (2 5 88)
 STASH_BACKUP_EXCLUDE_REPOS=()
 
