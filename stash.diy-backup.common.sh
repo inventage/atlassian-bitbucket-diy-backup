@@ -37,7 +37,7 @@ function stash_backup_wait {
     STASH_PROGRESS_DB_STATE="AVAILABLE"
     STASH_PROGRESS_SCM_STATE="AVAILABLE"
 
-    print -n "[${STASH_URL}] .INFO: Waiting for DRAINED state "
+    print -n "[${STASH_URL}]  INFO: Waiting for DRAINED state"
     while [ "${STASH_PROGRESS_DB_STATE}_${STASH_PROGRESS_SCM_STATE}" != "DRAINED_DRAINED" ]; do
         print -n "."
 
@@ -57,7 +57,7 @@ function stash_backup_wait {
         fi
     done
 
-    print "done"
+    print " done"
     info "db state '${STASH_PROGRESS_DB_STATE}'"
     info "scm state '${STASH_PROGRESS_SCM_STATE}'"
 }
