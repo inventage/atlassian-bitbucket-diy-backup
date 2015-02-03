@@ -35,10 +35,10 @@ function check_command {
 # $1 = message, $2 = color (yellow/green/red/purple/gray/random), $3 = notify (0/1)
 function hc_announce {
     if [ -z "${HIPCHAT_ROOM}" ]; then
-        return 1
+        return 0
     fi
     if [ -z "${HIPCHAT_TOKEN}" ]; then
-        return 1
+        return 0
     fi
 
     if [ -z "$1" ]; then
