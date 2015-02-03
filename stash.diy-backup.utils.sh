@@ -24,7 +24,7 @@ function success {
 
 function print {
     if [ "${STASH_VERBOSE_BACKUP}" == "TRUE" ]; then
-        echo $*
+        echo "$@"
     fi
 }
 
