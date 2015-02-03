@@ -10,7 +10,7 @@ BACKUP_DATABASE_TYPE=postgresql
 # Which filesystem backup script to use (ex: rsync)
 BACKUP_HOME_TYPE=rsync
 
-# Which archive backup script to use (ex: tar)
+# Which archive backup script to use (ex: tar, tar-gpg)
 BACKUP_ARCHIVE_TYPE=tar
 
 # Used by the scripts for verbose logging. If not true only errors will be shown.
@@ -39,6 +39,10 @@ STASH_BACKUP_HOME=${STASH_BACKUP_ROOT}/stash-home/
 
 # The path to where the backup archives are stored
 STASH_BACKUP_ARCHIVE_ROOT=
+
+# List of repo IDs which should be excluded from the backup
+# It should be space separated: (2 5 88)
+STASH_BACKUP_EXCLUDE_REPOS=()
 
 # PostgreSQL options
 POSTGRES_HOST=

@@ -3,8 +3,12 @@
 check_command "rsync"
 
 function stash_perform_rsync {
+    for repo_id in ${STASH_BACKUP_EXCLUDE_REPOS[@]}; do
+      RSYNC_EXCLUDE_REPOS="${RSYNC_EXCLUDE_REPOS} --exclude=/shared/data/repositories/${repo_id}"
+    done
+
     mkdir -p ${STASH_BACKUP_HOME}
-    rsync -avh --delete --delete-excluded --exclude=/caches/ --exclude=/data/db.* --exclude=/export/ --exclude=/log/ --exclude=/plugins/.*/ --exclude=/tmp --exclude=/.lock ${STASH_HOME} ${STASH_BACKUP_HOME}
+    rsync -avh --delete --delete-excluded --exclude=/caches/ --exclude=/data/db.* --exclude=/export/ --exclude=/log/ --exclude=/plugins/.*/ --exclude=/tmp --exclude=/.lock ${RSYNC_EXCLUDE_REPOS} ${STASH_HOME} ${STASH_BACKUP_HOME}
     if [ $? != 0 ]; then
         bail "Unable to rsync from ${STASH_HOME} to ${STASH_BACKUP_HOME}"
     fi
