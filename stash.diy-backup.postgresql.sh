@@ -16,6 +16,11 @@ if [[ -n ${POSTGRES_USERNAME} ]]; then
     PG_USER="-U ${POSTGRES_USERNAME}"
 fi
 
+# Use password if configured
+if [[ -n ${POSTGRES_PASSWORD} ]]; then
+    export PGPASSWORD="${POSTGRES_PASSWORD}"
+fi
+
 # Use -h option if POSTGRES_HOST is set
 if [[ -n ${POSTGRES_HOST} ]]; then
     PG_HOST="-h ${POSTGRES_HOST}"
