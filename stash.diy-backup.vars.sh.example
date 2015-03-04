@@ -63,3 +63,55 @@ HIPCHAT_TOKEN=
 
 # Options for the tar-gpg archive type
 STASH_BACKUP_GPG_RECIPIENT=
+
+# AWS Specific variables
+
+# The access key id to use when authenticating with the AWS API.
+# Not necessary if the instance has been launched with the appropriate IAM role
+AWS_ACCESS_KEY_ID=
+# The access key secret to use when authenticating with the AWS API.
+# Not necessary if the instance has been launched with the appropriate IAM role
+AWS_SECRET_ACCESS_KEY=
+
+# The availability zone in which volumes will be created when restoring and instance
+AWS_AVAILABILITY_ZONE=
+# The region for the resources Stash is using (volumes, instances, snapshots, etc)
+AWS_REGION=
+
+# The ID for the volume holding the home directory
+BACKUP_HOME_DIRECTORY_VOLUME_ID=
+# The ID for the snapshot to use when restoring the volume with the home directory
+RESTORE_HOME_DIRECTORY_SNAPSHOT_ID=
+# The type of volume to create when restoring the home directory
+RESTORE_HOME_DIRECTORY_VOLUME_TYPE=
+# The IOPS that should be provisioned for the new volume. Only valid when choosing an 'io1' volume type.
+# Note: Maximum IOPS to volume size ratio is 30
+RESTORE_HOME_DIRECTORY_IOPS=
+
+# Only necessary if the contents of stash.diy-backup.ebs-db.sh have been uncommented
+# To be used when backing up the database by doing snapshots of the volume containing the data directory
+# The ID for the volume holding the database data directory.
+BACKUP_DB_DATA_DIRECTORY_VOLUME_ID=
+# Only necessary if the contents of stash.diy-backup.ebs-db.sh have been uncommented
+# To be used when restoring the database by creating a volume using a snapshot containing the data directory
+# The ID for the snapshot to use when restoring the volume with the data directory.
+RESTORE_DB_DATA_DIRECTORY_SNAPSHOT_ID=
+# Only necessary if the contents of stash.diy-backup.ebs-db.sh have been uncommented
+# To be used when restoring the database by creating a volume using a snapshot containing the data directory
+RESTORE_DB_DATA_DIRECTORY_VOLUME_TYPE=
+# The IOPS that should be provisioned for the new volume. Only valid when choosing an 'io1' volume type. This value is in relation to the size of the volume
+# Note: Maximum IOPS to volume size ratio is 30
+RESTORE_DB_DATA_DIRECTORY_IOPS=
+
+# The RDS instance ID for the database to backup
+BACKUP_RDS_INSTANCE_ID=
+# The RDS instance ID for the database to create on restore
+RESTORE_RDS_INSTANCE_ID=
+# The rds snapshot ID to use when restoring the database
+RESTORE_RDS_SNAPSHOT_ID=
+# The instance class to use when restoring the database
+RESTORE_RDS_INSTANCE_CLASS=db.r3.large
+# The subnet in which the database will be restored
+RESTORE_RDS_SUBNET_GROUP_NAME=
+# The security group to assign to the restored instance
+RESTORE_RDS_SECURITY_GROUP=
