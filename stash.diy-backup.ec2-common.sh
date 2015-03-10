@@ -128,15 +128,9 @@ function restore_rds_instance {
     info "Restored snapshot ${SNAPSHOT_ID} to instance ${INSTANCE_ID}"
 
     if [ ! -z "${RESTORE_RDS_SECURITY_GROUP}" ]; then
-        SNAPSHOT_VPC_ID="$(aws rds describe-db-snapshots --db-snapshot-identifier ${SNAPSHOT_ID} | jq -r '.DBSnapshots[0].VpcId')"
-
-        # The command argument is different for databases in a VPC
-        # A database will be in a VPC if the user specified a VPC subnet group or if the snapshot was in a VPC
-        if [ -z "${SNAPSHOT_VPC_ID}" ] && [ -z "${RESTORE_RDS_SUBNET_GROUP_NAME}" ]; then
-            aws rds modify-db-instance --apply-immediately --db-instance-identifier "${INSTANCE_ID}" --db-security-groups "${RESTORE_RDS_SECURITY_GROUP}" > /dev/null
-        else
-            aws rds modify-db-instance --apply-immediately --db-instance-identifier "${INSTANCE_ID}" --vpc-security-group-ids "${RESTORE_RDS_SECURITY_GROUP}" > /dev/null
-        fi
+        # When restoring a DB instance outside of a VPC this command will need to be modified to use --db-security-groups instead of --vpc-security-group-ids
+        # For more information see http://docs.aws.amazon.com/cli/latest/reference/rds/modify-db-instance.html
+        aws rds modify-db-instance --apply-immediately --db-instance-identifier "${INSTANCE_ID}" --vpc-security-group-ids "${RESTORE_RDS_SECURITY_GROUP}" > /dev/null
 
         info "Changed security groups of ${INSTANCE_ID} to ${RESTORE_RDS_SECURITY_GROUP}"
     fi
