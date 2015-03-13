@@ -69,6 +69,9 @@ STASH_BACKUP_GPG_RECIPIENT=
 
 # AWS Specific variables
 
+# The name of the role used to launch the instance
+IAM_INSTANCE_ROLE=
+
 # The access key id to use when authenticating with the AWS API.
 # Not necessary if the instance has been launched with the appropriate IAM role
 AWS_ACCESS_KEY_ID=
