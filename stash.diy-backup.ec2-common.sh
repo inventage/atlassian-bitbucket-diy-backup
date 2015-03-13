@@ -12,11 +12,11 @@ fi
 if [ -z "${AWS_ACCESS_KEY_ID}" ] ||  [ -z "${AWS_SECRET_ACCESS_KEY}" ]
 then
     # The AWS credentials have not been set. Retreive the credentials for the IAM role used to launch the instance
-    IAM_INSTANCE_ROLE=`curl --fail http://169.254.169.254/latest/meta-data/iam/security-credentials/`
+    IAM_INSTANCE_ROLE=`curl --silent --fail http://169.254.169.254/latest/meta-data/iam/security-credentials/`
     if [ ! -z "${IAM_INSTANCE_ROLE}" ]
     then
-        AWS_ACCESS_KEY_ID=`curl --fail http://169.254.169.254/latest/meta-data/iam/security-credentials/${IAM_INSTANCE_ROLE} | grep AccessKeyId | cut -d':' -f2 | sed 's/[^0-9A-Z]*//g'`
-        AWS_SECRET_ACCESS_KEY=`curl --fail http://169.254.169.254/latest/meta-data/iam/security-credentials/${IAM_INSTANCE_ROLE} | grep SecretAccessKey | cut -d':' -f2 | sed 's/[^0-9A-Za-z/+=]*//g'`
+        AWS_ACCESS_KEY_ID=`curl --silent --fail http://169.254.169.254/latest/meta-data/iam/security-credentials/${IAM_INSTANCE_ROLE} | grep AccessKeyId | cut -d':' -f2 | sed 's/[^0-9A-Z]*//g'`
+        AWS_SECRET_ACCESS_KEY=`curl --silent --fail http://169.254.169.254/latest/meta-data/iam/security-credentials/${IAM_INSTANCE_ROLE} | grep SecretAccessKey | cut -d':' -f2 | sed 's/[^0-9A-Za-z/+=]*//g'`
     fi
 fi
 
