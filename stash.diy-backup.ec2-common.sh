@@ -9,26 +9,22 @@ if [[ -z ${AWS_REGION} ]]; then
   bail "See stash.diy-backup.vars.sh.example for the defaults."
 fi
 
-if [ -z "${AWS_ACCESS_KEY_ID}" ] ||  [ -z "${AWS_SECRET_ACCESS_KEY}" ]
-then
-    # The AWS credentials have not been set. Retreive the credentials for the IAM role used to launch the instance
-    IAM_INSTANCE_ROLE=`curl --silent --fail http://169.254.169.254/latest/meta-data/iam/security-credentials/`
-    if [ ! -z "${IAM_INSTANCE_ROLE}" ]
-    then
-        AWS_ACCESS_KEY_ID=`curl --silent --fail http://169.254.169.254/latest/meta-data/iam/security-credentials/${IAM_INSTANCE_ROLE} | grep AccessKeyId | cut -d':' -f2 | sed 's/[^0-9A-Z]*//g'`
-        AWS_SECRET_ACCESS_KEY=`curl --silent --fail http://169.254.169.254/latest/meta-data/iam/security-credentials/${IAM_INSTANCE_ROLE} | grep SecretAccessKey | cut -d':' -f2 | sed 's/[^0-9A-Za-z/+=]*//g'`
+if [ -z "${AWS_ACCESS_KEY_ID}" ] ||  [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then
+    AWS_INSTANCE_ROLE=`curl --silent --fail http://169.254.169.254/latest/meta-data/iam/security-credentials/`
+    if [ -z "${AWS_INSTANCE_ROLE}" ]; then
+        error "Could not find the necessary credentials to run backup"
+        error "We recommend launching the instance with an appropiate IAM role"
+        error "Alternatively AWS credentials can be set in stash.diy-backup.vars.sh"
+        bail "See stash.diy-backup.vars.sh.example for the defaults."
+    else
+        info "Using IAM instance role ${AWS_INSTANCE_ROLE}"
     fi
+else
+    info "Found AWS credentials"
+    aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
+    aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
 fi
 
-if [ -z "${AWS_ACCESS_KEY_ID}" ] ||  [ -z "${AWS_SECRET_ACCESS_KEY}" ]
-then
-    error "The AWS credentials must be set via an instance IAM role or in stash.diy-backup.vars.sh"
-    bail "See stash.diy-backup.vars.sh.example for the defaults."
-fi
-
-#The aws command requires these to be set
-aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
-aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
 aws configure set region ${AWS_REGION}
 aws configure set format json
 
