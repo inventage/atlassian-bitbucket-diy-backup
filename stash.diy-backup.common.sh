@@ -79,3 +79,20 @@ function stash_unlock {
 
     info "Stash instance unlocked"
 }
+
+function freeze_mount_point {
+    info "Freezing filesystem at mount point ${1}"
+
+    sudo fsfreeze -f ${1} 2>&1 > /dev/null
+}
+
+function unfreeze_mount_point {
+    info "Unreezing filesystem at mount point ${1}"
+
+    sudo fsfreeze -u ${1} 2>&1 > /dev/null
+}
+
+function add_cleanup_routine() {
+    cleanup_queue+=($1)
+    trap run_cleanup EXIT
+}

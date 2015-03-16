@@ -21,12 +21,12 @@ if [ -z "${AWS_ACCESS_KEY_ID}" ] ||  [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then
     fi
 else
     info "Found AWS credentials"
-    aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
-    aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
 fi
 
-aws configure set region ${AWS_REGION}
-aws configure set format json
+export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+export AWS_DEFAULT_REGION=${AWS_REGION}
+export AWS_DEFAULT_OUTPUT=json
 
 TAG_KEY="${PRODUCT}-Backup-ID"
 
@@ -80,7 +80,7 @@ function validate_ebs_snapshot {
         print "Available snapshots:"
         aws ec2 describe-snapshots
 
-        bail "If the snapshot was created in a region other than ${AWS_REGION} please copy the snapshot before restoring ${PRODUCT}"
+        bail "Please review your AWS_REGION configuration in ${BACKUP_VARS_FILE}"
     fi
 }
 
@@ -142,6 +142,6 @@ function validate_rds_snapshot {
         print "Available snapshots:"
         aws rds describe-db-snapshots
 
-        bail "If the snapshot was created in a region other than ${AWS_REGION} please copy the snapshot before restoring ${PRODUCT}"
+        bail "Please review your AWS_REGION configuration in ${BACKUP_VARS_FILE}"
     fi
 }

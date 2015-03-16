@@ -33,15 +33,15 @@ function stash_restore_db {
     fi
 
     if [ -z "${RESTORE_RDS_INSTANCE_CLASS}" ]; then
-        info "No instance class was provided. The RDS snapshot will be restored into a default instance size"
+        info "No restore instance class has been set in ${BACKUP_VARS_FILE}"
     fi
 
     if [ -z "${RESTORE_RDS_SUBNET_GROUP_NAME}" ]; then
-        info "No subnet group was provided. The RDS snapshot will be restored into default subnet group"
+        info "No restore subnet group has been set in ${BACKUP_VARS_FILE}"
     fi
 
     if [ -z "${RESTORE_RDS_SECURITY_GROUP}" ]; then
-        info "No security group was provided. The RDS snapshot will be restored into an instance with the default security group"
+        info "No restore security group has been set in ${BACKUP_VARS_FILE}"
     fi
 
     restore_rds_instance "${RESTORE_RDS_INSTANCE_ID}" "${RESTORE_RDS_SNAPSHOT_ID}"

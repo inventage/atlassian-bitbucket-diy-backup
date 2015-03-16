@@ -11,7 +11,14 @@ function stash_prepare_db {
 function stash_backup_db {
     info "Performing backup of database data directory"
 
+    # Freeze the db data directory filesystem to ensure consistency
+    freeze_db_directory
+    # Add a clean up routine to ensure we unfreeze the db data directory filesystem
+    add_cleanup_routine unfreeze_db_directory
+
     snapshot_db "Perform backup: ${PRODUCT} database data directory snapshot"
+
+    unfreeze_db_directory
 }
 
 function snapshot_db {
@@ -20,6 +27,11 @@ function snapshot_db {
     if [ -z "${BACKUP_DB_DATA_DIRECTORY_VOLUME_ID}" ]; then
         info "No database volume id has been provided as BACKUP_DB_DATA_DIRECTORY_VOLUME_ID in ${BACKUP_VARS_FILE}. Skipping database data directory snapshot"
     else
+        if [ -z "${BACKUP_DB_DIRECTORY_MOUNT_POINT}" ]; then
+            error "The database data directory mount point must be set as BACKUP_DB_DIRECTORY_MOUNT_POINT in ${BACKUP_VARS_FILE}"
+            bail "See stash.diy-backup.vars.sh.example for the defaults."
+        fi
+
         snapshot_ebs_volume "${BACKUP_DB_DATA_DIRECTORY_VOLUME_ID}" "${1}"
     fi
 }
@@ -50,4 +62,12 @@ function stash_restore_db {
 
         info "Performed restore of database data directory snapshot"
     fi
+}
+
+function freeze_db_directory {
+    freeze_mount_point ${BACKUP_DB_DIRECTORY_MOUNT_POINT}
+}
+
+function unfreeze_db_directory {
+    unfreeze_mount_point ${BACKUP_DB_DIRECTORY_MOUNT_POINT}
 }

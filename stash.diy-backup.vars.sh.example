@@ -86,27 +86,30 @@ AWS_REGION=
 
 # The ID for the volume holding the home directory
 BACKUP_HOME_DIRECTORY_VOLUME_ID=
+# The mount point for the home directory volume
+BACKUP_HOME_DIRECTORY_MOUNT_POINT=
 # The ID for the snapshot to use when restoring the volume with the home directory
 RESTORE_HOME_DIRECTORY_SNAPSHOT_ID=
 # The type of volume to create when restoring the home directory
 RESTORE_HOME_DIRECTORY_VOLUME_TYPE=
-# The IOPS that should be provisioned for the new volume. Only valid when choosing an 'io1' volume type.
-# Note: Maximum IOPS to volume size ratio is 30
+# Required if RESTORE_HOME_DIRECTORY_VOLUME_TYPE has been set to 'io1'
+# The IOPS that should be provisioned for the new volume. Note: Maximum IOPS to volume size ratio is 30
 RESTORE_HOME_DIRECTORY_IOPS=
 
-# Only necessary if the contents of stash.diy-backup.ebs-db.sh have been uncommented
-# To be used when backing up the database by doing snapshots of the volume containing the data directory
+# Only necessary if the database data directory is in a different volume than BACKUP_HOME_DIRECTORY_VOLUME_ID
 # The ID for the volume holding the database data directory.
 BACKUP_DB_DATA_DIRECTORY_VOLUME_ID=
-# Only necessary if the contents of stash.diy-backup.ebs-db.sh have been uncommented
-# To be used when restoring the database by creating a volume using a snapshot containing the data directory
+# Required if BACKUP_DB_DATA_DIRECTORY_VOLUME_ID has been provided
+# The mount point for the database data directory volume
+BACKUP_DB_DIRECTORY_MOUNT_POINT=
+# Only necessary if the database data directory has been backed up in a different snapshot than RESTORE_HOME_DIRECTORY_SNAPSHOT_ID
 # The ID for the snapshot to use when restoring the volume with the data directory.
 RESTORE_DB_DATA_DIRECTORY_SNAPSHOT_ID=
-# Only necessary if the contents of stash.diy-backup.ebs-db.sh have been uncommented
-# To be used when restoring the database by creating a volume using a snapshot containing the data directory
+# Required if RESTORE_DB_DATA_DIRECTORY_SNAPSHOT_ID has been provided
+# The type of volume to create when restoring the database data directory
 RESTORE_DB_DATA_DIRECTORY_VOLUME_TYPE=
-# The IOPS that should be provisioned for the new volume. Only valid when choosing an 'io1' volume type. This value is in relation to the size of the volume
-# Note: Maximum IOPS to volume size ratio is 30
+# Required if RESTORE_DB_DATA_DIRECTORY_SNAPSHOT_ID has been provided and RESTORE_DB_DATA_DIRECTORY_VOLUME_TYPE has been set to 'io1'
+# The IOPS that should be provisioned for the new volume. Note: Maximum IOPS to volume size ratio is 30
 RESTORE_DB_DATA_DIRECTORY_IOPS=
 
 # The RDS instance ID for the database to backup
