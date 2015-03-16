@@ -96,3 +96,11 @@ function add_cleanup_routine() {
     cleanup_queue+=($1)
     trap run_cleanup EXIT
 }
+
+function run_cleanup() {
+    announce "Cleaning up..."
+    for cleanup in ${cleanup_queue[@]}
+    do
+        ${cleanup}
+    done
+}
