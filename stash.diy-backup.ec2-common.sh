@@ -5,7 +5,7 @@ check_command "jq"
 
 # Ensure the AWS region has been provided
 if [[ -z ${AWS_REGION} ]]; then
-  error "The AWS region must be set in stash.diy-backup.vars.sh"
+  error "The AWS region must be set as AWS_REGION in ${BACKUP_VARS_FILE}"
   bail "See stash.diy-backup.vars.sh.example for the defaults."
 fi
 
@@ -14,7 +14,7 @@ if [ -z "${AWS_ACCESS_KEY_ID}" ] ||  [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then
     if [ -z "${AWS_INSTANCE_ROLE}" ]; then
         error "Could not find the necessary credentials to run backup"
         error "We recommend launching the instance with an appropiate IAM role"
-        error "Alternatively AWS credentials can be set in stash.diy-backup.vars.sh"
+        error "Alternatively AWS credentials can be set as AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in ${BACKUP_VARS_FILE}"
         bail "See stash.diy-backup.vars.sh.example for the defaults."
     else
         info "Using IAM instance role ${AWS_INSTANCE_ROLE}"

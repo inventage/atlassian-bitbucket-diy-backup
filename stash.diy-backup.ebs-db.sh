@@ -18,7 +18,7 @@ function snapshot_db {
     # The database data directory may be located in the same volume as the home directory
     # in which case there's no need to take a new snapshot
     if [ -z "${BACKUP_DB_DATA_DIRECTORY_VOLUME_ID}" ]; then
-        info "No database volume id has been provided. Skipping database data directory snapshot"
+        info "No database volume id has been provided as BACKUP_DB_DATA_DIRECTORY_VOLUME_ID in ${BACKUP_VARS_FILE}. Skipping database data directory snapshot"
     else
         snapshot_ebs_volume "${BACKUP_DB_DATA_DIRECTORY_VOLUME_ID}" "${1}"
     fi
@@ -28,19 +28,19 @@ function stash_restore_db {
     # The database data directory may be located in the same volume as the home directory
     # in which case there's no need to restore it into a new volume
     if [ -z "${RESTORE_DB_DATA_DIRECTORY_SNAPSHOT_ID}" ]; then
-        info "No database snapshot id has been provided. Skipping database data directory restore"
+        info "No database snapshot id has been provided as RESTORE_DB_DATA_DIRECTORY_SNAPSHOT_ID in ${BACKUP_VARS_FILE}. Skipping database data directory restore"
     else
         if [ -z "${RESTORE_DB_DATA_DIRECTORY_VOLUME_TYPE}" ]; then
-            error "The database volume type must be set in stash.diy-backup.vars.sh"
+            error "The database volume type must be set as RESTORE_DB_DATA_DIRECTORY_VOLUME_TYPE in ${BACKUP_VARS_FILE}"
             bail "See stash.diy-backup.vars.sh.example for the defaults."
         elif [ "io1" == "${RESTORE_DB_DATA_DIRECTORY_VOLUME_TYPE}" ] && [ -z "${RESTORE_DB_DATA_DIRECTORY_IOPS}" ]; then
-            error "The provisioned iops must be set in stash.diy-backup.vars.sh when choosing 'io1' volume type for the database data directory EBS volume"
+            error "The provisioned iops must be set as RESTORE_DB_DATA_DIRECTORY_IOPS in ${BACKUP_VARS_FILE} when choosing 'io1' volume type for the database data directory EBS volume"
             bail "See stash.diy-backup.vars.sh.example for the defaults."
         fi
 
         if [ -z "${AWS_AVAILABILITY_ZONE}" ]
         then
-            error "The availability zone for new volumes must be set in stash.diy-backup.vars.sh"
+            error "The availability zone for new volumes must be set as AWS_AVAILABILITY_ZONE in ${BACKUP_VARS_FILE}"
             bail "See stash.diy-backup.vars.sh.example for the defaults."
         fi
 

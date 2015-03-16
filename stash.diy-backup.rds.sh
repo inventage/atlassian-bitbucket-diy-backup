@@ -14,7 +14,7 @@ function stash_backup_db {
 
 function snapshot_db {
     if [ -z "${BACKUP_RDS_INSTANCE_ID}" ]; then
-        error "The RDS instance id must be set in stash.diy-backup.vars.sh"
+        error "The RDS instance id must be set in ${BACKUP_VARS_FILE}"
         bail "See stash.diy-backup.vars.sh.example for the defaults."
     fi
 
@@ -23,12 +23,12 @@ function snapshot_db {
 
 function stash_restore_db {
     if [ -z "${RESTORE_RDS_INSTANCE_ID}" ]; then
-        error "The RDS instance id must be set in stash.diy-backup.vars.sh"
+        error "The RDS instance id must be set in ${BACKUP_VARS_FILE}"
         bail "See stash.diy-backup.vars.sh.example for the defaults."
     fi
 
     if [ -z "${RESTORE_RDS_SNAPSHOT_ID}" ]; then
-        error "The RDS snapshot id must be set in stash.diy-backup.vars.sh"
+        error "The RDS snapshot id must be set in ${BACKUP_VARS_FILE}"
         bail "See stash.diy-backup.vars.sh.example for the defaults."
     fi
 
