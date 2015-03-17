@@ -1,6 +1,17 @@
 #!/bin/bash
 
+
 function stash_prepare_home {
+    if [ -z "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" ]; then
+        error "The home directory volume must be set as BACKUP_DB_DATA_DIRECTORY_VOLUME_ID in ${BACKUP_VARS_FILE}"
+        bail "See stash.diy-backup.vars.sh.example for the defaults."
+    fi
+
+    if [ -z "${BACKUP_HOME_DIRECTORY_MOUNT_POINT}" ]; then
+        error "The home directory mount point must be set as BACKUP_HOME_DIRECTORY_MOUNT_POINT in ${BACKUP_VARS_FILE}"
+        bail "See stash.diy-backup.vars.sh.example for the defaults."
+    fi
+
     info "Preparing backup of home directory"
 
     snapshot_home "Prepare backup: ${PRODUCT} home directory snapshot"
@@ -20,16 +31,6 @@ function stash_backup_home {
 }
 
 function snapshot_home {
-    if [ -z "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" ]; then
-        error "The home directory volume must be set as BACKUP_DB_DATA_DIRECTORY_VOLUME_ID in ${BACKUP_VARS_FILE}"
-        bail "See stash.diy-backup.vars.sh.example for the defaults."
-    fi
-
-    if [ -z "${BACKUP_HOME_DIRECTORY_MOUNT_POINT}" ]; then
-        error "The home directory mount point must be set as BACKUP_HOME_DIRECTORY_MOUNT_POINT in ${BACKUP_VARS_FILE}"
-        bail "See stash.diy-backup.vars.sh.example for the defaults."
-    fi
-
     snapshot_ebs_volume "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" "$1"
 }
 

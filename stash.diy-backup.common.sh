@@ -83,13 +83,13 @@ function stash_unlock {
 function freeze_mount_point {
     info "Freezing filesystem at mount point ${1}"
 
-    sudo fsfreeze -f ${1} 2>&1 > /dev/null
+    sudo fsfreeze -f ${1} > /dev/null 2>&1
 }
 
 function unfreeze_mount_point {
     info "Unreezing filesystem at mount point ${1}"
 
-    sudo fsfreeze -u ${1} 2>&1 > /dev/null
+    sudo fsfreeze -u ${1} > /dev/null 2>&1
 }
 
 function add_cleanup_routine() {
@@ -98,7 +98,7 @@ function add_cleanup_routine() {
 }
 
 function run_cleanup() {
-    announce "Cleaning up..."
+    info "Cleaning up..."
     for cleanup in ${cleanup_queue[@]}
     do
         ${cleanup}
