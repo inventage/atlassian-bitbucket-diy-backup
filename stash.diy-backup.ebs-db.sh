@@ -48,8 +48,7 @@ function stash_restore_db {
             bail "See stash.diy-backup.vars.sh.example for the defaults."
         fi
 
-        if [ -z "${AWS_AVAILABILITY_ZONE}" ]
-        then
+        if [ -z "${AWS_AVAILABILITY_ZONE}" ]; then
             error "The availability zone for new volumes must be set as AWS_AVAILABILITY_ZONE in ${BACKUP_VARS_FILE}"
             bail "See stash.diy-backup.vars.sh.example for the defaults."
         fi
