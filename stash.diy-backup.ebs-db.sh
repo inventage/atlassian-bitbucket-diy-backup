@@ -2,41 +2,33 @@
 
 check_command "aws"
 
-# The database data directory may be located in the same volume as the home directory
-# in which case there's no need to take a new snapshot
-if [ -z "${BACKUP_DB_DATA_DIRECTORY_VOLUME_ID}" ]; then
-    function stash_prepare_db {
-        info "No database volume id has been provided as BACKUP_DB_DATA_DIRECTORY_VOLUME_ID in ${BACKUP_VARS_FILE}. Skipping database data directory snapshot"
-    }
+function no_op {
+    info "No database volume id has been provided as BACKUP_DB_DATA_DIRECTORY_VOLUME_ID in ${BACKUP_VARS_FILE}. Skipping database data directory snapshot"
+}
 
-    function stash_backup_db {
-        info "No database volume id has been provided as BACKUP_DB_DATA_DIRECTORY_VOLUME_ID in ${BACKUP_VARS_FILE}. Skipping database data directory snapshot"
-    }
-else
-    function stash_prepare_db {
-        if [ -z "${BACKUP_DB_DIRECTORY_MOUNT_POINT}" ]; then
-            error "The database data directory mount point must be set as BACKUP_DB_DIRECTORY_MOUNT_POINT in ${BACKUP_VARS_FILE}"
-            bail "See stash.diy-backup.vars.sh.example for the defaults."
-        fi
+function prepare_db {
+    if [ -z "${BACKUP_DB_DIRECTORY_MOUNT_POINT}" ]; then
+        error "The database data directory mount point must be set as BACKUP_DB_DIRECTORY_MOUNT_POINT in ${BACKUP_VARS_FILE}"
+        bail "See stash.diy-backup.vars.sh.example for the defaults."
+    fi
 
-        info "Preparing backup of database data directory"
+    info "Preparing backup of database data directory"
 
-        snapshot_db "Prepare backup: ${PRODUCT} database data directory snapshot"
-    }
+    snapshot_db "Prepare backup: ${PRODUCT} database data directory snapshot"
+}
 
-    function stash_backup_db {
-        # Freeze the db data directory filesystem to ensure consistency
-        freeze_db_directory
-        # Add a clean up routine to ensure we unfreeze the db data directory filesystem
-        add_cleanup_routine unfreeze_db_directory
+function backup_db {
+    # Freeze the db data directory filesystem to ensure consistency
+    freeze_db_directory
+    # Add a clean up routine to ensure we unfreeze the db data directory filesystem
+    add_cleanup_routine unfreeze_db_directory
 
-        info "Performing backup of database data directory"
+    info "Performing backup of database data directory"
 
-        snapshot_db "Perform backup: ${PRODUCT} database data directory snapshot"
+    snapshot_db "Perform backup: ${PRODUCT} database data directory snapshot"
 
-        unfreeze_db_directory
-    }
-fi
+    unfreeze_db_directory
+}
 
 function snapshot_db {
     snapshot_ebs_volume "${BACKUP_DB_DATA_DIRECTORY_VOLUME_ID}" "${1}"
@@ -77,3 +69,23 @@ function freeze_db_directory {
 function unfreeze_db_directory {
     unfreeze_mount_point ${BACKUP_DB_DIRECTORY_MOUNT_POINT}
 }
+
+# The database data directory may be located in the same volume as the home directory
+# in which case there's no need to take a new snapshot
+if [ -z "${BACKUP_DB_DATA_DIRECTORY_VOLUME_ID}" ]; then
+    function stash_prepare_db {
+        no_op
+    }
+
+    function stash_backup_db {
+       no_op
+    }
+else
+    function stash_prepare_db {
+        prepare_db
+    }
+
+    function stash_backup_db {
+        backup_db
+    }
+fi

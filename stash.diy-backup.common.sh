@@ -5,6 +5,9 @@ check_command "jq"
 
 STASH_HTTP_AUTH="-u ${STASH_BACKUP_USER}:${STASH_BACKUP_PASS}"
 
+# The name of the product
+PRODUCT=Stash
+
 function stash_lock {
     STASH_LOCK_RESULT=`curl -s -f ${STASH_HTTP_AUTH} -X POST -H "Content-type: application/json" "${STASH_URL}/mvc/maintenance/lock"`
     if [ -z "${STASH_LOCK_RESULT}" ]; then

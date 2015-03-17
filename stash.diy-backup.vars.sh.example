@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# The name of the product
-PRODUCT=
-
 ##
 # It is recomended to `chmod 600 stash.diy-backup.vars.sh` after copying the template.
 ##
@@ -74,15 +71,15 @@ IAM_INSTANCE_ROLE=
 
 # The access key id to use when authenticating with the AWS API.
 # Not necessary if the instance has been launched with the appropriate IAM role
-AWS_ACCESS_KEY_ID=
+AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
 # The access key secret to use when authenticating with the AWS API.
 # Not necessary if the instance has been launched with the appropriate IAM role
-AWS_SECRET_ACCESS_KEY=
+AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 
 # The availability zone in which volumes will be created when restoring and instance
-AWS_AVAILABILITY_ZONE=
+AWS_AVAILABILITY_ZONE=`curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone`
 # The region for the resources Stash is using (volumes, instances, snapshots, etc)
-AWS_REGION=
+AWS_REGION=`echo \"AWS_AVAILABILITY_ZONE\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"
 
 # The ID for the volume holding the home directory
 BACKUP_HOME_DIRECTORY_VOLUME_ID=
