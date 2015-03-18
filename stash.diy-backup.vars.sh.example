@@ -76,7 +76,7 @@ STASH_BACKUP_GPG_RECIPIENT=
 # The availability zone in which volumes will be created when restoring and instance
 AWS_AVAILABILITY_ZONE=`curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone`
 # The region for the resources Stash is using (volumes, instances, snapshots, etc)
-AWS_REGION=`echo \"${AWS_AVAILABILITY_ZONE}\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"
+AWS_REGION="`echo \"${AWS_AVAILABILITY_ZONE}\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"
 
 # The ID for the volume holding the home directory
 BACKUP_HOME_DIRECTORY_VOLUME_ID=
