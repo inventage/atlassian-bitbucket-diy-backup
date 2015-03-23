@@ -1,18 +1,17 @@
 #!/bin/bash
 
-function stash_backup_db {
-    info "Performing backup of RDS instance ${BACKUP_RDS_INSTANCE_ID}"
-
-    snapshot_db "${BACKUP_RDS_INSTANCE_ID}-${BACKUP_TIMESTAMP}"
-}
-
-function snapshot_db {
+function stash_prepare_db {
+    # Validate that all the configuration parameters have been provided to avoid bailing out and leaving Stash locked
     if [ -z "${BACKUP_RDS_INSTANCE_ID}" ]; then
         error "The RDS instance id must be set in ${BACKUP_VARS_FILE}"
         bail "See stash.diy-backup.vars.sh.example for the defaults."
     fi
+}
 
-    snapshot_rds_instance "${BACKUP_RDS_INSTANCE_ID}" "${1}"
+function stash_backup_db {
+    info "Performing backup of RDS instance ${BACKUP_RDS_INSTANCE_ID}"
+
+    snapshot_rds_instance "${BACKUP_RDS_INSTANCE_ID}" "${BACKUP_RDS_INSTANCE_ID}-${BACKUP_TIMESTAMP}"
 }
 
 function stash_restore_db {

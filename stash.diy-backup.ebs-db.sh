@@ -1,6 +1,7 @@
 #!/bin/bash
 
-function stash_backup_db {
+function stash_prepare_db {
+    # Validate that all the configuration parameters have been provided to avoid bailing out and leaving Stash locked
     if [ -z "${BACKUP_DB_DATA_DIRECTORY_VOLUME_ID}" ]; then
         error "The database data directory volume ID must be set as BACKUP_DB_DATA_DIRECTORY_VOLUME_ID in ${BACKUP_VARS_FILE}"
         bail "See stash.diy-backup.vars.sh.example for the defaults."
@@ -10,7 +11,9 @@ function stash_backup_db {
         error "The database data directory mount point must be set as BACKUP_DB_DIRECTORY_MOUNT_POINT in ${BACKUP_VARS_FILE}"
         bail "See stash.diy-backup.vars.sh.example for the defaults."
     fi
+}
 
+function stash_backup_db {
     # Freeze the db data directory filesystem to ensure consistency
     freeze_db_directory
     # Add a clean up routine to ensure we unfreeze the db data directory filesystem

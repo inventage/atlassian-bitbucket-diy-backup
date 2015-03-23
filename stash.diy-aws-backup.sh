@@ -51,6 +51,8 @@ BACKUP_ID="${BACKUP_TIMESTAMP}"
 
 ##########################################################
 # The actual proposed backup process. It has the following steps
+stash_prepare_home
+stash_prepare_db
 
 # Locking the stash instance, starting an external backup and waiting for instance readiness
 stash_lock
