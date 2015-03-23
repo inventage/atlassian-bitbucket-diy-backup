@@ -26,15 +26,25 @@ if [[ -z ${STASH_UID} || -z ${STASH_GID} ]]; then
 fi
 
 # The following scripts contain functions which are dependant on the configuration of this stash instance.
-# Generally every each of them exports certain functions, which can be implemented in different ways
+# Generally each of them exports certain functions, which can be implemented in different ways
 
-# Exports the following functions
-#     stash_restore_db     - for restoring the stash DB
-source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_DATABASE_TYPE}.sh
+if [ "mssql" == "${BACKUP_DATABASE_TYPE}" ] || [ "postgresql" == "${BACKUP_DATABASE_TYPE}" ] || [ "mysql" == "${BACKUP_DATABASE_TYPE}" ]; then
+    # Exports the following functions
+    #     stash_restore_db     - for restoring the stash DB
+    source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_DATABASE_TYPE}.sh
+else
+    error "${BACKUP_DATABASE_TYPE} is not a supported database backup type"
+    bail "Please update BACKUP_DATABASE_TYPE in ${BACKUP_VARS_FILE} or consider running stash.diy-aws-restore.sh instead"
+fi
 
-# Exports the following functions
-#     stash_restore_home   -  for restoring the filesystem backup
-source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_HOME_TYPE}.sh
+if [ "rsync" == "${BACKUP_HOME_TYPE}" ]; then
+    # Exports the following functions
+    #     stash_restore_home   -  for restoring the filesystem backup
+    source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_HOME_TYPE}.sh
+else
+    error "${BACKUP_HOME_TYPE} is not a supported home backup type"
+    bail "Please update BACKUP_HOME_TYPE in ${BACKUP_VARS_FILE} or consider running stash.diy-aws-restore.sh instead"
+fi
 
 # Exports the following functions
 #     stash_restore_archive - for un-archiving the archive folder

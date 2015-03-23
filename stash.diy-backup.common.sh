@@ -90,7 +90,7 @@ function freeze_mount_point {
 }
 
 function unfreeze_mount_point {
-    info "Unreezing filesystem at mount point ${1}"
+    info "Unfreezing filesystem at mount point ${1}"
 
     sudo fsfreeze -u ${1} > /dev/null 2>&1
 }

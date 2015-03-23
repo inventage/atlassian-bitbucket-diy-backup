@@ -4,7 +4,7 @@
 # It is recomended to `chmod 600 stash.diy-backup.vars.sh` after copying the template.
 ##
 
-# Which database backup script to use (ex: mssql, postgresql, mysql, ebs-db, rds)
+# Which database backup script to use (ex: mssql, postgresql, mysql, ebs-collocated, ebs-db, rds)
 BACKUP_DATABASE_TYPE=postgresql
 
 # Which filesystem backup script to use (ex: rsync, ebs-home)
@@ -16,7 +16,7 @@ BACKUP_ARCHIVE_TYPE=tar
 # Used by the scripts for verbose logging. If not true only errors will be shown.
 STASH_VERBOSE_BACKUP=TRUE
 
-# The base url used to access this stash instance
+# The base url used to access this stash instance. It cannot end on a '/'
 STASH_URL=
 
 # The username and password for the user used to make backups (and have this permission)

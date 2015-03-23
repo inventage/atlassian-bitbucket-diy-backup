@@ -23,30 +23,34 @@ fi
 source ${SCRIPT_DIR}/stash.diy-backup.common.sh
 
 # The following scripts contain functions which are dependant on the configuration of this stash instance.
-# Generally every each of them exports certain functions, which can be implemented in different ways
+# Generally each of them exports certain functions, which can be implemented in different ways
 
 # Exports aws specific function to be used during the backup
 source ${SCRIPT_DIR}/stash.diy-backup.ec2-common.sh
 
-# Exports the following functions
-#     stash_prepare_db     - for making a backup of the DB if differential backups a possible. Can be empty
-#     stash_backup_db      - for making a backup of the stash DB
-source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_DATABASE_TYPE}.sh
+if [ "ebs-collocated" == "${BACKUP_DATABASE_TYPE}" ] || [ "ebs-db" == "${BACKUP_DATABASE_TYPE}" ] || [ "rds" == "${BACKUP_DATABASE_TYPE}" ]; then
+    # Exports the following functions
+    #     stash_backup_db      - for making a backup of the stash DB
+    source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_DATABASE_TYPE}.sh
+else
+    error "${BACKUP_DATABASE_TYPE} is not a supported AWS database backup type"
+    bail "Please update BACKUP_DATABASE_TYPE in ${BACKUP_VARS_FILE} or consider running stash.diy-backup.sh instead"
+fi
 
-# Exports the following functions
-#     stash_prepare_home   - for preparing the filesystem for the backup
-#     stash_backup_home    - for making the actual filesystem backup
-source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_HOME_TYPE}.sh
+if [ "ebs-home" == "${BACKUP_HOME_TYPE}" ]; then
+    # Exports the following functions
+    #     stash_backup_home    - for making the actual filesystem backup
+    source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_HOME_TYPE}.sh
+else
+    error "${BACKUP_HOME_TYPE} is not a supported AWS home backup type"
+    bail "Please update BACKUP_HOME_TYPE in ${BACKUP_VARS_FILE} or consider running stash.diy-backup.sh instead"
+fi
 
 BACKUP_TIMESTAMP="`date +%s%N`"
 BACKUP_ID="${BACKUP_TIMESTAMP}"
 
 ##########################################################
 # The actual proposed backup process. It has the following steps
-
-# Prepare the database and the filesystem for taking a backup
-stash_prepare_db
-stash_prepare_home
 
 # Locking the stash instance, starting an external backup and waiting for instance readiness
 stash_lock

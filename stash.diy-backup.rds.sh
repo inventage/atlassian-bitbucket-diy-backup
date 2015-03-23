@@ -1,11 +1,5 @@
 #!/bin/bash
 
-check_command "aws"
-
-function stash_prepare_db {
-    info "Preparing backup of RDS instance ${BACKUP_RDS_INSTANCE_ID}"
-}
-
 function stash_backup_db {
     info "Performing backup of RDS instance ${BACKUP_RDS_INSTANCE_ID}"
 

@@ -23,17 +23,27 @@ fi
 source ${SCRIPT_DIR}/stash.diy-backup.common.sh
 
 # The following scripts contain functions which are dependant on the configuration of this stash instance.
-# Generally every each of them exports certain functions, which can be implemented in different ways
+# Generally each of them exports certain functions, which can be implemented in different ways
 
-# Exports the following functions
-#     stash_prepare_db     - for making a backup of the DB if differential backups a possible. Can be empty
-#     stash_backup_db      - for making a backup of the stash DB
-source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_DATABASE_TYPE}.sh
+if [ "rsync" == "${BACKUP_HOME_TYPE}" ]; then
+    # Exports the following functions
+    #     stash_prepare_db     - for making a backup of the DB if differential backups a possible. Can be empty
+    #     stash_backup_db      - for making a backup of the stash DB
+    source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_DATABASE_TYPE}.sh
+else
+    error "${BACKUP_HOME_TYPE} is not a supported home backup type"
+    bail "Please update BACKUP_HOME_TYPE in ${BACKUP_VARS_FILE} or consider running stash.diy-aws-backup.sh instead"
+fi
 
-# Exports the following functions
-#     stash_prepare_home   - for preparing the filesystem for the backup
-#     stash_backup_home    - for making the actual filesystem backup
-source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_HOME_TYPE}.sh
+if [ "mssql" == "${BACKUP_DATABASE_TYPE}" ] || [ "postgresql" == "${BACKUP_DATABASE_TYPE}" ] || [ "mysql" == "${BACKUP_DATABASE_TYPE}" ]; then
+    # Exports the following functions
+    #     stash_prepare_db     - for making a backup of the DB if differential backups a possible. Can be empty
+    #     stash_backup_db      - for making a backup of the stash DB
+    source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_DATABASE_TYPE}.sh
+else
+    error "${BACKUP_DATABASE_TYPE} is not a supported database backup type"
+    bail "Please update BACKUP_DATABASE_TYPE in ${BACKUP_VARS_FILE} or consider running stash.diy-aws-backup.sh instead"
+fi
 
 # Exports the following functions
 #     stash_backup_archive - for archiving the backup folder and puting the archive in archive folder

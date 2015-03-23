@@ -20,18 +20,28 @@ else
 fi
 
 # The following scripts contain functions which are dependant on the configuration of this stash instance.
-# Generally every each of them exports certain functions, which can be implemented in different ways
+# Generally each of them exports certain functions, which can be implemented in different ways
 
 # Exports aws specific function to be used during the restore
 source ${SCRIPT_DIR}/stash.diy-backup.ec2-common.sh
 
-# Exports the following functions
-#     stash_restore_db     - for restoring the stash DB
-source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_DATABASE_TYPE}.sh
+if [ "ebs-collocated" == "${BACKUP_DATABASE_TYPE}" ] || [ "ebs-db" == "${BACKUP_DATABASE_TYPE}" ] || [ "rds" == "${BACKUP_DATABASE_TYPE}" ]; then
+    # Exports the following functions
+    #     stash_restore_db     - for restoring the stash DB
+    source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_DATABASE_TYPE}.sh
+else
+    error "${BACKUP_DATABASE_TYPE} is not a supported AWS database backup type"
+    bail "Please update BACKUP_DATABASE_TYPE in ${BACKUP_VARS_FILE} or consider running stash.diy-restore.sh instead"
+fi
 
-# Exports the following functions
-#     stash_restore_home   -  for restoring the filesystem backup
-source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_HOME_TYPE}.sh
+if [ "ebs-home" == "${BACKUP_HOME_TYPE}" ]; then
+    # Exports the following functions
+    #     stash_restore_home   -  for restoring the filesystem backup
+    source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_HOME_TYPE}.sh
+else
+    error "${BACKUP_HOME_TYPE} is not a supported AWS home backup type"
+    bail "Please update BACKUP_HOME_TYPE in ${BACKUP_VARS_FILE} or consider running stash.diy-restore.sh instead"
+fi
 
 ##########################################################
 # The actual restore process. It has the following steps

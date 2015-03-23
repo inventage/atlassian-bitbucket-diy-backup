@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-function stash_prepare_home {
+function stash_backup_home {
     if [ -z "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" ]; then
         error "The home directory volume must be set as BACKUP_DB_DATA_DIRECTORY_VOLUME_ID in ${BACKUP_VARS_FILE}"
         bail "See stash.diy-backup.vars.sh.example for the defaults."
@@ -12,26 +12,16 @@ function stash_prepare_home {
         bail "See stash.diy-backup.vars.sh.example for the defaults."
     fi
 
-    info "Preparing backup of home directory"
-
-    snapshot_home "Prepare backup: ${PRODUCT} home directory snapshot"
-}
-
-function stash_backup_home {
-    info "Performing backup of home directory"
-
     # Freeze the home directory filesystem to ensure consistency
     freeze_home_directory
     # Add a clean up routine to ensure we unfreeze the home directory filesystem
     add_cleanup_routine unfreeze_home_directory
 
-    snapshot_home "Perform backup: ${PRODUCT} home directory snapshot"
+    info "Performing backup of home directory"
+
+    snapshot_ebs_volume "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" "Perform backup: ${PRODUCT} home directory snapshot"
 
     unfreeze_home_directory
-}
-
-function snapshot_home {
-    snapshot_ebs_volume "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" "$1"
 }
 
 function stash_restore_home {
