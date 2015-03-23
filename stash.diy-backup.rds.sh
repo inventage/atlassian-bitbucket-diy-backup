@@ -1,5 +1,13 @@
 #!/bin/bash
 
+if [ $# -lt 3 ]; then
+    echo "Usage: $0 home_snapshot_id database_snapshot_id database_instance_id"
+
+    exit 99
+else
+    validate_rds_snapshot "${2}"
+fi
+
 function stash_prepare_db {
     # Validate that all the configuration parameters have been provided to avoid bailing out and leaving Stash locked
     if [ -z "${BACKUP_RDS_INSTANCE_ID}" ]; then
@@ -15,15 +23,8 @@ function stash_backup_db {
 }
 
 function stash_restore_db {
-    if [ -z "${RESTORE_RDS_INSTANCE_ID}" ]; then
-        error "The RDS instance id must be set in ${BACKUP_VARS_FILE}"
-        bail "See stash.diy-backup.vars.sh.example for the defaults."
-    fi
-
-    if [ -z "${RESTORE_RDS_SNAPSHOT_ID}" ]; then
-        error "The RDS snapshot id must be set in ${BACKUP_VARS_FILE}"
-        bail "See stash.diy-backup.vars.sh.example for the defaults."
-    fi
+    RESTORE_RDS_SNAPSHOT_ID="${1}"
+    RESTORE_RDS_INSTANCE_ID="${2}"
 
     if [ -z "${RESTORE_RDS_INSTANCE_CLASS}" ]; then
         info "No restore instance class has been set in ${BACKUP_VARS_FILE}"

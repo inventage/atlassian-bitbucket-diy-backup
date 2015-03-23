@@ -46,10 +46,12 @@ fi
 ##########################################################
 # The actual restore process. It has the following steps
 
-# Restore the database
-stash_restore_db
-
 # Restore the filesystem
-stash_restore_home
+stash_restore_home $1
+
+shift
+
+# Restore the database
+stash_restore_db $@
 
 ##########################################################

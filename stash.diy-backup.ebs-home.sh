@@ -1,5 +1,12 @@
 #!/bin/bash
 
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 snapshot_id"
+
+    exit 99
+else
+    validate_ebs_snapshot "${1}"
+fi
 
 function stash_prepare_home {
     # Validate that all the configuration parameters have been provided to avoid bailing out and leaving Stash locked
@@ -28,10 +35,7 @@ function stash_backup_home {
 }
 
 function stash_restore_home {
-    if [ -z "${RESTORE_HOME_DIRECTORY_SNAPSHOT_ID}" ]; then
-        error "The id for the snapshot to use when restoring the home directory must be set as RESTORE_HOME_DIRECTORY_SNAPSHOT_ID in ${BACKUP_VARS_FILE}"
-        bail "See stash.diy-backup.vars.sh.example for the defaults."
-    fi
+    RESTORE_HOME_DIRECTORY_SNAPSHOT_ID="${1}"
 
     if [ -z "${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}" ]; then
         error "The type of volume to create when restoring the home directory must be set as RESTORE_HOME_DIRECTORY_VOLUME_TYPE in ${BACKUP_VARS_FILE}"

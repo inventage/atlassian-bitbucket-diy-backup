@@ -83,8 +83,6 @@ BACKUP_HOME_DIRECTORY_VOLUME_ID=
 # The mount point for the home directory volume
 BACKUP_HOME_DIRECTORY_MOUNT_POINT=
 # The ID for the snapshot to use when restoring the volume with the home directory
-RESTORE_HOME_DIRECTORY_SNAPSHOT_ID=
-# The type of volume to create when restoring the home directory
 RESTORE_HOME_DIRECTORY_VOLUME_TYPE=
 # Required if RESTORE_HOME_DIRECTORY_VOLUME_TYPE has been set to 'io1'
 # The IOPS that should be provisioned for the new volume. Note: Maximum IOPS to volume size ratio is 30
@@ -98,9 +96,6 @@ BACKUP_DB_DATA_DIRECTORY_VOLUME_ID=
 BACKUP_DB_DIRECTORY_MOUNT_POINT=
 # Only necessary if the database data directory has been backed up in a different snapshot than RESTORE_HOME_DIRECTORY_SNAPSHOT_ID
 # The ID for the snapshot to use when restoring the volume with the data directory.
-RESTORE_DB_DATA_DIRECTORY_SNAPSHOT_ID=
-# Required if RESTORE_DB_DATA_DIRECTORY_SNAPSHOT_ID has been provided
-# The type of volume to create when restoring the database data directory
 RESTORE_DB_DATA_DIRECTORY_VOLUME_TYPE=
 # Required if RESTORE_DB_DATA_DIRECTORY_SNAPSHOT_ID has been provided and RESTORE_DB_DATA_DIRECTORY_VOLUME_TYPE has been set to 'io1'
 # The IOPS that should be provisioned for the new volume. Note: Maximum IOPS to volume size ratio is 30
@@ -109,10 +104,6 @@ RESTORE_DB_DATA_DIRECTORY_IOPS=
 # The RDS instance ID for the database to backup
 BACKUP_RDS_INSTANCE_ID=
 # The RDS instance ID for the database to create on restore
-RESTORE_RDS_INSTANCE_ID=
-# The rds snapshot ID to use when restoring the database
-RESTORE_RDS_SNAPSHOT_ID=
-# The instance class to use when restoring the database
 RESTORE_RDS_INSTANCE_CLASS=db.r3.large
 # The subnet in which the database will be restored
 RESTORE_RDS_SUBNET_GROUP_NAME=

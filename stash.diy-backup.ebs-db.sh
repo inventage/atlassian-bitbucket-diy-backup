@@ -1,5 +1,13 @@
 #!/bin/bash
 
+if [ $# -lt 2 ]; then
+    echo "Usage: $0 home_snapshot_id database_snapshot_id"
+
+    exit 99
+else
+    validate_ebs_snapshot "${2}"
+fi
+
 function stash_prepare_db {
     # Validate that all the configuration parameters have been provided to avoid bailing out and leaving Stash locked
     if [ -z "${BACKUP_DB_DATA_DIRECTORY_VOLUME_ID}" ]; then
@@ -27,10 +35,7 @@ function stash_backup_db {
 }
 
 function stash_restore_db {
-    if [ -z "${RESTORE_DB_DATA_DIRECTORY_SNAPSHOT_ID}" ]; then
-        error "The database data directory snapshot ID must be set as RESTORE_DB_DATA_DIRECTORY_SNAPSHOT_ID in ${BACKUP_VARS_FILE}"
-        bail "See stash.diy-backup.vars.sh.example for the defaults."
-    fi
+    RESTORE_DB_DATA_DIRECTORY_SNAPSHOT_ID="${1}"
 
     if [ -z "${RESTORE_DB_DATA_DIRECTORY_VOLUME_TYPE}" ]; then
         error "The database volume type must be set as RESTORE_DB_DATA_DIRECTORY_VOLUME_TYPE in ${BACKUP_VARS_FILE}"
