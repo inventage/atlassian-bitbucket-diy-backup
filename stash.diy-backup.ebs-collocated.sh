@@ -7,8 +7,16 @@ function no_op {
     echo > /dev/null
 }
 
+function stash_prepare_db {
+    no_op
+}
+
 function stash_backup_db {
    no_op
+}
+
+function stash_prepare_db_restore {
+    no_op
 }
 
 function stash_restore_db {

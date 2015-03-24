@@ -25,7 +25,7 @@ if [[ -z ${STASH_UID} || -z ${STASH_GID} ]]; then
   bail "See stash.diy-backup.vars.sh.example for the defaults."
 fi
 
-# The following scripts contain functions which are dependant on the configuration of this stash instance.
+# The following scripts contain functions which are dependent on the configuration of this stash instance.
 # Generally each of them exports certain functions, which can be implemented in different ways
 
 if [ "mssql" == "${BACKUP_DATABASE_TYPE}" ] || [ "postgresql" == "${BACKUP_DATABASE_TYPE}" ] || [ "mysql" == "${BACKUP_DATABASE_TYPE}" ]; then

@@ -22,7 +22,7 @@ fi
 # Contains functions that perform lock/unlock and backup of a stash instance
 source ${SCRIPT_DIR}/stash.diy-backup.common.sh
 
-# The following scripts contain functions which are dependant on the configuration of this stash instance.
+# The following scripts contain functions which are dependent on the configuration of this stash instance.
 # Generally each of them exports certain functions, which can be implemented in different ways
 
 if [ "rsync" == "${BACKUP_HOME_TYPE}" ]; then

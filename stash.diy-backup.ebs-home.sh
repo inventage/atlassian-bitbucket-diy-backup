@@ -1,12 +1,5 @@
 #!/bin/bash
 
-if [ $# -lt 1 ]; then
-    echo "Usage: $0 snapshot_id"
-
-    exit 99
-else
-    validate_ebs_snapshot "${1}"
-fi
 
 function stash_prepare_home {
     # Validate that all the configuration parameters have been provided to avoid bailing out and leaving Stash locked
@@ -34,8 +27,18 @@ function stash_backup_home {
     unfreeze_home_directory
 }
 
-function stash_restore_home {
-    RESTORE_HOME_DIRECTORY_SNAPSHOT_ID="${1}"
+function stash_prepare_home_restore {
+    local SNAPSHOT_TAG="${1}"
+
+    if [ -z "${STASH_HOME}" ]; then
+        error "The ${PRODUCT} home directory must be set as STASH_HOME in ${BACKUP_VARS_FILE}"
+        bail "See stash.diy-backup.vars.sh.example for the defaults."
+    fi
+
+    if [ -z "${AWS_AVAILABILITY_ZONE}" ]; then
+        error "The availability zone for new volumes must be set as AWS_AVAILABILITY_ZONE in ${BACKUP_VARS_FILE}"
+        bail "See stash.diy-backup.vars.sh.example for the defaults."
+    fi
 
     if [ -z "${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}" ]; then
         error "The type of volume to create when restoring the home directory must be set as RESTORE_HOME_DIRECTORY_VOLUME_TYPE in ${BACKUP_VARS_FILE}"
@@ -45,14 +48,34 @@ function stash_restore_home {
         bail "See stash.diy-backup.vars.sh.example for the defaults."
     fi
 
-    if [ -z "${AWS_AVAILABILITY_ZONE}" ]; then
-        error "The availability zone for new volumes must be set as AWS_AVAILABILITY_ZONE in ${BACKUP_VARS_FILE}"
+    if [ -z "${RESTORE_HOME_DIRECTORY_DEVICE_NAME}" ]; then
+        error "The home directory volume device name must be set as RESTORE_HOME_DIRECTORY_DEVICE_NAME in ${BACKUP_VARS_FILE}"
         bail "See stash.diy-backup.vars.sh.example for the defaults."
     fi
 
+    if [ -z "${RESTORE_HOME_DIRECTORY_MOUNT_POINT}" ]; then
+        error "The home directory mount point must be set as RESTORE_HOME_DIRECTORY_MOUNT_POINT in ${BACKUP_VARS_FILE}"
+        bail "See stash.diy-backup.vars.sh.example for the defaults."
+    fi
+
+    if mount | grep ${RESTORE_HOME_DIRECTORY_MOUNT_POINT} > /dev/null; then
+        error "The home directory mount point ${RESTORE_HOME_DIRECTORY_MOUNT_POINT} appears to be taken"
+        bail "Please make sure Stash has been stopped, and that home directory the EBS volume has been unmounted and dettached"
+    fi
+
+    validate_device_name "${RESTORE_HOME_DIRECTORY_DEVICE_NAME}"
+
+    RESTORE_HOME_DIRECTORY_SNAPSHOT_ID=
+    validate_ebs_snapshot "${SNAPSHOT_TAG}" RESTORE_HOME_DIRECTORY_SNAPSHOT_ID
+}
+
+function stash_restore_home {
     info "Restoring home directory from snapshot ${RESTORE_HOME_DIRECTORY_SNAPSHOT_ID} into a ${RESTORE_HOME_DIRECTORY_VOLUME_TYPE} volume"
 
-    restore_from_snapshot "${RESTORE_HOME_DIRECTORY_SNAPSHOT_ID}" "${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}" "${RESTORE_HOME_DIRECTORY_IOPS}"
+    restore_from_snapshot "${RESTORE_HOME_DIRECTORY_SNAPSHOT_ID}" "${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}" \
+    "${RESTORE_HOME_DIRECTORY_IOPS}" "${RESTORE_HOME_DIRECTORY_DEVICE_NAME}" "${RESTORE_HOME_DIRECTORY_MOUNT_POINT}"
+
+    cleanup_locks ${STASH_HOME}
 
     info "Performed restore of home directory snapshot"
 }

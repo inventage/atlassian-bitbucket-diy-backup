@@ -4,7 +4,7 @@ check_command "aws"
 check_command "jq"
 
 # Ensure the AWS region has been provided
-if [[ -z ${AWS_REGION} ]]; then
+if [ -z "${AWS_REGION}" ] || [ ${AWS_REGION} == null ]; then
   error "The AWS region must be set as AWS_REGION in ${BACKUP_VARS_FILE}"
   bail "See stash.diy-backup.vars.sh.example for the defaults."
 fi
@@ -28,83 +28,166 @@ fi
 export AWS_DEFAULT_REGION=${AWS_REGION}
 export AWS_DEFAULT_OUTPUT=json
 
-TAG_KEY="${PRODUCT}-Backup-ID"
+if [ -z "${INSTANCE_NAME}" ]; then
+    error "The ${PRODUCT} instance name must be set as INSTANCE_NAME in ${BACKUP_VARS_FILE}"
+
+    bail "See stash.diy-backup.vars.sh.example for the defaults."
+elif [ ! "${INSTANCE_NAME}" == ${INSTANCE_NAME%[[:space:]]*} ]; then
+    error "Instance name cannot contain spaces"
+
+    bail "See stash.diy-backup.vars.sh.example for the defaults."
+elif [ ${#INSTANCE_NAME} -ge 100 ]; then
+    error "Instance name must be under 100 characters in length"
+
+    bail "See stash.diy-backup.vars.sh.example for the defaults."
+fi
+
+SNAPSHOT_TAG_KEY="Name"
+SNAPSHOT_TAG_PREFIX="${INSTANCE_NAME}-"
+SNAPSHOT_TAG_VALUE="${SNAPSHOT_TAG_PREFIX}`date +"%Y%m%d-%H%M%S-%3N"`"
+info "Snapshot tag value: ${SNAPSHOT_TAG_VALUE}"
 
 function snapshot_ebs_volume {
-    VOLUME_ID="$1"
+    local VOLUME_ID="$1"
 
-    SNAPSHOT_ID=$(aws ec2 create-snapshot --volume-id ${VOLUME_ID} --description "$2" | jq -r '.SnapshotId')
+    local SNAPSHOT_ID=$(aws ec2 create-snapshot --volume-id "${VOLUME_ID}" --description "$2" | jq -r '.SnapshotId')
 
     success "Taken snapshot ${SNAPSHOT_ID} of volume ${VOLUME_ID}"
 
-    aws ec2 create-tags --resources "${SNAPSHOT_ID}" --tags Key="${TAG_KEY}",Value="${BACKUP_ID}"
+    aws ec2 create-tags --resources "${SNAPSHOT_ID}" --tags Key="${SNAPSHOT_TAG_KEY}",Value="${SNAPSHOT_TAG_VALUE}"
 
-    info "Tagged ${SNAPSHOT_ID} with Key [${TAG_KEY}] and Value [${BACKUP_ID}]"
+    info "Tagged ${SNAPSHOT_ID} with Key \"${SNAPSHOT_TAG_KEY}\" and Value \"${SNAPSHOT_TAG_VALUE}\""
 }
 
 function create_volume {
-    SNAPSHOT_ID="$1"
-    VOLUME_TYPE="$2"
-    PROVISIONED_IOPS="$3"
+    local SNAPSHOT_ID="$1"
+    local VOLUME_TYPE="$2"
+    local PROVISIONED_IOPS="$3"
 
-    OPTIONAL_ARGS=
+    local OPTIONAL_ARGS=
     if [ "io1" == "${VOLUME_TYPE}" ] && [ ! -z "${PROVISIONED_IOPS}" ]; then
         info "Restoring volume with ${PROVISIONED_IOPS} provisioned IOPS"
         OPTIONAL_ARGS="--iops ${PROVISIONED_IOPS}"
     fi
 
-    VOLUME_ID=$(aws ec2 create-volume --snapshot ${SNAPSHOT_ID} --availability-zone ${AWS_AVAILABILITY_ZONE} --volume-type ${VOLUME_TYPE} ${OPTIONAL_ARGS} | jq -r '.VolumeId')
+    eval "VOLUME_ID=$(aws ec2 create-volume --snapshot ${SNAPSHOT_ID} --availability-zone ${AWS_AVAILABILITY_ZONE} --volume-type ${VOLUME_TYPE} ${OPTIONAL_ARGS} | jq -r '.VolumeId')"
 
-    aws ec2 wait volume-available --volume-ids ${VOLUME_ID}
+    aws ec2 wait volume-available --volume-ids "${VOLUME_ID}"
 
     success "Restored snapshot ${SNAPSHOT_ID} into volume ${VOLUME_ID}"
 }
 
-function restore_from_snapshot {
-    SNAPSHOT_ID="$1"
-    VOLUME_TYPE="$2"
-    PROVISIONED_IOPS="$3"
+function attach_volume {
+    local VOLUME_ID="$1"
+    local DEVICE_NAME="$2"
+    local INSTANCE_ID="$3"
 
-    validate_ebs_snapshot "${SNAPSHOT_ID}"
+    aws ec2 attach-volume --volume-id "${VOLUME_ID}" --instance "${INSTANCE_ID}" --device "${DEVICE_NAME}" > /dev/null 2>&1
 
-    create_volume "${SNAPSHOT_ID}" "${VOLUME_TYPE}" "${PROVISIONED_IOPS}"
+    wait_attached_volume "${VOLUME_ID}"
+
+    success "Attached volume ${VOLUME_ID} to device ${DEVICE_NAME} at instance ${INSTANCE_ID}"
 }
 
-function validate_ebs_snapshot {
-    SNAPSHOT_ID="$1"
+function wait_attached_volume {
+    local VOLUME_ID="$1"
 
-    aws ec2 describe-snapshots | grep ${SNAPSHOT_ID} 2>&1 > /dev/null
-    if [ $? != 0 ]; then
-        error "Could not find snapshot ${SNAPSHOT_ID} in region ${AWS_REGION}"
+    info "Waiting for volume ${VOLUME_ID} to be attached. This could take some time"
 
-        print "Available snapshots:"
-        aws ec2 describe-snapshots
+    TIMEOUT=120
+    END=$((SECONDS+${TIMEOUT}))
 
-        bail "Please review your AWS_REGION configuration in ${BACKUP_VARS_FILE}"
+    local STATE='attaching'
+    while [ $SECONDS -lt $END ]; do
+        # aws ec2 wait volume-in-use ${VOLUME_ID} is not enough.
+        # A volume state can be 'in-use' while its attachment state is still 'attaching'
+        # If the volume is not fully attach we cannot issue a mount command for it
+        STATE=$(aws ec2 describe-volumes --volume-ids ${VOLUME_ID} | jq -r '.Volumes[0].Attachments[0].State')
+        info "Volume ${VOLUME_ID} state: ${STATE}"
+        if [ "attached" == "${STATE}" ]; then
+            break
+        fi
+
+        sleep 10
+    done
+
+    if [ "attached" == "${STATE}" ]; then
+        success "Attached volume ${VOLUME_ID}"
+    else
+        bail "Unable to attach volume ${VOLUME_ID}. Attachment state is ${STATE} after ${TIMEOUT} seconds"
     fi
 }
 
-function snapshot_rds_instance {
-    INSTANCE_ID="$1"
-    SNAPSHOT_ID="$2"
+function restore_from_snapshot {
+    local SNAPSHOT_ID="$1"
+    local VOLUME_TYPE="$2"
+    local PROVISIONED_IOPS="$3"
+    local DEVICE_NAME="$4"
+    local MOUNT_POINT="$5"
 
-    aws rds create-db-snapshot --db-instance-identifier ${INSTANCE_ID} --db-snapshot-identifier ${SNAPSHOT_ID} --tags Key="${TAG_KEY}",Value="${BACKUP_ID}" > /dev/null
+    local VOLUME_ID=
+    create_volume "${SNAPSHOT_ID}" "${VOLUME_TYPE}" "${PROVISIONED_IOPS}" VOLUME_ID
+
+    local INSTANCE_ID=`curl --silent --fail http://169.254.169.254/latest/meta-data/instance-id`
+
+    attach_volume "${VOLUME_ID}" "${DEVICE_NAME}" "${INSTANCE_ID}"
+
+    mount_device "${DEVICE_NAME}" "${MOUNT_POINT}"
+}
+
+function validate_ebs_snapshot {
+    local SNAPSHOT_TAG="$1"
+    local  __RETURN=$2
+
+    local SNAPSHOT_ID="$(aws ec2 describe-snapshots --filters Name=tag-key,Values=\"Name\" Name=tag-value,Values=\"${SNAPSHOT_TAG}\" 2>/dev/null | jq -r '.Snapshots[0]?.SnapshotId')"
+    if [ -z "${SNAPSHOT_ID}" ] || [ ${SNAPSHOT_ID} == null ]; then
+        error "Could not find EBS snapshot for tag ${SNAPSHOT_TAG}"
+        list_available_ebs_snapshot_tags
+
+        bail "Please select an available tag"
+    else
+        info "Found EBS snapshot ${SNAPSHOT_ID} for tag ${SNAPSHOT_TAG}"
+
+        eval ${__RETURN}="${SNAPSHOT_ID}"
+    fi
+}
+
+function validate_device_name {
+    local DEVICE_NAME="${1}"
+    local INSTANCE_ID=`curl --silent --fail http://169.254.169.254/latest/meta-data/instance-id`
+
+    # If there's a volume taking the provided DEVICE_NAME it must be unmounted and detached
+    info "Checking for existing volumes using device name ${DEVICE_NAME}"
+    local VOLUME_ID="$(aws ec2 describe-volumes --filter Name=attachment.instance-id,Values=${INSTANCE_ID} Name=attachment.device,Values=${DEVICE_NAME} 2> /dev/null | jq -r '.Volumes[0].VolumeId')"
+
+    case "${VOLUME_ID}" in vol-*)
+        error "Device name ${DEVICE_NAME} appears to be taken by volume ${VOLUME_ID}"
+
+        bail "Please make sure Stash has been stopped, and that the EBS volume has been unmounted and dettached"
+        ;;
+    esac
+}
+
+function snapshot_rds_instance {
+    local INSTANCE_ID="$1"
+
+    # We use SNAPSHOT_TAG as the snapshot identifier because it's unique and because it will allow us to relate an EBS snapshot to an RDS snapshot by tag
+    aws rds create-db-snapshot --db-instance-identifier "${INSTANCE_ID}" --db-snapshot-identifier "${SNAPSHOT_TAG_VALUE}" --tags Key="${SNAPSHOT_TAG_KEY}",Value="${SNAPSHOT_TAG_VALUE}" > /dev/null
 
     # Wait until the database has completed the backup
-    aws rds wait db-instance-available --db-instance-identifier ${INSTANCE_ID}
+    info "Waiting for instance ${INSTANCE_ID} to complete backup. This could take some time"
+    aws rds wait db-instance-available --db-instance-identifier "${INSTANCE_ID}"
 
-    success "Taken snapshot ${SNAPSHOT_ID} of RDS instance ${INSTANCE_ID}"
+    success "Taken snapshot ${SNAPSHOT_TAG_VALUE} of RDS instance ${INSTANCE_ID}"
 
-    info "Tagged ${SNAPSHOT_ID} with Key [${TAG_KEY}] and Value [${BACKUP_ID}]"
+    info "Tagged ${SNAPSHOT_TAG_VALUE} with Key \"${SNAPSHOT_TAG_KEY}\" and Value \"${SNAPSHOT_TAG_VALUE}\""
 }
 
 function restore_rds_instance {
-    INSTANCE_ID="$1"
-    SNAPSHOT_ID="$2"
+    local INSTANCE_ID="$1"
+    local SNAPSHOT_ID="$2"
 
-    validate_rds_snapshot "${SNAPSHOT_ID}"
-
-    OPTIONAL_ARGS=
+    local OPTIONAL_ARGS=
     if [ ! -z "${RESTORE_RDS_INSTANCE_CLASS}" ]; then
         info "Restoring database to instance class ${RESTORE_RDS_INSTANCE_CLASS}"
         OPTIONAL_ARGS="--db-instance-class ${RESTORE_RDS_INSTANCE_CLASS}"
@@ -119,7 +202,7 @@ function restore_rds_instance {
 
     info "Waiting until the RDS instance is available. This could take some time"
 
-    aws rds wait db-instance-available --db-instance-identifier ${INSTANCE_ID}
+    aws rds wait db-instance-available --db-instance-identifier "${INSTANCE_ID}"
 
     info "Restored snapshot ${SNAPSHOT_ID} to instance ${INSTANCE_ID}"
 
@@ -133,15 +216,21 @@ function restore_rds_instance {
 }
 
 function validate_rds_snapshot {
-    SNAPSHOT_ID="$1"
+    local SNAPSHOT_TAG="$1"
 
-    aws rds describe-db-snapshots --db-snapshot-identifier ${SNAPSHOT_ID} > /dev/null
-    if [ $? != 0 ]; then
-        error "Could not find snapshot ${SNAPSHOT_ID} in region ${AWS_REGION}"
+    local SNAPSHOT_ID="`aws rds describe-db-snapshots --db-snapshot-identifier \"${SNAPSHOT_TAG}\" 2>/dev/null | jq -r '.DBSnapshots[0]?.DBSnapshotIdentifier'`"
+    if [ -z "${SNAPSHOT_ID}" ] || [ ${SNAPSHOT_ID} == null ]; then
+         error "Could not find RDS snapshot for tag ${SNAPSHOT_TAG}"
 
-        print "Available snapshots:"
-        aws rds describe-db-snapshots
-
-        bail "Please review your AWS_REGION configuration in ${BACKUP_VARS_FILE}"
+        list_available_ebs_snapshot_tags
+        bail "Please select a tag with an associated RDS snapshot"
+    else
+        info "Found RDS snapshot ${SNAPSHOT_ID} for tag ${SNAPSHOT_TAG}"
     fi
+}
+
+function list_available_ebs_snapshot_tags {
+    # Print a list of all snapshots tag values that start with the tag prefix
+    print "Available snapshot tags:"
+    aws ec2 describe-snapshots --filters Name=tag-key,Values="Name" Name=tag-value,Values="${SNAPSHOT_TAG_PREFIX}*" | jq -r ".Snapshots[].Tags[] | select(.Key == \"Name\") | .Value"
 }

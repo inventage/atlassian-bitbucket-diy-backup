@@ -4,7 +4,7 @@
 # It is recomended to `chmod 600 stash.diy-backup.vars.sh` after copying the template.
 ##
 
-# Which database backup script to use (ex: mssql, postgresql, mysql, ebs-collocated, ebs-db, rds)
+# Which database backup script to use (ex: mssql, postgresql, mysql, ebs-collocated, rds)
 BACKUP_DATABASE_TYPE=postgresql
 
 # Which filesystem backup script to use (ex: rsync, ebs-home)
@@ -19,6 +19,9 @@ STASH_VERBOSE_BACKUP=TRUE
 # The base url used to access this stash instance. It cannot end on a '/'
 STASH_URL=
 
+# Used in AWS backup / restore to tag snapshots. It cannot contain spaces and it must be under 100 characters long
+INSTANCE_NAME=stash
+
 # The username and password for the user used to make backups (and have this permission)
 STASH_BACKUP_USER=
 STASH_BACKUP_PASS=
@@ -26,7 +29,8 @@ STASH_BACKUP_PASS=
 # The name of the database used by this instance.
 STASH_DB=stash
 # The path to stash home folder (with trailing /)
-STASH_HOME=
+STASH_HOME=/var/atlassian/application-data/stash/
+
 
 # OS level user and group information (typically: 'stash' for both)
 STASH_UID=atlstash
@@ -81,29 +85,22 @@ AWS_REGION="`echo \"${AWS_AVAILABILITY_ZONE}\" | sed -e 's:\([0-9][0-9]*\)[a-z]*
 # The ID for the volume holding the home directory
 BACKUP_HOME_DIRECTORY_VOLUME_ID=
 # The mount point for the home directory volume
-BACKUP_HOME_DIRECTORY_MOUNT_POINT=
-# The ID for the snapshot to use when restoring the volume with the home directory
-RESTORE_HOME_DIRECTORY_VOLUME_TYPE=
+BACKUP_HOME_DIRECTORY_MOUNT_POINT=/media/atl
+# The type of volume to create when restoring the home directory
+RESTORE_HOME_DIRECTORY_VOLUME_TYPE=gp2
 # Required if RESTORE_HOME_DIRECTORY_VOLUME_TYPE has been set to 'io1'
 # The IOPS that should be provisioned for the new volume. Note: Maximum IOPS to volume size ratio is 30
-RESTORE_HOME_DIRECTORY_IOPS=
-
-# Only necessary if the database data directory is in a different volume than BACKUP_HOME_DIRECTORY_VOLUME_ID
-# The ID for the volume holding the database data directory.
-BACKUP_DB_DATA_DIRECTORY_VOLUME_ID=
-# Required if BACKUP_DB_DATA_DIRECTORY_VOLUME_ID has been provided
-# The mount point for the database data directory volume
-BACKUP_DB_DIRECTORY_MOUNT_POINT=
-# Only necessary if the database data directory has been backed up in a different snapshot than RESTORE_HOME_DIRECTORY_SNAPSHOT_ID
-# The ID for the snapshot to use when restoring the volume with the data directory.
-RESTORE_DB_DATA_DIRECTORY_VOLUME_TYPE=
-# Required if RESTORE_DB_DATA_DIRECTORY_SNAPSHOT_ID has been provided and RESTORE_DB_DATA_DIRECTORY_VOLUME_TYPE has been set to 'io1'
-# The IOPS that should be provisioned for the new volume. Note: Maximum IOPS to volume size ratio is 30
-RESTORE_DB_DATA_DIRECTORY_IOPS=
+RESTORE_HOME_DIRECTORY_IOPS=1000
+# The device name to which the home directory volume is attached
+RESTORE_HOME_DIRECTORY_DEVICE_NAME=/dev/sdd
+# The mount point for the home directory
+RESTORE_HOME_DIRECTORY_MOUNT_POINT=/media/atl
 
 # The RDS instance ID for the database to backup
 BACKUP_RDS_INSTANCE_ID=
 # The RDS instance ID for the database to create on restore
+RESTORE_RDS_INSTANCE_ID=
+# The instance class to use when restoring the database
 RESTORE_RDS_INSTANCE_CLASS=db.r3.large
 # The subnet in which the database will be restored
 RESTORE_RDS_SUBNET_GROUP_NAME=

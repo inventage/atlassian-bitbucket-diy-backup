@@ -19,13 +19,16 @@ else
     bail "You should create it using ${SCRIPT_DIR}/stash.diy-backup.vars.sh.example as a template."
 fi
 
-# The following scripts contain functions which are dependant on the configuration of this stash instance.
+# The following scripts contain functions which are dependent on the configuration of this stash instance.
 # Generally each of them exports certain functions, which can be implemented in different ways
+
+# Contains common functionality related to Stash (e.g.: lock / unlock instance, clean up lock files in repositories, etc)
+source ${SCRIPT_DIR}/stash.diy-backup.common.sh
 
 # Exports aws specific function to be used during the restore
 source ${SCRIPT_DIR}/stash.diy-backup.ec2-common.sh
 
-if [ "ebs-collocated" == "${BACKUP_DATABASE_TYPE}" ] || [ "ebs-db" == "${BACKUP_DATABASE_TYPE}" ] || [ "rds" == "${BACKUP_DATABASE_TYPE}" ]; then
+if [ "ebs-collocated" == "${BACKUP_DATABASE_TYPE}" ] || [ "rds" == "${BACKUP_DATABASE_TYPE}" ]; then
     # Exports the following functions
     #     stash_restore_db     - for restoring the stash DB
     source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_DATABASE_TYPE}.sh
@@ -43,15 +46,26 @@ else
     bail "Please update BACKUP_HOME_TYPE in ${BACKUP_VARS_FILE} or consider running stash.diy-restore.sh instead"
 fi
 
+if [ $# -ne 1 ]; then
+    info "Usage: $0 <snapshot-tag>"
+
+    list_available_ebs_snapshot_tags
+
+    exit 99
+else
+    info "Restoring from tag ${1}"
+fi
+
 ##########################################################
 # The actual restore process. It has the following steps
 
-# Restore the filesystem
-stash_restore_home $1
-
-shift
+stash_prepare_home_restore "${1}"
+stash_prepare_db_restore "${1}"
 
 # Restore the database
-stash_restore_db $@
+stash_restore_db
+
+# Restore the filesystem
+stash_restore_home
 
 ##########################################################

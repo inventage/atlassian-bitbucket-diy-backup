@@ -95,6 +95,14 @@ function unfreeze_mount_point {
     sudo fsfreeze -u ${1} > /dev/null 2>&1
 }
 
+function mount_device {
+    local DEVICE_NAME="$1"
+    local MOUNT_POINT="$2"
+
+    sudo mount "${DEVICE_NAME}" "${MOUNT_POINT}" > /dev/null 2>&1
+    success "Mounted device ${DEVICE_NAME} to ${MOUNT_POINT}"
+}
+
 function add_cleanup_routine() {
     cleanup_queue+=($1)
     trap run_cleanup EXIT
@@ -106,4 +114,21 @@ function run_cleanup() {
     do
         ${cleanup}
     done
+}
+
+# This removes config.lock, index.lock, gc.pid, and refs/heads/*.lock
+function cleanup_locks {
+    local HOME_DIRECTORY="$1"
+
+    # From the shopt man page:
+    # globstar
+    #           If set, the pattern ‘**’ used in a filename expansion context will match all files and zero or
+    #           more directories and subdirectories. If the pattern is followed by a ‘/’, only directories and subdirectories match.
+    shopt -s globstar
+
+    # Remove lock files in the repositories
+    rm -f ${HOME_DIRECTORY}/shared/data/repositories/*/{HEAD,config,index,gc,packed-refs,stash-packed-refs}.{pid,lock}
+    rm -f ${HOME_DIRECTORY}/shared/data/repositories/*/refs/**/*.lock
+    rm -f ${HOME_DIRECTORY}/shared/data/repositories/*/stash-refs/**/*.lock
+    rm -f ${HOME_DIRECTORY}/shared/data/repositories/*/logs/**/*.lock
 }
