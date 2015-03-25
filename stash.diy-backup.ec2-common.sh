@@ -4,9 +4,9 @@ check_command "aws"
 check_command "jq"
 
 # Ensure the AWS region has been provided
-if [ -z "${AWS_REGION}" ] || [ ${AWS_REGION} == null ]; then
-  error "The AWS region must be set as AWS_REGION in ${BACKUP_VARS_FILE}"
-  bail "See stash.diy-backup.vars.sh.example for the defaults."
+if [ -z "${AWS_REGION}" ] || [ "${AWS_REGION}" == null ]; then
+    error "The AWS region must be set as AWS_REGION in ${BACKUP_VARS_FILE}"
+    bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
 fi
 
 if [ -z "${AWS_ACCESS_KEY_ID}" ] ||  [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then
@@ -15,7 +15,7 @@ if [ -z "${AWS_ACCESS_KEY_ID}" ] ||  [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then
         error "Could not find the necessary credentials to run backup"
         error "We recommend launching the instance with an appropiate IAM role"
         error "Alternatively AWS credentials can be set as AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in ${BACKUP_VARS_FILE}"
-        bail "See stash.diy-backup.vars.sh.example for the defaults."
+        bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
     else
         info "Using IAM instance role ${AWS_INSTANCE_ROLE}"
     fi
@@ -31,21 +31,20 @@ export AWS_DEFAULT_OUTPUT=json
 if [ -z "${INSTANCE_NAME}" ]; then
     error "The ${PRODUCT} instance name must be set as INSTANCE_NAME in ${BACKUP_VARS_FILE}"
 
-    bail "See stash.diy-backup.vars.sh.example for the defaults."
+    bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
 elif [ ! "${INSTANCE_NAME}" == ${INSTANCE_NAME%[[:space:]]*} ]; then
     error "Instance name cannot contain spaces"
 
-    bail "See stash.diy-backup.vars.sh.example for the defaults."
+    bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
 elif [ ${#INSTANCE_NAME} -ge 100 ]; then
     error "Instance name must be under 100 characters in length"
 
-    bail "See stash.diy-backup.vars.sh.example for the defaults."
+    bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
 fi
 
 SNAPSHOT_TAG_KEY="Name"
 SNAPSHOT_TAG_PREFIX="${INSTANCE_NAME}-"
 SNAPSHOT_TAG_VALUE="${SNAPSHOT_TAG_PREFIX}`date +"%Y%m%d-%H%M%S-%3N"`"
-info "Snapshot tag value: ${SNAPSHOT_TAG_VALUE}"
 
 function snapshot_ebs_volume {
     local VOLUME_ID="$1"
@@ -111,9 +110,7 @@ function wait_attached_volume {
         sleep 10
     done
 
-    if [ "attached" == "${STATE}" ]; then
-        success "Attached volume ${VOLUME_ID}"
-    else
+    if [ "attached" != "${STATE}" ]; then
         bail "Unable to attach volume ${VOLUME_ID}. Attachment state is ${STATE} after ${TIMEOUT} seconds"
     fi
 }
@@ -140,7 +137,7 @@ function validate_ebs_snapshot {
     local  __RETURN=$2
 
     local SNAPSHOT_ID="$(aws ec2 describe-snapshots --filters Name=tag-key,Values=\"Name\" Name=tag-value,Values=\"${SNAPSHOT_TAG}\" 2>/dev/null | jq -r '.Snapshots[0]?.SnapshotId')"
-    if [ -z "${SNAPSHOT_ID}" ] || [ ${SNAPSHOT_ID} == null ]; then
+    if [ -z "${SNAPSHOT_ID}" ] || [ "${SNAPSHOT_ID}" == null ]; then
         error "Could not find EBS snapshot for tag ${SNAPSHOT_TAG}"
         list_available_ebs_snapshot_tags
 
@@ -163,7 +160,7 @@ function validate_device_name {
     case "${VOLUME_ID}" in vol-*)
         error "Device name ${DEVICE_NAME} appears to be taken by volume ${VOLUME_ID}"
 
-        bail "Please make sure Stash has been stopped, and that the EBS volume has been unmounted and dettached"
+        bail "Please make sure Stash has been stopped, that the EBS volume is not in use, and that it has been unmounted and dettached"
         ;;
     esac
 }
@@ -215,11 +212,41 @@ function restore_rds_instance {
     fi
 }
 
+function validate_ebs_volume {
+    local VOLUME_ID="$1"
+
+    STATE=$(aws ec2 describe-volumes --volume-ids ${VOLUME_ID} 2> /dev/null | jq -r '.Volumes[0].State')
+    if [ -z "${STATE}" ] || [ "${STATE}" == null ]; then
+        error "Could not retrieve attachment state for volume ${VOLUME_ID}"
+
+        bail "Please make sure you have selected an existing volume"
+    elif [ "${STATE}" != "in-use" ]; then
+        error "The volume ${VOLUME_ID} state is ${STATE}"
+
+        bail "Please select a volume in use"
+    fi
+}
+
+function validate_rds_instance_id {
+    local INSTANCE_ID="$1"
+
+    STATE=$(aws rds describe-db-instances --db-instance-identifier ${INSTANCE_ID} 2> /dev/null | jq -r '.DBInstances[0].DBInstanceStatus')
+    if [ -z "${STATE}" ] || [ "${STATE}" == null ]; then
+        error "Could not retrieve instance status for db ${INSTANCE_ID}"
+
+        bail "Please make sure you have selected an existing rds instance"
+    elif [ "${STATE}" != "available" ]; then
+        error "The instance ${INSTANCE_ID} status is ${STATE}"
+
+        bail "The instance must be available before the backup can be started"
+    fi
+}
+
 function validate_rds_snapshot {
     local SNAPSHOT_TAG="$1"
 
     local SNAPSHOT_ID="`aws rds describe-db-snapshots --db-snapshot-identifier \"${SNAPSHOT_TAG}\" 2>/dev/null | jq -r '.DBSnapshots[0]?.DBSnapshotIdentifier'`"
-    if [ -z "${SNAPSHOT_ID}" ] || [ ${SNAPSHOT_ID} == null ]; then
+    if [ -z "${SNAPSHOT_ID}" ] || [ "${SNAPSHOT_ID}" == null ]; then
          error "Could not find RDS snapshot for tag ${SNAPSHOT_TAG}"
 
         list_available_ebs_snapshot_tags
@@ -232,5 +259,5 @@ function validate_rds_snapshot {
 function list_available_ebs_snapshot_tags {
     # Print a list of all snapshots tag values that start with the tag prefix
     print "Available snapshot tags:"
-    aws ec2 describe-snapshots --filters Name=tag-key,Values="Name" Name=tag-value,Values="${SNAPSHOT_TAG_PREFIX}*" | jq -r ".Snapshots[].Tags[] | select(.Key == \"Name\") | .Value"
+    aws ec2 describe-snapshots --filters Name=tag-key,Values="Name" Name=tag-value,Values="${SNAPSHOT_TAG_PREFIX}*" | jq -r ".Snapshots[].Tags[] | select(.Key == \"Name\") | .Value" | sort -r
 }

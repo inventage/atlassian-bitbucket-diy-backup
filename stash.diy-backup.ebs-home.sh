@@ -5,13 +5,15 @@ function stash_prepare_home {
     # Validate that all the configuration parameters have been provided to avoid bailing out and leaving Stash locked
     if [ -z "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" ]; then
         error "The home directory volume must be set as BACKUP_DB_DATA_DIRECTORY_VOLUME_ID in ${BACKUP_VARS_FILE}"
-        bail "See stash.diy-backup.vars.sh.example for the defaults."
+        bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
     fi
 
     if [ -z "${BACKUP_HOME_DIRECTORY_MOUNT_POINT}" ]; then
         error "The home directory mount point must be set as BACKUP_HOME_DIRECTORY_MOUNT_POINT in ${BACKUP_VARS_FILE}"
-        bail "See stash.diy-backup.vars.sh.example for the defaults."
+        bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
     fi
+
+    validate_ebs_volume "${BACKUP_HOME_DIRECTORY_VOLUME_ID}"
 }
 
 function stash_backup_home {
@@ -32,35 +34,35 @@ function stash_prepare_home_restore {
 
     if [ -z "${STASH_HOME}" ]; then
         error "The ${PRODUCT} home directory must be set as STASH_HOME in ${BACKUP_VARS_FILE}"
-        bail "See stash.diy-backup.vars.sh.example for the defaults."
+        bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
     fi
 
     if [ -z "${AWS_AVAILABILITY_ZONE}" ]; then
         error "The availability zone for new volumes must be set as AWS_AVAILABILITY_ZONE in ${BACKUP_VARS_FILE}"
-        bail "See stash.diy-backup.vars.sh.example for the defaults."
+        bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
     fi
 
     if [ -z "${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}" ]; then
         error "The type of volume to create when restoring the home directory must be set as RESTORE_HOME_DIRECTORY_VOLUME_TYPE in ${BACKUP_VARS_FILE}"
-        bail "See stash.diy-backup.vars.sh.example for the defaults."
+        bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
     elif [ "io1" == "${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}" ] && [ -z "${RESTORE_HOME_DIRECTORY_IOPS}" ]; then
         error "The provisioned iops must be set as RESTORE_HOME_DIRECTORY_IOPS in ${BACKUP_VARS_FILE} when choosing 'io1' volume type for the home directory EBS volume"
-        bail "See stash.diy-backup.vars.sh.example for the defaults."
+        bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
     fi
 
     if [ -z "${RESTORE_HOME_DIRECTORY_DEVICE_NAME}" ]; then
         error "The home directory volume device name must be set as RESTORE_HOME_DIRECTORY_DEVICE_NAME in ${BACKUP_VARS_FILE}"
-        bail "See stash.diy-backup.vars.sh.example for the defaults."
+        bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
     fi
 
     if [ -z "${RESTORE_HOME_DIRECTORY_MOUNT_POINT}" ]; then
         error "The home directory mount point must be set as RESTORE_HOME_DIRECTORY_MOUNT_POINT in ${BACKUP_VARS_FILE}"
-        bail "See stash.diy-backup.vars.sh.example for the defaults."
+        bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
     fi
 
     if mount | grep ${RESTORE_HOME_DIRECTORY_MOUNT_POINT} > /dev/null; then
         error "The home directory mount point ${RESTORE_HOME_DIRECTORY_MOUNT_POINT} appears to be taken"
-        bail "Please make sure Stash has been stopped, and that home directory the EBS volume has been unmounted and dettached"
+        bail "Please make sure Stash has been stopped, that the EBS volume is not in use, and that it has been unmounted and dettached"
     fi
 
     validate_device_name "${RESTORE_HOME_DIRECTORY_DEVICE_NAME}"

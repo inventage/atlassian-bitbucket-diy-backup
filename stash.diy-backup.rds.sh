@@ -4,8 +4,10 @@ function stash_prepare_db {
     # Validate that all the configuration parameters have been provided to avoid bailing out and leaving Stash locked
     if [ -z "${BACKUP_RDS_INSTANCE_ID}" ]; then
         error "The RDS instance id must be set in ${BACKUP_VARS_FILE}"
-        bail "See stash.diy-backup.vars.sh.example for the defaults."
+        bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
     fi
+
+    validate_rds_instance_id "${BACKUP_RDS_INSTANCE_ID}"
 }
 
 function stash_backup_db {
@@ -19,7 +21,7 @@ function stash_prepare_db_restore {
 
     if [ -z "${RESTORE_RDS_INSTANCE_ID}" ]; then
         error "The RDS instance id must be set in ${BACKUP_VARS_FILE}"
-        bail "See stash.diy-backup.vars.sh.example for the defaults."
+        bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
     fi
 
     if [ -z "${RESTORE_RDS_INSTANCE_CLASS}" ]; then

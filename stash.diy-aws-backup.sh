@@ -7,7 +7,7 @@ source ${SCRIPT_DIR}/stash.diy-backup.utils.sh
 
 # BACKUP_VARS_FILE - allows override for stash.diy-backup.vars.sh
 if [ -z "${BACKUP_VARS_FILE}" ]; then
-    BACKUP_VARS_FILE=${SCRIPT_DIR}/stash.diy-backup.vars.sh
+    BACKUP_VARS_FILE=${SCRIPT_DIR}/stash.diy-aws-backup.vars.sh
 fi
 
 # Declares other scripts which provide required backup/archive functionality
@@ -16,7 +16,7 @@ if [[ -f ${BACKUP_VARS_FILE} ]]; then
     source ${BACKUP_VARS_FILE}
 else
     error "${BACKUP_VARS_FILE} not found"
-    bail "You should create it using ${SCRIPT_DIR}/stash.diy-backup.vars.sh.example as a template"
+    bail "You should create it using ${SCRIPT_DIR}/stash.diy-aws-backup.vars.sh.example as a template"
 fi
 
 # Contains common functionality related to Stash (e.g.: lock / unlock instance, clean up lock files in repositories, etc)
