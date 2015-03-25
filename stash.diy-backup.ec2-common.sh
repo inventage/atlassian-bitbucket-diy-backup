@@ -56,7 +56,7 @@ function snapshot_ebs_volume {
 
     aws ec2 create-tags --resources "${SNAPSHOT_ID}" --tags Key="${SNAPSHOT_TAG_KEY}",Value="${SNAPSHOT_TAG_VALUE}"
 
-    info "Tagged ${SNAPSHOT_ID} with Key \"${SNAPSHOT_TAG_KEY}\" and Value \"${SNAPSHOT_TAG_VALUE}\""
+    info "Tagged ${SNAPSHOT_ID} with ${SNAPSHOT_TAG_KEY}=${SNAPSHOT_TAG_VALUE}"
 }
 
 function create_volume {
@@ -180,7 +180,7 @@ function snapshot_rds_instance {
 
     success "Taken snapshot ${SNAPSHOT_TAG_VALUE} of RDS instance ${INSTANCE_ID}"
 
-    info "Tagged ${SNAPSHOT_TAG_VALUE} with Key \"${SNAPSHOT_TAG_KEY}\" and Value \"${SNAPSHOT_TAG_VALUE}\""
+    info "Tagged ${SNAPSHOT_TAG_VALUE} with ${SNAPSHOT_TAG_KEY}=${SNAPSHOT_TAG_VALUE}"
 }
 
 function restore_rds_instance {
