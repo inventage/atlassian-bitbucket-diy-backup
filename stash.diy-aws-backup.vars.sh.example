@@ -5,15 +5,18 @@
 ##
 
 # Which database backup script to use (ex: ebs-collocated, rds)
+# ebs-collocated means the database data directory is located in the volume as the stash home (i.e.: the snapshot / restore of the home directory will cover it)
+# rds means your Stash instance is using an RDS instance and we need to produce a snapshot of it on backup
 BACKUP_DATABASE_TYPE=ebs-collocated
 
 # Which filesystem backup script to use (ex: ebs-home)
+# ebs-home means the Stash home (and the database if selected ebs-collocated) will be backed up by taking a snapshot of the EBS volume
 BACKUP_HOME_TYPE=ebs-home
 
 # Used by the scripts for verbose logging. If not true only errors will be shown.
 STASH_VERBOSE_BACKUP=TRUE
 
-# The base url used to access this stash instance. It cannot end on a '/'
+# The base url used to access this stash instance. It cannot end on a '/'. This value can be retrieved from the admin page your Stash instance
 STASH_URL=
 
 # Used in AWS backup / restore to tag snapshots. It cannot contain spaces and it must be under 100 characters long
@@ -49,7 +52,7 @@ BACKUP_HOME_DIRECTORY_VOLUME_ID=
 BACKUP_HOME_DIRECTORY_MOUNT_POINT=/media/atl
 # The type of volume to create when restoring the home directory
 RESTORE_HOME_DIRECTORY_VOLUME_TYPE=gp2
-# Required if RESTORE_HOME_DIRECTORY_VOLUME_TYPE has been set to 'io1'
+# Required if RESTORE_HOME_DIRECTORY_VOLUME_TYPE has been set to 'io1'. Ignored otherwise.
 # The IOPS that should be provisioned for the new volume. Note: Maximum IOPS to volume size ratio is 30
 RESTORE_HOME_DIRECTORY_IOPS=1000
 # The device name to which the home directory volume is attached

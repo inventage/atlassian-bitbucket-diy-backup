@@ -60,10 +60,7 @@ function stash_prepare_home_restore {
         bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
     fi
 
-    if mount | grep ${RESTORE_HOME_DIRECTORY_MOUNT_POINT} > /dev/null; then
-        error "The home directory mount point ${RESTORE_HOME_DIRECTORY_MOUNT_POINT} appears to be taken"
-        bail "Please make sure Stash has been stopped, that the EBS volume is not in use, and that it has been unmounted and dettached"
-    fi
+    check_mount_point "${RESTORE_HOME_DIRECTORY_MOUNT_POINT}"
 
     validate_device_name "${RESTORE_HOME_DIRECTORY_DEVICE_NAME}"
 

@@ -160,7 +160,7 @@ function validate_device_name {
     case "${VOLUME_ID}" in vol-*)
         error "Device name ${DEVICE_NAME} appears to be taken by volume ${VOLUME_ID}"
 
-        bail "Please make sure Stash has been stopped, that the EBS volume is not in use, and that it has been unmounted and dettached"
+        bail "Please stop Stash. Stop PostgreSQL if it is running. Unmount the device and detach the volume"
         ;;
     esac
 }

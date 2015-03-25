@@ -116,6 +116,17 @@ function run_cleanup() {
     done
 }
 
+function check_mount_point {
+    local MOUNT_POINT="${1}"
+
+    # mountpoint check will return a non-zero exit code when mount point is free
+    mountpoint -q "${MOUNT_POINT}"
+    if [ $? == 0 ]; then
+        error "The directory mount point ${MOUNT_POINT} appears to be taken"
+        bail "Please stop Stash. Stop PostgreSQL if it is running. Unmount the device and detach the volume"
+    fi
+}
+
 # This removes config.lock, index.lock, gc.pid, and refs/heads/*.lock
 function cleanup_locks {
     local HOME_DIRECTORY="$1"
