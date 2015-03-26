@@ -213,22 +213,22 @@ function restore_rds_instance {
 }
 
 function validate_ebs_volume {
-    local VOLUME_ID="$1"
+    local DEVICE_NAME="${1}"
+    local __RETURN=$2
+    local INSTANCE_ID=`curl ${CURL_OPTIONS} http://169.254.169.254/latest/meta-data/instance-id`
 
-    STATE=$(aws ec2 describe-volumes --volume-ids ${VOLUME_ID} | jq -r '.Volumes[0].State')
-    if [ -z "${STATE}" ] || [ "${STATE}" == null ]; then
-        error "Could not retrieve attachment state for volume ${VOLUME_ID}"
+    info "Looking up volume for device name ${DEVICE_NAME}"
+    local VOLUME_ID="$(aws ec2 describe-volumes --filter Name=attachment.instance-id,Values=${INSTANCE_ID} Name=attachment.device,Values=${DEVICE_NAME} | jq -r '.Volumes[0].VolumeId')"
 
-        bail "Please make sure you have selected an existing volume"
-    elif [ "${STATE}" != "in-use" ]; then
-        error "The volume ${VOLUME_ID} state is ${STATE}"
+    if [ -z "${VOLUME_ID}" ] || [ "${VOLUME_ID}" == null ]; then
+        error "Device name ${DEVICE_NAME} appears to be free"
 
-        info "Attached volumes:"
-        aws ec2 describe-volumes --filter Name=attachment.instance-id,Values=`curl ${CURL_OPTIONS} http://169.254.169.254/latest/meta-data/instance-id` \
-        | jq -r '.Volumes[].Attachments[] | [.VolumeId, "\t", .Device] | add'
-
-        bail "Please select a volume in use"
+        bail "Please select a volume attached to this instance"
+    else
+        success "Found volume ${VOLUME_ID} for device name ${DEVICE_NAME}"
     fi
+
+    eval ${__RETURN}="${VOLUME_ID}"
 }
 
 function validate_rds_instance_id {

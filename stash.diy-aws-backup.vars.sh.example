@@ -32,6 +32,8 @@ STASH_BACKUP_PASS=
 STASH_HOME=/var/atlassian/application-data/stash/
 # The mount point for the home directory volume
 HOME_DIRECTORY_MOUNT_POINT=/media/atl
+# The device name to which the home directory volume is attached
+HOME_DIRECTORY_DEVICE_NAME=/dev/sdf
 
 # HipChat options
 HIPCHAT_URL=https://api.hipchat.com
@@ -57,8 +59,6 @@ RESTORE_HOME_DIRECTORY_VOLUME_TYPE=gp2
 # Required if RESTORE_HOME_DIRECTORY_VOLUME_TYPE has been set to 'io1'. Ignored otherwise.
 # The IOPS that should be provisioned for the new volume. Note: Maximum IOPS to volume size ratio is 30
 RESTORE_HOME_DIRECTORY_IOPS=1000
-# The device name to which the home directory volume is attached
-RESTORE_HOME_DIRECTORY_DEVICE_NAME=/dev/sdf
 
 # The RDS instance ID for the database to backup
 BACKUP_RDS_INSTANCE_ID=
