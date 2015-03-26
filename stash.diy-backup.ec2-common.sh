@@ -223,6 +223,10 @@ function validate_ebs_volume {
     elif [ "${STATE}" != "in-use" ]; then
         error "The volume ${VOLUME_ID} state is ${STATE}"
 
+        info "Attached volumes:"
+        aws ec2 describe-volumes --filter Name=attachment.instance-id,Values=`curl --silent --fail http://169.254.169.254/latest/meta-data/instance-id` \
+        | jq -r '.Volumes[].Attachments[] | [.VolumeId, "\t", .Device] | add'
+
         bail "Please select a volume in use"
     fi
 }
