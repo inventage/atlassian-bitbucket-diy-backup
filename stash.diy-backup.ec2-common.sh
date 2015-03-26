@@ -10,7 +10,7 @@ if [ -z "${AWS_REGION}" ] || [ "${AWS_REGION}" == null ]; then
 fi
 
 if [ -z "${AWS_ACCESS_KEY_ID}" ] ||  [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then
-    AWS_INSTANCE_ROLE=`curl --silent --fail http://169.254.169.254/latest/meta-data/iam/security-credentials/`
+    AWS_INSTANCE_ROLE=`curl ${CURL_OPTIONS} http://169.254.169.254/latest/meta-data/iam/security-credentials/`
     if [ -z "${AWS_INSTANCE_ROLE}" ]; then
         error "Could not find the necessary credentials to run backup"
         error "We recommend launching the instance with an appropiate IAM role"
@@ -125,7 +125,7 @@ function restore_from_snapshot {
     local VOLUME_ID=
     create_volume "${SNAPSHOT_ID}" "${VOLUME_TYPE}" "${PROVISIONED_IOPS}" VOLUME_ID
 
-    local INSTANCE_ID=`curl --silent --fail http://169.254.169.254/latest/meta-data/instance-id`
+    local INSTANCE_ID=`curl ${CURL_OPTIONS} http://169.254.169.254/latest/meta-data/instance-id`
 
     attach_volume "${VOLUME_ID}" "${DEVICE_NAME}" "${INSTANCE_ID}"
 
@@ -151,7 +151,7 @@ function validate_ebs_snapshot {
 
 function validate_device_name {
     local DEVICE_NAME="${1}"
-    local INSTANCE_ID=`curl --silent --fail http://169.254.169.254/latest/meta-data/instance-id`
+    local INSTANCE_ID=`curl ${CURL_OPTIONS} http://169.254.169.254/latest/meta-data/instance-id`
 
     # If there's a volume taking the provided DEVICE_NAME it must be unmounted and detached
     info "Checking for existing volumes using device name ${DEVICE_NAME}"
@@ -224,7 +224,7 @@ function validate_ebs_volume {
         error "The volume ${VOLUME_ID} state is ${STATE}"
 
         info "Attached volumes:"
-        aws ec2 describe-volumes --filter Name=attachment.instance-id,Values=`curl --silent --fail http://169.254.169.254/latest/meta-data/instance-id` \
+        aws ec2 describe-volumes --filter Name=attachment.instance-id,Values=`curl ${CURL_OPTIONS} http://169.254.169.254/latest/meta-data/instance-id` \
         | jq -r '.Volumes[].Attachments[] | [.VolumeId, "\t", .Device] | add'
 
         bail "Please select a volume in use"

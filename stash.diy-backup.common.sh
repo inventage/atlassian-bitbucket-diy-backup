@@ -9,7 +9,7 @@ STASH_HTTP_AUTH="-u ${STASH_BACKUP_USER}:${STASH_BACKUP_PASS}"
 PRODUCT=Stash
 
 function stash_lock {
-    STASH_LOCK_RESULT=`curl -s -f ${STASH_HTTP_AUTH} -X POST -H "Content-type: application/json" "${STASH_URL}/mvc/maintenance/lock"`
+    STASH_LOCK_RESULT=`curl ${CURL_OPTIONS} ${STASH_HTTP_AUTH} -X POST -H "Content-type: application/json" "${STASH_URL}/mvc/maintenance/lock"`
     if [ -z "${STASH_LOCK_RESULT}" ]; then
         bail "Locking this Stash instance failed"
     fi
@@ -23,7 +23,7 @@ function stash_lock {
 }
 
 function stash_backup_start {
-    STASH_BACKUP_RESULT=`curl -s -f ${STASH_HTTP_AUTH} -X POST -H "X-Atlassian-Maintenance-Token: ${STASH_LOCK_TOKEN}" -H "Accept: application/json" -H "Content-type: application/json" "${STASH_URL}/mvc/admin/backups?external=true"`
+    STASH_BACKUP_RESULT=`curl ${CURL_OPTIONS} ${STASH_HTTP_AUTH} -X POST -H "X-Atlassian-Maintenance-Token: ${STASH_LOCK_TOKEN}" -H "Accept: application/json" -H "Content-type: application/json" "${STASH_URL}/mvc/admin/backups?external=true"`
     if [ -z "${STASH_BACKUP_RESULT}" ]; then
         bail "Entering backup mode failed"
     fi
@@ -44,7 +44,7 @@ function stash_backup_wait {
     while [ "${STASH_PROGRESS_DB_STATE}_${STASH_PROGRESS_SCM_STATE}" != "DRAINED_DRAINED" ]; do
         print -n "."
 
-        STASH_PROGRESS_RESULT=`curl -s -f ${STASH_HTTP_AUTH} -X GET -H "X-Atlassian-Maintenance-Token: ${STASH_LOCK_TOKEN}" -H "Accept: application/json" -H "Content-type: application/json" "${STASH_URL}/mvc/maintenance"`
+        STASH_PROGRESS_RESULT=`curl ${CURL_OPTIONS} ${STASH_HTTP_AUTH} -X GET -H "X-Atlassian-Maintenance-Token: ${STASH_LOCK_TOKEN}" -H "Accept: application/json" -H "Content-type: application/json" "${STASH_URL}/mvc/maintenance"`
         if [ -z "${STASH_PROGRESS_RESULT}" ]; then
             bail "[${STASH_URL}] ERROR: Unable to check for backup progress"
         fi
@@ -66,7 +66,7 @@ function stash_backup_wait {
 }
 
 function stash_backup_progress {
-    STASH_REPORT_RESULT=`curl -s -f ${STASH_HTTP_AUTH} -X POST -H "Accept: application/json" -H "Content-type: application/json" "${STASH_URL}/mvc/admin/backups/progress/client?token=${STASH_LOCK_TOKEN}&percentage=$1"`
+    STASH_REPORT_RESULT=`curl ${CURL_OPTIONS} ${STASH_HTTP_AUTH} -X POST -H "Accept: application/json" -H "Content-type: application/json" "${STASH_URL}/mvc/admin/backups/progress/client?token=${STASH_LOCK_TOKEN}&percentage=$1"`
     if [ $? != 0 ]; then
         bail "Unable to update backup progress"
     fi
@@ -75,7 +75,7 @@ function stash_backup_progress {
 }
 
 function stash_unlock {
-    STASH_UNLOCK_RESULT=`curl -s -f ${STASH_HTTP_AUTH} -X DELETE -H "Accept: application/json" -H "Content-type: application/json" "${STASH_URL}/mvc/maintenance/lock?token=${STASH_LOCK_TOKEN}"`
+    STASH_UNLOCK_RESULT=`curl ${CURL_OPTIONS} ${STASH_HTTP_AUTH} -X DELETE -H "Accept: application/json" -H "Content-type: application/json" "${STASH_URL}/mvc/maintenance/lock?token=${STASH_LOCK_TOKEN}"`
     if [ $? != 0 ]; then
         bail "Unable to unlock instance with lock ${STASH_LOCK_TOKEN}"
     fi

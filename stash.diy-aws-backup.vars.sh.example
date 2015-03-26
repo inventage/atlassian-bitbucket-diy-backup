@@ -4,6 +4,8 @@
 # It is recomended to `chmod 600 stash.diy-aws-backup.vars.sh` after copying the template.
 ##
 
+CURL_OPTIONS="-L -s -f"
+
 # Which database backup script to use (ex: ebs-collocated, rds)
 # ebs-collocated means the database data directory is located in the volume as the stash home (i.e.: the snapshot / restore of the home directory will cover it)
 # rds means your Stash instance is using an RDS instance and we need to produce a snapshot of it on backup
@@ -44,7 +46,7 @@ HIPCHAT_TOKEN=
 #AWS_SECRET_ACCESS_KEY=
 
 # The availability zone in which volumes will be created when restoring and instance
-AWS_AVAILABILITY_ZONE=`curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone`
+AWS_AVAILABILITY_ZONE=`curl ${CURL_OPTIONS} http://169.254.169.254/latest/meta-data/placement/availability-zone`
 # The region for the resources Stash is using (volumes, instances, snapshots, etc)
 AWS_REGION="`echo \"${AWS_AVAILABILITY_ZONE}\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"
 

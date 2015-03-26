@@ -4,6 +4,8 @@
 # It is recomended to `chmod 600 stash.diy-backup.vars.sh` after copying the template.
 ##
 
+CURL_OPTIONS="-L -s -f"
+
 # Which database backup script to use (ex: mssql, postgresql, mysql, ebs-collocated, rds)
 BACKUP_DATABASE_TYPE=postgresql
 
