@@ -17,7 +17,7 @@ BACKUP_HOME_TYPE=ebs-home
 STASH_VERBOSE_BACKUP=TRUE
 
 # The base url used to access this stash instance. It cannot end on a '/'. This value can be retrieved from the admin page your Stash instance
-STASH_URL=
+STASH_URL=http://localhost:7990
 
 # Used in AWS backup / restore to tag snapshots. It cannot contain spaces and it must be under 100 characters long
 INSTANCE_NAME=stash
