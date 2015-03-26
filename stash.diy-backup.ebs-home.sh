@@ -13,7 +13,7 @@ function stash_prepare_home {
         bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
     fi
 
-    validate_ebs_volume "${HOME_DIRECTORY_MOUNT_POINT}"
+    validate_ebs_volume "${BACKUP_HOME_DIRECTORY_VOLUME_ID}"
 }
 
 function stash_backup_home {
