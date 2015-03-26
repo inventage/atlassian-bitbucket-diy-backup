@@ -58,7 +58,7 @@ RESTORE_HOME_DIRECTORY_VOLUME_TYPE=gp2
 # The IOPS that should be provisioned for the new volume. Note: Maximum IOPS to volume size ratio is 30
 RESTORE_HOME_DIRECTORY_IOPS=1000
 # The device name to which the home directory volume is attached
-RESTORE_HOME_DIRECTORY_DEVICE_NAME=/dev/sdd
+RESTORE_HOME_DIRECTORY_DEVICE_NAME=/dev/sdf
 
 # The RDS instance ID for the database to backup
 BACKUP_RDS_INSTANCE_ID=
