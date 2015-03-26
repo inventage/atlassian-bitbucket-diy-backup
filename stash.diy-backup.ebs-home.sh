@@ -8,12 +8,12 @@ function stash_prepare_home {
         bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
     fi
 
-    if [ -z "${BACKUP_HOME_DIRECTORY_MOUNT_POINT}" ]; then
-        error "The home directory mount point must be set as BACKUP_HOME_DIRECTORY_MOUNT_POINT in ${BACKUP_VARS_FILE}"
+    if [ -z "${HOME_DIRECTORY_MOUNT_POINT}" ]; then
+        error "The home directory mount point must be set as HOME_DIRECTORY_MOUNT_POINT in ${BACKUP_VARS_FILE}"
         bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
     fi
 
-    validate_ebs_volume "${BACKUP_HOME_DIRECTORY_VOLUME_ID}"
+    validate_ebs_volume "${HOME_DIRECTORY_MOUNT_POINT}"
 }
 
 function stash_backup_home {
@@ -55,12 +55,12 @@ function stash_prepare_home_restore {
         bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
     fi
 
-    if [ -z "${RESTORE_HOME_DIRECTORY_MOUNT_POINT}" ]; then
-        error "The home directory mount point must be set as RESTORE_HOME_DIRECTORY_MOUNT_POINT in ${BACKUP_VARS_FILE}"
+    if [ -z "${HOME_DIRECTORY_MOUNT_POINT}" ]; then
+        error "The home directory mount point must be set as HOME_DIRECTORY_MOUNT_POINT in ${BACKUP_VARS_FILE}"
         bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
     fi
 
-    check_mount_point "${RESTORE_HOME_DIRECTORY_MOUNT_POINT}"
+    check_mount_point "${HOME_DIRECTORY_MOUNT_POINT}"
 
     validate_device_name "${RESTORE_HOME_DIRECTORY_DEVICE_NAME}"
 
@@ -72,7 +72,7 @@ function stash_restore_home {
     info "Restoring home directory from snapshot ${RESTORE_HOME_DIRECTORY_SNAPSHOT_ID} into a ${RESTORE_HOME_DIRECTORY_VOLUME_TYPE} volume"
 
     restore_from_snapshot "${RESTORE_HOME_DIRECTORY_SNAPSHOT_ID}" "${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}" \
-    "${RESTORE_HOME_DIRECTORY_IOPS}" "${RESTORE_HOME_DIRECTORY_DEVICE_NAME}" "${RESTORE_HOME_DIRECTORY_MOUNT_POINT}"
+    "${RESTORE_HOME_DIRECTORY_IOPS}" "${RESTORE_HOME_DIRECTORY_DEVICE_NAME}" "${HOME_DIRECTORY_MOUNT_POINT}"
 
     cleanup_locks ${STASH_HOME}
 
@@ -80,9 +80,9 @@ function stash_restore_home {
 }
 
 function freeze_home_directory {
-    freeze_mount_point ${BACKUP_HOME_DIRECTORY_MOUNT_POINT}
+    freeze_mount_point ${HOME_DIRECTORY_MOUNT_POINT}
 }
 
 function unfreeze_home_directory {
-    unfreeze_mount_point ${BACKUP_HOME_DIRECTORY_MOUNT_POINT}
+    unfreeze_mount_point ${HOME_DIRECTORY_MOUNT_POINT}
 }
