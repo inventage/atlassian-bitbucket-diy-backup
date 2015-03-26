@@ -81,7 +81,7 @@ function attach_volume {
     local DEVICE_NAME="$2"
     local INSTANCE_ID="$3"
 
-    aws ec2 attach-volume --volume-id "${VOLUME_ID}" --instance "${INSTANCE_ID}" --device "${DEVICE_NAME}" > /dev/null 2>&1
+    aws ec2 attach-volume --volume-id "${VOLUME_ID}" --instance "${INSTANCE_ID}" --device "${DEVICE_NAME}" > /dev/null
 
     wait_attached_volume "${VOLUME_ID}"
 
@@ -136,7 +136,7 @@ function validate_ebs_snapshot {
     local SNAPSHOT_TAG="$1"
     local  __RETURN=$2
 
-    local SNAPSHOT_ID="$(aws ec2 describe-snapshots --filters Name=tag-key,Values=\"Name\" Name=tag-value,Values=\"${SNAPSHOT_TAG}\" 2>/dev/null | jq -r '.Snapshots[0]?.SnapshotId')"
+    local SNAPSHOT_ID="$(aws ec2 describe-snapshots --filters Name=tag-key,Values=\"Name\" Name=tag-value,Values=\"${SNAPSHOT_TAG}\" | jq -r '.Snapshots[0]?.SnapshotId')"
     if [ -z "${SNAPSHOT_ID}" ] || [ "${SNAPSHOT_ID}" == null ]; then
         error "Could not find EBS snapshot for tag ${SNAPSHOT_TAG}"
         list_available_ebs_snapshot_tags
@@ -155,7 +155,7 @@ function validate_device_name {
 
     # If there's a volume taking the provided DEVICE_NAME it must be unmounted and detached
     info "Checking for existing volumes using device name ${DEVICE_NAME}"
-    local VOLUME_ID="$(aws ec2 describe-volumes --filter Name=attachment.instance-id,Values=${INSTANCE_ID} Name=attachment.device,Values=${DEVICE_NAME} 2> /dev/null | jq -r '.Volumes[0].VolumeId')"
+    local VOLUME_ID="$(aws ec2 describe-volumes --filter Name=attachment.instance-id,Values=${INSTANCE_ID} Name=attachment.device,Values=${DEVICE_NAME} | jq -r '.Volumes[0].VolumeId')"
 
     case "${VOLUME_ID}" in vol-*)
         error "Device name ${DEVICE_NAME} appears to be taken by volume ${VOLUME_ID}"
@@ -215,7 +215,7 @@ function restore_rds_instance {
 function validate_ebs_volume {
     local VOLUME_ID="$1"
 
-    STATE=$(aws ec2 describe-volumes --volume-ids ${VOLUME_ID} 2> /dev/null | jq -r '.Volumes[0].State')
+    STATE=$(aws ec2 describe-volumes --volume-ids ${VOLUME_ID} | jq -r '.Volumes[0].State')
     if [ -z "${STATE}" ] || [ "${STATE}" == null ]; then
         error "Could not retrieve attachment state for volume ${VOLUME_ID}"
 
@@ -234,7 +234,7 @@ function validate_ebs_volume {
 function validate_rds_instance_id {
     local INSTANCE_ID="$1"
 
-    STATE=$(aws rds describe-db-instances --db-instance-identifier ${INSTANCE_ID} 2> /dev/null | jq -r '.DBInstances[0].DBInstanceStatus')
+    STATE=$(aws rds describe-db-instances --db-instance-identifier ${INSTANCE_ID} | jq -r '.DBInstances[0].DBInstanceStatus')
     if [ -z "${STATE}" ] || [ "${STATE}" == null ]; then
         error "Could not retrieve instance status for db ${INSTANCE_ID}"
 
@@ -249,7 +249,7 @@ function validate_rds_instance_id {
 function validate_rds_snapshot {
     local SNAPSHOT_TAG="$1"
 
-    local SNAPSHOT_ID="`aws rds describe-db-snapshots --db-snapshot-identifier \"${SNAPSHOT_TAG}\" 2>/dev/null | jq -r '.DBSnapshots[0]?.DBSnapshotIdentifier'`"
+    local SNAPSHOT_ID="`aws rds describe-db-snapshots --db-snapshot-identifier \"${SNAPSHOT_TAG}\" | jq -r '.DBSnapshots[0]?.DBSnapshotIdentifier'`"
     if [ -z "${SNAPSHOT_ID}" ] || [ "${SNAPSHOT_ID}" == null ]; then
          error "Could not find RDS snapshot for tag ${SNAPSHOT_TAG}"
 

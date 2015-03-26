@@ -86,7 +86,7 @@ function stash_unlock {
 function freeze_mount_point {
     info "Freezing filesystem at mount point ${1}"
 
-    sudo fsfreeze -f ${1} > /dev/null 2>&1
+    sudo fsfreeze -f ${1} > /dev/null
 }
 
 function unfreeze_mount_point {
@@ -99,7 +99,7 @@ function mount_device {
     local DEVICE_NAME="$1"
     local MOUNT_POINT="$2"
 
-    sudo mount "${DEVICE_NAME}" "${MOUNT_POINT}" > /dev/null 2>&1
+    sudo mount "${DEVICE_NAME}" "${MOUNT_POINT}" > /dev/null
     success "Mounted device ${DEVICE_NAME} to ${MOUNT_POINT}"
 }
 
