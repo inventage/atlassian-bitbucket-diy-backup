@@ -4,6 +4,7 @@
 # It is recomended to `chmod 600 stash.diy-aws-backup.vars.sh` after copying the template.
 ##
 
+# Default options passed to 'curl' commands
 CURL_OPTIONS="-L -s -f"
 
 # Which database backup script to use (ex: ebs-collocated, rds)
@@ -21,7 +22,7 @@ STASH_VERBOSE_BACKUP=TRUE
 # The base url used to access this stash instance. It cannot end on a '/'. This value can be retrieved from the admin page your Stash instance
 STASH_URL=http://localhost:7990
 
-# Used in AWS backup / restore to tag snapshots. It cannot contain spaces and it must be under 100 characters long
+# Used in AWS backup to tag snapshots. It cannot contain spaces and it must be under 100 characters long
 INSTANCE_NAME=stash
 
 # The username and password for the user used to make backups (and have this permission)
@@ -32,7 +33,8 @@ STASH_BACKUP_PASS=
 STASH_HOME=/var/atlassian/application-data/stash/
 # The mount point for the home directory volume
 HOME_DIRECTORY_MOUNT_POINT=/media/atl
-# The device name to which the home directory volume is attached
+# The device name to which the home directory volume is attached as it appears in your Amazon console
+# Do NOT use the 'mount' command to retrieve this value as the linux device-driver might have assigned a different value
 HOME_DIRECTORY_DEVICE_NAME=/dev/sdf
 
 # HipChat options
@@ -40,14 +42,7 @@ HIPCHAT_URL=https://api.hipchat.com
 HIPCHAT_ROOM=
 HIPCHAT_TOKEN=
 
-# The access key id to use when authenticating with the AWS API.
-# Not necessary if the instance has been launched with the appropriate IAM role or if it has been set as an environment variable
-#AWS_ACCESS_KEY_ID=
-# The access key secret to use when authenticating with the AWS API.
-# Not necessary if the instance has been launched with the appropriate IAM role or if it has been set as an environment variable
-#AWS_SECRET_ACCESS_KEY=
-
-# The availability zone in which volumes will be created when restoring and instance
+# The availability zone in which volumes will be created when restoring and instance.
 AWS_AVAILABILITY_ZONE=`curl ${CURL_OPTIONS} http://169.254.169.254/latest/meta-data/placement/availability-zone`
 # The region for the resources Stash is using (volumes, instances, snapshots, etc)
 AWS_REGION="`echo \"${AWS_AVAILABILITY_ZONE}\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"

@@ -68,4 +68,6 @@ stash_restore_db
 # Restore the filesystem
 stash_restore_home
 
+success "Successfully completed the restore of your ${PRODUCT} instance"
+
 ##########################################################

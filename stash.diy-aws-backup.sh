@@ -67,4 +67,6 @@ stash_backup_progress 100
 # Unlocking the stash instance
 stash_unlock
 
+success "Successfully completed the backup of your ${PRODUCT} instance"
+
 ##########################################################
