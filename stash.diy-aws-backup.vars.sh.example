@@ -31,6 +31,8 @@ STASH_BACKUP_PASS=
 
 # The path to stash home folder (with trailing /)
 STASH_HOME=/var/atlassian/application-data/stash/
+# OS level username for the account that owns the STASH_HOME (typically 'atlstash')
+STASH_UID=atlstash
 # The mount point for the home directory volume
 HOME_DIRECTORY_MOUNT_POINT=/media/atl
 # The device name to which the home directory volume is attached as it appears in your Amazon console

@@ -34,7 +34,7 @@ STASH_DB=stash
 STASH_HOME=/var/atlassian/application-data/stash/
 
 
-# OS level user and group information (typically: 'stash' for both)
+# OS level user and group information (typically: 'atlstash' for both)
 STASH_UID=atlstash
 STASH_GID=atlstash
 

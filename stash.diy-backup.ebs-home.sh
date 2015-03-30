@@ -33,6 +33,11 @@ function stash_prepare_home_restore {
         bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
     fi
 
+    if [ -z "${STASH_UID}" ]; then
+        error "The ${PRODUCT} home directory owner account must be set as STASH_UID in ${BACKUP_VARS_FILE}"
+        bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
+    fi
+
     if [ -z "${AWS_AVAILABILITY_ZONE}" ]; then
         error "The availability zone for new volumes must be set as AWS_AVAILABILITY_ZONE in ${BACKUP_VARS_FILE}"
         bail "See stash.diy-aws-backup.vars.sh.example for the defaults."

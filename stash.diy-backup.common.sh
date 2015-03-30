@@ -138,8 +138,8 @@ function cleanup_locks {
     shopt -s globstar
 
     # Remove lock files in the repositories
-    rm -f ${HOME_DIRECTORY}/shared/data/repositories/*/{HEAD,config,index,gc,packed-refs,stash-packed-refs}.{pid,lock}
-    rm -f ${HOME_DIRECTORY}/shared/data/repositories/*/refs/**/*.lock
-    rm -f ${HOME_DIRECTORY}/shared/data/repositories/*/stash-refs/**/*.lock
-    rm -f ${HOME_DIRECTORY}/shared/data/repositories/*/logs/**/*.lock
+    sudo -u ${STASH_UID} rm -f ${HOME_DIRECTORY}/shared/data/repositories/*/{HEAD,config,index,gc,packed-refs,stash-packed-refs}.{pid,lock}
+    sudo -u ${STASH_UID} rm -f ${HOME_DIRECTORY}/shared/data/repositories/*/refs/**/*.lock
+    sudo -u ${STASH_UID} rm -f ${HOME_DIRECTORY}/shared/data/repositories/*/stash-refs/**/*.lock
+    sudo -u ${STASH_UID} rm -f ${HOME_DIRECTORY}/shared/data/repositories/*/logs/**/*.lock
 }
