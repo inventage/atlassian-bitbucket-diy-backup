@@ -220,14 +220,6 @@ function validate_ebs_volume {
     info "Looking up volume for device name ${DEVICE_NAME}"
     local VOLUME_ID="$(aws ec2 describe-volumes --filter Name=attachment.instance-id,Values=${INSTANCE_ID} Name=attachment.device,Values=${DEVICE_NAME} | jq -r '.Volumes[0].VolumeId')"
 
-    if [ -z "${VOLUME_ID}" ] || [ "${VOLUME_ID}" == null ]; then
-        error "Device name ${DEVICE_NAME} appears to be free"
-
-        bail "Please select a volume attached to this instance"
-    else
-        success "Found volume ${VOLUME_ID} for device name ${DEVICE_NAME}"
-    fi
-
     eval ${__RETURN}="${VOLUME_ID}"
 }
 

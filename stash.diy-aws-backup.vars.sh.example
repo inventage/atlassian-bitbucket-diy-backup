@@ -37,7 +37,7 @@ STASH_UID=atlstash
 HOME_DIRECTORY_MOUNT_POINT=/media/atl
 # The device name to which the home directory volume is attached as it appears in your Amazon console
 # Do NOT use the 'mount' command to retrieve this value as the linux device-driver might have assigned a different value
-HOME_DIRECTORY_DEVICE_NAME=/dev/`curl ${CURL_OPTIONS} http://169.254.169.254/latest/meta-data/block-device-mapping/ebs4`
+HOME_DIRECTORY_DEVICE_NAME=/dev/xvdf
 
 # HipChat options
 HIPCHAT_URL=https://api.hipchat.com

@@ -8,8 +8,19 @@ function stash_prepare_home {
         bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
     fi
 
+    if [ -z "${HOME_DIRECTORY_DEVICE_NAME}" ]; then
+        error "The home directory volume device name must be set as HOME_DIRECTORY_DEVICE_NAME in ${BACKUP_VARS_FILE}"
+        bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
+    fi
+
     BACKUP_HOME_DIRECTORY_VOLUME_ID=
     validate_ebs_volume "${HOME_DIRECTORY_DEVICE_NAME}" BACKUP_HOME_DIRECTORY_VOLUME_ID
+
+    if [ -z "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" ] || [ "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" == null ]; then
+        error "Device name ${HOME_DIRECTORY_DEVICE_NAME} specified in ${BACKUP_VARS_FILE} as HOME_DIRECTORY_DEVICE_NAME could not be resolved to a volume."
+
+        bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
+    fi
 }
 
 function stash_backup_home {
