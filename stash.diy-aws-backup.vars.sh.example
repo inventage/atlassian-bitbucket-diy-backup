@@ -1,0 +1,67 @@
+#!/bin/bash
+
+##
+# It is recomended to `chmod 600 stash.diy-aws-backup.vars.sh` after copying the template.
+##
+
+# Default options passed to 'curl' commands
+CURL_OPTIONS="-L -s -f"
+
+# Which database backup script to use (ex: ebs-collocated, rds)
+# ebs-collocated means the database data directory is located in the volume as the stash home (i.e.: the snapshot / restore of the home directory will cover it)
+# rds means your Stash instance is using an RDS instance and we need to produce a snapshot of it on backup
+BACKUP_DATABASE_TYPE=ebs-collocated
+
+# Which filesystem backup script to use (ex: ebs-home)
+# ebs-home means the Stash home (and the database if selected ebs-collocated) will be backed up by taking a snapshot of the EBS volume
+BACKUP_HOME_TYPE=ebs-home
+
+# Used by the scripts for verbose logging. If not true only errors will be shown.
+STASH_VERBOSE_BACKUP=TRUE
+
+# The base url used to access this stash instance. It cannot end on a '/'. This value can be retrieved from the admin page your Stash instance
+STASH_URL=http://localhost:7990
+
+# Used in AWS backup to tag snapshots. It cannot contain spaces and it must be under 100 characters long
+INSTANCE_NAME=stash
+
+# The username and password for the user used to make backups (and have this permission)
+STASH_BACKUP_USER=
+STASH_BACKUP_PASS=
+
+# The path to stash home folder (with trailing /)
+STASH_HOME=/var/atlassian/application-data/stash/
+# OS level username for the account that owns the STASH_HOME (typically 'atlstash')
+STASH_UID=atlstash
+# The mount point for the home directory volume
+HOME_DIRECTORY_MOUNT_POINT=/media/atl
+# The device name to which the home directory volume is attached as it appears in your Amazon console
+# Do NOT use the 'mount' command to retrieve this value as the linux device-driver might have assigned a different value
+HOME_DIRECTORY_DEVICE_NAME=/dev/xvdf
+
+# HipChat options
+HIPCHAT_URL=https://api.hipchat.com
+HIPCHAT_ROOM=
+HIPCHAT_TOKEN=
+
+# The availability zone in which volumes will be created when restoring and instance.
+AWS_AVAILABILITY_ZONE=`curl ${CURL_OPTIONS} http://169.254.169.254/latest/meta-data/placement/availability-zone`
+# The region for the resources Stash is using (volumes, instances, snapshots, etc)
+AWS_REGION="`echo \"${AWS_AVAILABILITY_ZONE}\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"
+
+# The type of volume to create when restoring the home directory
+RESTORE_HOME_DIRECTORY_VOLUME_TYPE=gp2
+# Required if RESTORE_HOME_DIRECTORY_VOLUME_TYPE has been set to 'io1'. Ignored otherwise.
+# The IOPS that should be provisioned for the new volume. Note: Maximum IOPS to volume size ratio is 30
+RESTORE_HOME_DIRECTORY_IOPS=1000
+
+# The RDS instance ID for the database to backup
+BACKUP_RDS_INSTANCE_ID=
+# The RDS instance ID for the database to create on restore
+RESTORE_RDS_INSTANCE_ID=
+# The instance class to use when restoring the database
+RESTORE_RDS_INSTANCE_CLASS=db.r3.large
+# The subnet in which the database will be restored
+RESTORE_RDS_SUBNET_GROUP_NAME=
+# The security group to assign to the restored instance
+RESTORE_RDS_SECURITY_GROUP=

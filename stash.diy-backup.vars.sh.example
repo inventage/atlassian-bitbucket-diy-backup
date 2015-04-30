@@ -4,10 +4,12 @@
 # It is recomended to `chmod 600 stash.diy-backup.vars.sh` after copying the template.
 ##
 
-# Which database backup script to use (ex: mssql, postgresql, mysql)
+CURL_OPTIONS="-L -s -f"
+
+# Which database backup script to use (ex: mssql, postgresql, mysql, ebs-collocated, rds)
 BACKUP_DATABASE_TYPE=postgresql
 
-# Which filesystem backup script to use (ex: rsync)
+# Which filesystem backup script to use (ex: rsync, ebs-home)
 BACKUP_HOME_TYPE=rsync
 
 # Which archive backup script to use (ex: tar, tar-gpg)
@@ -16,8 +18,11 @@ BACKUP_ARCHIVE_TYPE=tar
 # Used by the scripts for verbose logging. If not true only errors will be shown.
 STASH_VERBOSE_BACKUP=TRUE
 
-# The base url used to access this stash instance
+# The base url used to access this stash instance. It cannot end on a '/'
 STASH_URL=
+
+# Used in AWS backup / restore to tag snapshots. It cannot contain spaces and it must be under 100 characters long
+INSTANCE_NAME=stash
 
 # The username and password for the user used to make backups (and have this permission)
 STASH_BACKUP_USER=
@@ -26,11 +31,12 @@ STASH_BACKUP_PASS=
 # The name of the database used by this instance.
 STASH_DB=stash
 # The path to stash home folder (with trailing /)
-STASH_HOME=
+STASH_HOME=/var/atlassian/application-data/stash/
 
-# OS level user and group information (typically: 'stash' for both)
-STASH_UID=stash
-STASH_GID=stash
+
+# OS level user and group information (typically: 'atlstash' for both)
+STASH_UID=atlstash
+STASH_GID=atlstash
 
 # The path to working folder for the backup
 STASH_BACKUP_ROOT=
