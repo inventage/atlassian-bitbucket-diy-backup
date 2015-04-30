@@ -27,9 +27,9 @@ source ${SCRIPT_DIR}/stash.diy-backup.common.sh
 
 if [ "rsync" == "${BACKUP_HOME_TYPE}" ]; then
     # Exports the following functions
-    #     stash_prepare_db     - for making a backup of the DB if differential backups a possible. Can be empty
-    #     stash_backup_db      - for making a backup of the stash DB
-    source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_DATABASE_TYPE}.sh
+    #     stash_prepare_home   - for preparing the filesystem for the backup
+    #     stash_backup_home    - for making the actual filesystem backup
+    source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_HOME_TYPE}.sh
 else
     error "${BACKUP_HOME_TYPE} is not a supported home backup type"
     bail "Please update BACKUP_HOME_TYPE in ${BACKUP_VARS_FILE} or consider running stash.diy-aws-backup.sh instead"
