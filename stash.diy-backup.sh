@@ -25,7 +25,7 @@ source ${SCRIPT_DIR}/stash.diy-backup.common.sh
 # The following scripts contain functions which are dependent on the configuration of this stash instance.
 # Generally each of them exports certain functions, which can be implemented in different ways
 
-if [ "rsync" == "${BACKUP_HOME_TYPE}" ]; then
+if [ "rsync" = "${BACKUP_HOME_TYPE}" ]; then
     # Exports the following functions
     #     stash_prepare_home   - for preparing the filesystem for the backup
     #     stash_backup_home    - for making the actual filesystem backup
@@ -35,7 +35,7 @@ else
     bail "Please update BACKUP_HOME_TYPE in ${BACKUP_VARS_FILE} or consider running stash.diy-aws-backup.sh instead"
 fi
 
-if [ "mssql" == "${BACKUP_DATABASE_TYPE}" ] || [ "postgresql" == "${BACKUP_DATABASE_TYPE}" ] || [ "mysql" == "${BACKUP_DATABASE_TYPE}" ]; then
+if [ "mssql" = "${BACKUP_DATABASE_TYPE}" ] || [ "postgresql" = "${BACKUP_DATABASE_TYPE}" ] || [ "mysql" = "${BACKUP_DATABASE_TYPE}" ]; then
     # Exports the following functions
     #     stash_prepare_db     - for making a backup of the DB if differential backups a possible. Can be empty
     #     stash_backup_db      - for making a backup of the stash DB
