@@ -28,7 +28,7 @@ fi
 # The following scripts contain functions which are dependent on the configuration of this stash instance.
 # Generally each of them exports certain functions, which can be implemented in different ways
 
-if [ "mssql" == "${BACKUP_DATABASE_TYPE}" ] || [ "postgresql" == "${BACKUP_DATABASE_TYPE}" ] || [ "mysql" == "${BACKUP_DATABASE_TYPE}" ]; then
+if [ "mssql" = "${BACKUP_DATABASE_TYPE}" ] || [ "postgresql" = "${BACKUP_DATABASE_TYPE}" ] || [ "mysql" = "${BACKUP_DATABASE_TYPE}" ]; then
     # Exports the following functions
     #     stash_restore_db     - for restoring the stash DB
     source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_DATABASE_TYPE}.sh
@@ -37,7 +37,7 @@ else
     bail "Please update BACKUP_DATABASE_TYPE in ${BACKUP_VARS_FILE} or consider running stash.diy-aws-restore.sh instead"
 fi
 
-if [ "rsync" == "${BACKUP_HOME_TYPE}" ]; then
+if [ "rsync" = "${BACKUP_HOME_TYPE}" ]; then
     # Exports the following functions
     #     stash_restore_home   -  for restoring the filesystem backup
     source ${SCRIPT_DIR}/stash.diy-backup.${BACKUP_HOME_TYPE}.sh
