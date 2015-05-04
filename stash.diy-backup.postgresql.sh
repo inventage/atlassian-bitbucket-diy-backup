@@ -6,7 +6,8 @@ check_command "pg_restore"
 
 # Make use of PostgreSQL 9.3+ options if available
 psql_version="$(psql --version | awk '{print $3}')"
-if [[ ${psql_version//./} -ge 930 ]]; then
+psql_majorminor="$(printf "%03d%03d" $(echo "$psql_version" | tr "." "\n" | head -n 2))"
+if [[ $psql_majorminor -ge 009003 ]]; then
     PG_PARALLELL="-j 5"
     PG_SNAPSHOT_OPT="--no-synchronized-snapshots"
 fi
