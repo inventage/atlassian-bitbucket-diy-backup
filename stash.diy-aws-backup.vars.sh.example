@@ -48,6 +48,8 @@ HIPCHAT_TOKEN=
 AWS_AVAILABILITY_ZONE=`curl ${CURL_OPTIONS} http://169.254.169.254/latest/meta-data/placement/availability-zone`
 # The region for the resources Stash is using (volumes, instances, snapshots, etc)
 AWS_REGION="`echo \"${AWS_AVAILABILITY_ZONE}\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"
+# Additional AWS tags for EBS and RDS snapshot
+AWS_ADDITIONAL_TAGS=
 
 # The type of volume to create when restoring the home directory
 RESTORE_HOME_DIRECTORY_VOLUME_TYPE=gp2

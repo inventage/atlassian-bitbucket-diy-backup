@@ -56,6 +56,11 @@ function snapshot_ebs_volume {
     aws ec2 create-tags --resources "${SNAPSHOT_ID}" --tags Key="${SNAPSHOT_TAG_KEY}",Value="${SNAPSHOT_TAG_VALUE}"
 
     info "Tagged ${SNAPSHOT_ID} with ${SNAPSHOT_TAG_KEY}=${SNAPSHOT_TAG_VALUE}"
+
+    if [ ! -z "${AWS_ADDITIONAL_TAGS}" ]; then
+       aws ec2 create-tags --resources "${SNAPSHOT_ID}" --tags "${AWS_ADDITIONAL_TAGS}"
+       info "Tagged ${SNAPSHOT_ID} with additional tags: ${AWS_ADDITIONAL_TAGS}"
+    fi
 }
 
 function create_volume {
@@ -178,6 +183,14 @@ function snapshot_rds_instance {
     success "Taken snapshot ${SNAPSHOT_TAG_VALUE} of RDS instance ${INSTANCE_ID}"
 
     info "Tagged ${SNAPSHOT_TAG_VALUE} with ${SNAPSHOT_TAG_KEY}=${SNAPSHOT_TAG_VALUE}"
+    
+    if [ ! -z "${AWS_ADDITIONAL_TAGS}" ]; then
+       local ACCOUNT_NUMBER=`aws iam get-user | awk '/arn:aws:/{split($0,a,":"); print a[6]}'`
+       local SNAPSHOT_RESOURCE_NAME="arn:aws:rds:${AWS_REGION}:${ACCOUNT_NUMBER}:snapshot:${SNAPSHOT_TAG_VALUE}"
+
+       aws rds add-tags-to-resource --resource-name "${SNAPSHOT_RESOURCE_NAME}" --tags "${AWS_ADDITIONAL_TAGS}"
+       info "Tagged ${SNAPSHOT_TAG_VALUE} with additional tags: ${AWS_ADDITIONAL_TAGS}"
+    fi
 }
 
 function restore_rds_instance {
