@@ -185,7 +185,12 @@ function snapshot_rds_instance {
     info "Tagged ${SNAPSHOT_TAG_VALUE} with ${SNAPSHOT_TAG_KEY}=${SNAPSHOT_TAG_VALUE}"
     
     if [ ! -z "${AWS_ADDITIONAL_TAGS}" ]; then
-       local ACCOUNT_NUMBER=`aws iam get-user | awk '/arn:aws:/{split($0,a,":"); print a[6]}'`
+       local ACCOUNT_NUMBER=`aws iam get-user | awk '/arn:aws:/{split($0, a, ":"); print a[6]}'`
+       if [ $? != 0 ]; then
+            # In case user does not have privileges for get-user command, AccessDenied error message is thrown.
+            # This massage contains the AWS account number, we just need to parse it
+            ACCOUNT_NUMBER=`echo ${ACCOUNT_NUMBER} | sed 's|.*:\([0-9]*\):assumed-role\/.*|\1|'`
+       fi
        local SNAPSHOT_RESOURCE_NAME="arn:aws:rds:${AWS_REGION}:${ACCOUNT_NUMBER}:snapshot:${SNAPSHOT_TAG_VALUE}"
 
        aws rds add-tags-to-resource --resource-name "${SNAPSHOT_RESOURCE_NAME}" --tags "${AWS_ADDITIONAL_TAGS}"
