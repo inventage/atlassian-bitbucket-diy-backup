@@ -58,7 +58,7 @@ function snapshot_ebs_volume {
     info "Tagged ${SNAPSHOT_ID} with ${SNAPSHOT_TAG_KEY}=${SNAPSHOT_TAG_VALUE}"
 
     if [ ! -z "${AWS_ADDITIONAL_TAGS}" ]; then
-       aws ec2 create-tags --resources "${SNAPSHOT_ID}" --tags "${AWS_ADDITIONAL_TAGS}"
+       aws ec2 create-tags --resources "${SNAPSHOT_ID}" --tags "[ ${AWS_ADDITIONAL_TAGS} ]"
        info "Tagged ${SNAPSHOT_ID} with additional tags: ${AWS_ADDITIONAL_TAGS}"
     fi
 }
@@ -173,8 +173,14 @@ function validate_device_name {
 function snapshot_rds_instance {
     local INSTANCE_ID="$1"
 
+    if [ ! -z "${AWS_ADDITIONAL_TAGS}" ]; then
+        COMMA=', '
+    fi
+
+    AWS_TAGS="[ {\"Key\": \"${SNAPSHOT_TAG_KEY}\", \"Value\": \"${SNAPSHOT_TAG_VALUE}\"}${COMMA}${AWS_ADDITIONAL_TAGS} ]"
+
     # We use SNAPSHOT_TAG as the snapshot identifier because it's unique and because it will allow us to relate an EBS snapshot to an RDS snapshot by tag
-    aws rds create-db-snapshot --db-instance-identifier "${INSTANCE_ID}" --db-snapshot-identifier "${SNAPSHOT_TAG_VALUE}" --tags Key="${SNAPSHOT_TAG_KEY}",Value="${SNAPSHOT_TAG_VALUE}" > /dev/null
+    aws rds create-db-snapshot --db-instance-identifier "${INSTANCE_ID}" --db-snapshot-identifier "${SNAPSHOT_TAG_VALUE}" --tags "${AWS_TAGS}" > /dev/null
 
     # Wait until the database has completed the backup
     info "Waiting for instance ${INSTANCE_ID} to complete backup. This could take some time"
@@ -182,20 +188,7 @@ function snapshot_rds_instance {
 
     success "Taken snapshot ${SNAPSHOT_TAG_VALUE} of RDS instance ${INSTANCE_ID}"
 
-    info "Tagged ${SNAPSHOT_TAG_VALUE} with ${SNAPSHOT_TAG_KEY}=${SNAPSHOT_TAG_VALUE}"
-    
-    if [ ! -z "${AWS_ADDITIONAL_TAGS}" ]; then
-       local ACCOUNT_NUMBER=`aws iam get-user | awk '/arn:aws:/{split($0, a, ":"); print a[6]}'`
-       if [ $? != 0 ]; then
-            # In case user does not have privileges for get-user command, AccessDenied error message is thrown.
-            # This massage contains the AWS account number, we just need to parse it
-            ACCOUNT_NUMBER=`echo ${ACCOUNT_NUMBER} | sed 's|.*:\([0-9]*\):assumed-role\/.*|\1|'`
-       fi
-       local SNAPSHOT_RESOURCE_NAME="arn:aws:rds:${AWS_REGION}:${ACCOUNT_NUMBER}:snapshot:${SNAPSHOT_TAG_VALUE}"
-
-       aws rds add-tags-to-resource --resource-name "${SNAPSHOT_RESOURCE_NAME}" --tags "${AWS_ADDITIONAL_TAGS}"
-       info "Tagged ${SNAPSHOT_TAG_VALUE} with additional tags: ${AWS_ADDITIONAL_TAGS}"
-    fi
+    info "Tagged ${SNAPSHOT_TAG_VALUE} with ${AWS_TAGS}"
 }
 
 function restore_rds_instance {
