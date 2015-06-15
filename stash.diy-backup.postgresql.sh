@@ -8,7 +8,7 @@ check_command "pg_restore"
 psql_version="$(psql --version | awk '{print $3}')"
 psql_majorminor="$(printf "%d%03d" $(echo "$psql_version" | tr "." "\n" | head -n 2))"
 if [[ $psql_majorminor -ge 9003 ]]; then
-    PG_PARALLELL="-j 5"
+    PG_PARALLEL="-j 5"
     PG_SNAPSHOT_OPT="--no-synchronized-snapshots"
 fi
 
@@ -38,7 +38,7 @@ function stash_prepare_db {
 
 function stash_backup_db {
     rm -r ${STASH_BACKUP_DB}
-    pg_dump ${PG_USER} ${PG_HOST} --port=${POSTGRES_PORT} ${PG_PARALLELL} -Fd ${STASH_DB} ${PG_SNAPSHOT_OPT} -f ${STASH_BACKUP_DB}
+    pg_dump ${PG_USER} ${PG_HOST} --port=${POSTGRES_PORT} ${PG_PARALLEL} -Fd ${STASH_DB} ${PG_SNAPSHOT_OPT} -f ${STASH_BACKUP_DB}
     if [ $? != 0 ]; then
         bail "Unable to backup ${STASH_DB} to ${STASH_BACKUP_DB}"
     fi
