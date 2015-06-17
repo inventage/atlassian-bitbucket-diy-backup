@@ -55,6 +55,6 @@ function hc_announce {
         NOTIFY="true"
     fi
 
-    local MESSAGE=`echo "$1" | sed -e 's|"|\\"|g'`
+    local MESSAGE=`echo "$1" | sed -e 's|"|\\\"|g'`
     curl -s -S -X POST -H "Content-Type: application/json" -d "{\"message\":\"${MESSAGE}\",\"color\":\"${COLOR}\",\"notify\":${NOTIFY}}" "${HIPCHAT_URL}/v2/room/${HIPCHAT_ROOM}/notification?auth_token=${HIPCHAT_TOKEN}"
 }
