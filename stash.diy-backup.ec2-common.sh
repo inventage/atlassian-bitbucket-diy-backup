@@ -281,7 +281,7 @@ function delete_rds_snapshot {
 
 # List all EBS snapshots older than the most recent ${KEEP_BACKUPS}
 function list_old_ebs_snapshot_ids {
-    aws ec2 describe-snapshots --filters "Name=tag:Name,Values=${SNAPSHOT_TAG_PREFIX}-*" | jq -r ".Snapshots | sort_by(.StartTime) | reverse | .[${KEEP_BACKUPS}:] | map(.SnapshotId)[]"
+    aws ec2 describe-snapshots --filters "Name=tag:Name,Values=${SNAPSHOT_TAG_PREFIX}*" | jq -r ".Snapshots | sort_by(.StartTime) | reverse | .[${KEEP_BACKUPS}:] | map(.SnapshotId)[]"
 }
 
 function delete_ebs_snapshot {
