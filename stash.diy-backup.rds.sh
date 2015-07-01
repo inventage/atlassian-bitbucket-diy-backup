@@ -46,3 +46,10 @@ function stash_restore_db {
 
     info "Performed restore of ${RESTORE_RDS_SNAPSHOT_ID} to RDS instance ${RESTORE_RDS_INSTANCE_ID}"
 }
+
+function cleanup_old_db_snapshots {
+    for snapshot_id in $(list_old_rds_snapshot_ids); do
+        info "Deleting old snapshot ${snapshot_id}"
+        delete_rds_snapshot "${snapshot_id}"
+    done
+}

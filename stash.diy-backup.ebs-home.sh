@@ -98,3 +98,10 @@ function freeze_home_directory {
 function unfreeze_home_directory {
     unfreeze_mount_point ${HOME_DIRECTORY_MOUNT_POINT}
 }
+
+function cleanup_old_home_snapshots {
+    for snapshot_id in $(list_old_ebs_snapshot_ids); do
+        info "Deleting old EBS snapshot ${snapshot_id}"
+        delete_ebs_snapshot ${snapshot_id}
+    done
+}
