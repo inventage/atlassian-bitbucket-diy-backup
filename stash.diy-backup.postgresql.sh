@@ -46,7 +46,7 @@ function stash_backup_db {
 }
 
 function stash_bail_if_db_exists {
-    psql ${PG_USER} ${PG_HOST} --port=${POSTGRES_PORT} -d ${STASH_DB} -c '' >/dev/null 2>&1
+    psql ${PG_USER} ${PG_HOST} --port=${POSTGRES_PORT} -d ${STASH_DB} -c '' > /dev/null 2>&1
     if [ $? = 0 ]; then
         bail "Cannot restore over existing database ${STASH_DB}. Try dropdb ${STASH_DB} first."
     fi

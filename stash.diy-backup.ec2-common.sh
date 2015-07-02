@@ -268,3 +268,27 @@ function list_available_ebs_snapshot_tags {
     print "Available snapshot tags:"
     aws ec2 describe-snapshots --filters Name=tag-key,Values="Name" Name=tag-value,Values="${SNAPSHOT_TAG_PREFIX}*" | jq -r ".Snapshots[].Tags[] | select(.Key == \"Name\") | .Value" | sort -r
 }
+
+# List all RDS DB snapshots older than the most recent ${KEEP_BACKUPS}
+function list_old_rds_snapshot_ids {
+    if [ "${KEEP_BACKUPS}" -gt 0 ]; then
+        aws rds describe-db-snapshots --snapshot-type manual | jq -r ".DBSnapshots | map(select(.DBSnapshotIdentifier | startswith(\"${SNAPSHOT_TAG_PREFIX}\"))) | sort_by(.SnapshotCreateTime) | reverse | .[${KEEP_BACKUPS}:] | map(.DBSnapshotIdentifier)[]"
+    fi
+}
+
+function delete_rds_snapshot {
+    local SNAPSHOT_ID="$1"
+    aws rds delete-db-snapshot --db-snapshot-identifier "${SNAPSHOT_ID}" > /dev/null
+}
+
+# List all EBS snapshots older than the most recent ${KEEP_BACKUPS}
+function list_old_ebs_snapshot_ids {
+    if [ "${KEEP_BACKUPS}" -gt 0 ]; then
+        aws ec2 describe-snapshots --filters "Name=tag:Name,Values=${SNAPSHOT_TAG_PREFIX}*" | jq -r ".Snapshots | sort_by(.StartTime) | reverse | .[${KEEP_BACKUPS}:] | map(.SnapshotId)[]"
+    fi
+}
+
+function delete_ebs_snapshot {
+    local SNAPSHOT_ID="$1"
+    aws ec2 delete-snapshot --snapshot-id "${SNAPSHOT_ID}"
+}

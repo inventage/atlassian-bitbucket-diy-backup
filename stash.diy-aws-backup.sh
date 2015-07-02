@@ -47,7 +47,7 @@ else
 fi
 
 ##########################################################
-# The actual proposed backup process. It has the following steps
+# The actual backup process. It has the following steps
 stash_prepare_home
 stash_prepare_db
 
@@ -70,3 +70,8 @@ stash_unlock
 success "Successfully completed the backup of your ${PRODUCT} instance"
 
 ##########################################################
+# Clean up old backups, keeping just the most recent ${KEEP_BACKUPS} snapshots
+
+cleanup_old_db_snapshots
+cleanup_old_home_snapshots
+
