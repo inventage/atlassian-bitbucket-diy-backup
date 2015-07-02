@@ -276,7 +276,7 @@ function list_old_rds_snapshot_ids {
 
 function delete_rds_snapshot {
     local SNAPSHOT_ID="$1"
-    aws rds delete-db-snapshot --db-snapshot-identifier "${SNAPSHOT_ID}" >/dev/null
+    aws rds delete-db-snapshot --db-snapshot-identifier "${SNAPSHOT_ID}" > /dev/null
 }
 
 # List all EBS snapshots older than the most recent ${KEEP_BACKUPS}

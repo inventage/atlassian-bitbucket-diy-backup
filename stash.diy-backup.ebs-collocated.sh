@@ -22,3 +22,7 @@ function stash_prepare_db_restore {
 function stash_restore_db {
     no_op
 }
+
+function cleanup_old_db_snapshots {
+    no_op
+}
