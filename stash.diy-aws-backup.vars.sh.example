@@ -52,8 +52,9 @@ AWS_REGION="`echo \"${AWS_AVAILABILITY_ZONE}\" | sed -e 's:\([0-9][0-9]*\)[a-z]*
 # Example: AWS_ADDITIONAL_TAGS='{"Key":"Value"}, {"Key":"Value"}'
 AWS_ADDITIONAL_TAGS=
 
-# The number of old backups to keep
-KEEP_BACKUPS=5
+# The number of backups to keep.  After backups are taken, all old snapshots except for the most recent ${KEEP_BACKUPS}
+# are deleted.  Set to 0 to disable cleanup of old snapshots.
+KEEP_BACKUPS=0
 
 # The type of volume to create when restoring the home directory
 RESTORE_HOME_DIRECTORY_VOLUME_TYPE=gp2

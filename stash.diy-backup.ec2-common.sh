@@ -271,7 +271,9 @@ function list_available_ebs_snapshot_tags {
 
 # List all RDS DB snapshots older than the most recent ${KEEP_BACKUPS}
 function list_old_rds_snapshot_ids {
-    aws rds describe-db-snapshots --snapshot-type manual | jq -r ".DBSnapshots | map(select(.DBSnapshotIdentifier | startswith(\"${SNAPSHOT_TAG_PREFIX}\"))) | sort_by(.SnapshotCreateTime) | reverse | .[${KEEP_BACKUPS}:] | map(.DBSnapshotIdentifier)[]"
+    if [ "${KEEP_BACKUPS}" -gt 0 ]; then
+        aws rds describe-db-snapshots --snapshot-type manual | jq -r ".DBSnapshots | map(select(.DBSnapshotIdentifier | startswith(\"${SNAPSHOT_TAG_PREFIX}\"))) | sort_by(.SnapshotCreateTime) | reverse | .[${KEEP_BACKUPS}:] | map(.DBSnapshotIdentifier)[]"
+    fi
 }
 
 function delete_rds_snapshot {
@@ -281,7 +283,9 @@ function delete_rds_snapshot {
 
 # List all EBS snapshots older than the most recent ${KEEP_BACKUPS}
 function list_old_ebs_snapshot_ids {
-    aws ec2 describe-snapshots --filters "Name=tag:Name,Values=${SNAPSHOT_TAG_PREFIX}*" | jq -r ".Snapshots | sort_by(.StartTime) | reverse | .[${KEEP_BACKUPS}:] | map(.SnapshotId)[]"
+    if [ "${KEEP_BACKUPS}" -gt 0 ]; then
+        aws ec2 describe-snapshots --filters "Name=tag:Name,Values=${SNAPSHOT_TAG_PREFIX}*" | jq -r ".Snapshots | sort_by(.StartTime) | reverse | .[${KEEP_BACKUPS}:] | map(.SnapshotId)[]"
+    fi
 }
 
 function delete_ebs_snapshot {
