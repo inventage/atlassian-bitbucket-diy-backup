@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ##
-# It is recomended to `chmod 600 stash.diy-backup.vars.sh` after copying the template.
+# It is recomended to `chmod 600 bitbucket.diy-backup.vars.sh` after copying the template.
 ##
 
 CURL_OPTIONS="-L -s -f"
@@ -16,39 +16,39 @@ BACKUP_HOME_TYPE=rsync
 BACKUP_ARCHIVE_TYPE=tar
 
 # Used by the scripts for verbose logging. If not true only errors will be shown.
-STASH_VERBOSE_BACKUP=TRUE
+BITBUCKET_VERBOSE_BACKUP=TRUE
 
-# The base url used to access this stash instance. It cannot end on a '/'
-STASH_URL=
+# The base url used to access this bitbucket instance. It cannot end on a '/'
+BITBUCKET_URL=
 
 # Used in AWS backup / restore to tag snapshots. It cannot contain spaces and it must be under 100 characters long
-INSTANCE_NAME=stash
+INSTANCE_NAME=bitbucket
 
 # The username and password for the user used to make backups (and have this permission)
-STASH_BACKUP_USER=
-STASH_BACKUP_PASS=
+BITBUCKET_BACKUP_USER=
+BITBUCKET_BACKUP_PASS=
 
 # The name of the database used by this instance.
-STASH_DB=stash
-# The path to stash home folder (with trailing /)
-STASH_HOME=/var/atlassian/application-data/stash/
+BITBUCKET_DB=bitbucket
+# The path to bitbucket home folder (with trailing /)
+BITBUCKET_HOME=/var/atlassian/application-data/bitbucket/
 
 
-# OS level user and group information (typically: 'atlstash' for both)
-STASH_UID=atlstash
-STASH_GID=atlstash
+# OS level user and group information (typically: 'atlbitbucket' for both)
+BITBUCKET_UID=atlbitbucket
+BITBUCKET_GID=atlbitbucket
 
 # The path to working folder for the backup
-STASH_BACKUP_ROOT=
-STASH_BACKUP_DB=${STASH_BACKUP_ROOT}/stash-db/
-STASH_BACKUP_HOME=${STASH_BACKUP_ROOT}/stash-home/
+BITBUCKET_BACKUP_ROOT=
+BITBUCKET_BACKUP_DB=${BITBUCKET_BACKUP_ROOT}/bitbucket-db/
+BITBUCKET_BACKUP_HOME=${BITBUCKET_BACKUP_ROOT}/bitbucket-home/
 
 # The path to where the backup archives are stored
-STASH_BACKUP_ARCHIVE_ROOT=
+BITBUCKET_BACKUP_ARCHIVE_ROOT=
 
 # List of repo IDs which should be excluded from the backup
 # It should be space separated: (2 5 88)
-STASH_BACKUP_EXCLUDE_REPOS=()
+BITBUCKET_BACKUP_EXCLUDE_REPOS=()
 
 # PostgreSQL options
 POSTGRES_HOST=
@@ -68,4 +68,4 @@ HIPCHAT_ROOM=
 HIPCHAT_TOKEN=
 
 # Options for the tar-gpg archive type
-STASH_BACKUP_GPG_RECIPIENT=
+BITBUCKET_BACKUP_GPG_RECIPIENT=

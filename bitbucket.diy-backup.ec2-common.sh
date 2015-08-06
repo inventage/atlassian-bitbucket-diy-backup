@@ -6,7 +6,7 @@ check_command "jq"
 # Ensure the AWS region has been provided
 if [ -z "${AWS_REGION}" ] || [ "${AWS_REGION}" == null ]; then
     error "The AWS region must be set as AWS_REGION in ${BACKUP_VARS_FILE}"
-    bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
+    bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
 fi
 
 if [ -z "${AWS_ACCESS_KEY_ID}" ] ||  [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then
@@ -15,7 +15,7 @@ if [ -z "${AWS_ACCESS_KEY_ID}" ] ||  [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then
         error "Could not find the necessary credentials to run backup"
         error "We recommend launching the instance with an appropiate IAM role"
         error "Alternatively AWS credentials can be set as AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in ${BACKUP_VARS_FILE}"
-        bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
+        bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
     else
         info "Using IAM instance role ${AWS_INSTANCE_ROLE}"
     fi
@@ -31,15 +31,15 @@ export AWS_DEFAULT_OUTPUT=json
 if [ -z "${INSTANCE_NAME}" ]; then
     error "The ${PRODUCT} instance name must be set as INSTANCE_NAME in ${BACKUP_VARS_FILE}"
 
-    bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
+    bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
 elif [ ! "${INSTANCE_NAME}" == ${INSTANCE_NAME%[[:space:]]*} ]; then
     error "Instance name cannot contain spaces"
 
-    bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
+    bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
 elif [ ${#INSTANCE_NAME} -ge 100 ]; then
     error "Instance name must be under 100 characters in length"
 
-    bail "See stash.diy-aws-backup.vars.sh.example for the defaults."
+    bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
 fi
 
 SNAPSHOT_TAG_KEY="Name"
@@ -165,7 +165,7 @@ function validate_device_name {
     case "${VOLUME_ID}" in vol-*)
         error "Device name ${DEVICE_NAME} appears to be taken by volume ${VOLUME_ID}"
 
-        bail "Please stop Stash. Stop PostgreSQL if it is running. Unmount the device and detach the volume"
+        bail "Please stop Bitbucket. Stop PostgreSQL if it is running. Unmount the device and detach the volume"
         ;;
     esac
 }
