@@ -15,7 +15,7 @@ function bitbucket_prepare_db {
 
 function bitbucket_backup_db {
     rm -r ${BITBUCKET_BACKUP_DB}
-    mysqldump ${MYSQL_HOST_CMD} ${MYSQL_BACKUP_OPTIONS} -u ${MYSQL_USERNAME} -p${MYSQL_PASSWORD} ${BITBUCKET_DB} > ${BITBUCKET_BACKUP_DB}
+    mysqldump ${MYSQL_HOST_CMD} ${MYSQL_BACKUP_OPTIONS} -u ${MYSQL_USERNAME} -p${MYSQL_PASSWORD} --databases ${BITBUCKET_DB} > ${BITBUCKET_BACKUP_DB}
     if [ $? != 0 ]; then
         bail "Unable to backup ${BITBUCKET_DB} to ${BITBUCKET_BACKUP_DB}"
     fi
@@ -30,7 +30,7 @@ function bitbucket_bail_if_db_exists {
 }
 
 function bitbucket_restore_db {
-    mysql ${MYSQL_HOST_CMD} -u ${MYSQL_USERNAME} -p${MYSQL_PASSWORD} ${BITBUCKET_DB} < ${BITBUCKET_RESTORE_DB}
+    mysql ${MYSQL_HOST_CMD} -u ${MYSQL_USERNAME} -p${MYSQL_PASSWORD} < ${BITBUCKET_RESTORE_DB}
     if [ $? != 0 ]; then
         bail "Unable to restore ${BITBUCKET_RESTORE_DB} to ${BITBUCKET_DB}"
     fi
