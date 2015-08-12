@@ -14,7 +14,7 @@ function bitbucket_lock {
         bail "Locking this Bitbucket instance failed"
     fi
 
-    BITBUCKET_LOCK_TOKEN=`echo ${BITBUCKET_LOCK_RESULT} | jq -r ".unlockToken"`
+    BITBUCKET_LOCK_TOKEN=`echo ${BITBUCKET_LOCK_RESULT} | jq -r ".unlockToken" | tr -d '\r'`
     if [ -z "${BITBUCKET_LOCK_TOKEN}" ]; then
         bail "Unable to find lock token. Result was '$BITBUCKET_LOCK_RESULT'"
     fi
@@ -28,7 +28,7 @@ function bitbucket_backup_start {
         bail "Entering backup mode failed"
     fi
 
-    BITBUCKET_BACKUP_TOKEN=`echo ${BITBUCKET_BACKUP_RESULT} | jq -r ".cancelToken"`
+    BITBUCKET_BACKUP_TOKEN=`echo ${BITBUCKET_BACKUP_RESULT} | jq -r ".cancelToken" | tr -d '\r'`
     if [ -z "${BITBUCKET_BACKUP_TOKEN}" ]; then
         bail "Unable to find backup token. Result was '${BITBUCKET_BACKUP_RESULT}'"
     fi
@@ -49,9 +49,9 @@ function bitbucket_backup_wait {
             bail "[${BITBUCKET_URL}] ERROR: Unable to check for backup progress"
         fi
 
-        BITBUCKET_PROGRESS_DB_STATE=`echo ${BITBUCKET_PROGRESS_RESULT} | jq -r '.["db-state"]'`
-        BITBUCKET_PROGRESS_SCM_STATE=`echo ${BITBUCKET_PROGRESS_RESULT} | jq -r '.["scm-state"]'`
-        BITBUCKET_PROGRESS_STATE=`echo ${BITBUCKET_PROGRESS_RESULT} | jq -r '.task.state'`
+        BITBUCKET_PROGRESS_DB_STATE=`echo ${BITBUCKET_PROGRESS_RESULT} | jq -r '.["db-state"]' | tr -d '\r'`
+        BITBUCKET_PROGRESS_SCM_STATE=`echo ${BITBUCKET_PROGRESS_RESULT} | jq -r '.["scm-state"]' | tr -d '\r'`
+        BITBUCKET_PROGRESS_STATE=`echo ${BITBUCKET_PROGRESS_RESULT} | jq -r '.task.state' | tr -d '\r'`
 
         if [ "${BITBUCKET_PROGRESS_STATE}" != "RUNNING" ]; then
             error "Unable to start backup, try unlocking"
