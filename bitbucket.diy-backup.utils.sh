@@ -1,8 +1,8 @@
 #!/bin/bash
 
 function error {
-    echo "[${STASH_URL}] ERROR: $*"
-    hc_announce "[${STASH_URL}] ERROR: $*" "red" 1
+    echo "[${BITBUCKET_URL}] ERROR: $*"
+    hc_announce "[${BITBUCKET_URL}] ERROR: $*" "red" 1
 }
 
 function bail {
@@ -11,19 +11,19 @@ function bail {
 }
 
 function info {
-    if [ "${STASH_VERBOSE_BACKUP}" == "TRUE" ]; then
-        echo "[${STASH_URL}]  INFO: $*"
-        hc_announce "[${STASH_URL}]  INFO: $*" "gray"
+    if [ "${BITBUCKET_VERBOSE_BACKUP}" == "TRUE" ]; then
+        echo "[${BITBUCKET_URL}]  INFO: $*"
+        hc_announce "[${BITBUCKET_URL}]  INFO: $*" "gray"
     fi
 }
 
 function success {
-    echo "[${STASH_URL}]  SUCC: $*"
-    hc_announce "[${STASH_URL}]  SUCC: $*" "green"
+    echo "[${BITBUCKET_URL}]  SUCC: $*"
+    hc_announce "[${BITBUCKET_URL}]  SUCC: $*" "green"
 }
 
 function print {
-    if [ "${STASH_VERBOSE_BACKUP}" == "TRUE" ]; then
+    if [ "${BITBUCKET_VERBOSE_BACKUP}" == "TRUE" ]; then
         echo "$@"
     fi
 }
