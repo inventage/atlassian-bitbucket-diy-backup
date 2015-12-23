@@ -13,7 +13,7 @@ function bitbucket_perform_rsync {
     fi
 
     mkdir -p ${BITBUCKET_BACKUP_HOME}
-    rsync -avh ${RSYNC_QUIET} --delete --delete-excluded --exclude=/caches/ --exclude=/data/db.* --exclude=/export/ --exclude=/log/ --exclude=/plugins/.*/ --exclude=/tmp --exclude=/.lock --exclude=/shared/.lock ${RSYNC_EXCLUDE_REPOS} ${BITBUCKET_HOME} ${BITBUCKET_BACKUP_HOME}
+    rsync -avh ${RSYNC_QUIET} --delete --delete-excluded --exclude=/caches/ --exclude=/shared/data/db.* --exclude=/export/ --exclude=/log/ --exclude=/plugins/.*/ --exclude=/tmp --exclude=/.lock --exclude=/shared/.lock ${RSYNC_EXCLUDE_REPOS} ${BITBUCKET_HOME} ${BITBUCKET_BACKUP_HOME}
     if [ $? != 0 ]; then
         bail "Unable to rsync from ${BITBUCKET_HOME} to ${BITBUCKET_BACKUP_HOME}"
     fi
