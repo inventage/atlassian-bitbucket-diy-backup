@@ -83,4 +83,5 @@ BACKUP_EBS_DEST_REGION=
 
 # If set to true, this variable will copy the RDS snapshot to the specified region
 BACKUP_RDS_SNAPSHOT_TO_ANOTHER_REGION=false
+# The region where the RDS snapshot will be copied to
 BACKUP_RDS_DEST_REGION=

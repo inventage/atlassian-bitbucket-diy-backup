@@ -57,20 +57,19 @@ if [ "$BACKUP_LOCK_BITBUCKET" = "true" ]; then
     bitbucket_backup_start
     bitbucket_backup_wait
 
-    # Backing up the database and reporting 50% progress
-    bitbucket_backup_db
-    bitbucket_backup_progress 50
-
-    # Backing up the filesystem and reporting 100% progress
-    bitbucket_backup_home
+    # Backing up the database and filesystem in parallel, reporting progress
+    (bitbucket_backup_db; bitbucket_backup_progress 50) &
+    (bitbucket_backup_home; bitbucket_backup_progress 50) &
+    wait $(jobs -p)
     bitbucket_backup_progress 100
 
     # Unlocking the bitbucket instance
     bitbucket_unlock
 else
     # Backing up the database and filesystem without locking application
-    bitbucket_backup_db
-    bitbucket_backup_home
+    bitbucket_backup_db &
+    bitbucket_backup_home &
+    wait $(jobs -p)
 fi
 
 success "Successfully completed the backup of your ${PRODUCT} instance"
