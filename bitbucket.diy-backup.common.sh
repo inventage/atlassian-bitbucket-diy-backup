@@ -9,7 +9,7 @@ BITBUCKET_HTTP_AUTH="-u ${BITBUCKET_BACKUP_USER}:${BITBUCKET_BACKUP_PASS}"
 PRODUCT=Bitbucket
 
 function bitbucket_lock {
-    if [ "$ZERO_DOWNTIME_BACKUP" = "true" ]; then
+    if [ "$BACKUP_ZERO_DOWNTIME" = "true" ]; then
         info "Skipping application lock as Zero_Downtime_Backup is set to true"
         return
     fi
@@ -27,7 +27,7 @@ function bitbucket_lock {
 }
 
 function bitbucket_backup_start {
-    if [ "$ZERO_DOWNTIME_BACKUP" = "true" ]; then
+    if [ "$BACKUP_ZERO_DOWNTIME" = "true" ]; then
         info "Skipping entering back mode as Zero_Downtime_Backup is set to true"
         return
     fi
@@ -46,7 +46,7 @@ function bitbucket_backup_start {
 }
 
 function bitbucket_backup_wait {
-    if [ "$ZERO_DOWNTIME_BACKUP" = "true" ]; then
+    if [ "$BACKUP_ZERO_DOWNTIME" = "true" ]; then
         info "Skipping backup wait as Zero_Downtime_Backup is set to true"
         return
     fi
@@ -80,7 +80,7 @@ function bitbucket_backup_wait {
 }
 
 function bitbucket_backup_progress {
-    if [ "$ZERO_DOWNTIME_BACKUP" = "true" ]; then
+    if [ "$BACKUP_ZERO_DOWNTIME" = "true" ]; then
         info "Skipping setting the backup progress as Zero_Downtime_Backup is set to true"
         return
     fi
@@ -94,7 +94,7 @@ function bitbucket_backup_progress {
 }
 
 function bitbucket_unlock {
-    if [ "$ZERO_DOWNTIME_BACKUP" = "true" ]; then
+    if [ "$BACKUP_ZERO_DOWNTIME" = "true" ]; then
         info "Skipping application unlock as Zero_Downtime_Backup is set to true"
         return
     fi

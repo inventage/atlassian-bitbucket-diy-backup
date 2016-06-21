@@ -71,4 +71,4 @@ HIPCHAT_TOKEN=
 BITBUCKET_BACKUP_GPG_RECIPIENT=
 
 # If set to true, this variable will backup the filesystem and database without locking the application
-ZERO_DOWNTIME_BACKUP=false
+BACKUP_ZERO_DOWNTIME=false
