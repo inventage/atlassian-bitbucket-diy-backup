@@ -304,8 +304,8 @@ function copy_ebs_snapshot_to_another_region {
     local SOURCE_REGION="$2"
     local DEST_REGION="$3"
 
-    COPIED_SNAPSHOT_ID= aws --region "${DEST_REGION}" ec2 copy-snapshot --source-region "${SOURCE_REGION}" \
-     --source-snapshot-id "${SNAPSHOT_ID}" | jq -r '.SnapshotId'
+    COPIED_SNAPSHOT_ID=$(aws --region "${DEST_REGION}" ec2 copy-snapshot --source-region "${SOURCE_REGION}" \
+     --source-snapshot-id "${SNAPSHOT_ID}" | jq -r '.SnapshotId')
 
     info "Copied ${SNAPSHOT_ID} from ${SOURCE_REGION} to ${DEST_REGION}. New snapshot ID: ${COPIED_SNAPSHOT_ID}"
 }
@@ -323,14 +323,14 @@ function give_create_volume_permission_on_snapshot {
 function copy_rds_snapshot_to_another_region {
     local SOURCE_RDS_SNAPSHOT_ID="$1"
     local DEST_REGION="$2"
-    local DEST_RDS_ID="$3"
-
-    aws rds copy-db-snapshot --source-db-snapshot-identifier "${SOURCE_RDS_SNAPSHOT_ID}" \
-     --region "${DEST_REGION}" --target-db-snapshot-identifier "${DEST_RDS_ID}"
+    local DEST_RDS_NAME="$3"
 
     # Wait until db snapshot is available, this must run in same region as the source snapshot.
     info "Waiting for ${DEST_RDS_ID} to become available in ${DEST_REGION}. This could take some time."
-    aws rds wait db-snapshot-completed --db-snapshot-identifier "${DEST_RDS_ID}"
+    aws rds wait db-snapshot-completed --db-snapshot-identifier "${DEST_RDS_NAME}"
 
-    info "Copied RDS Snapshot as ${DEST_RDS_ID} to ${DEST_REGION}"
+    aws rds copy-db-snapshot --source-db-snapshot-identifier "${SOURCE_RDS_SNAPSHOT_ID}" \
+     --region "${DEST_REGION}" --target-db-snapshot-identifier "${DEST_RDS_NAME}"
+
+    info "Copied RDS Snapshot as ${DEST_RDS_NAME} to ${DEST_REGION}"
 }

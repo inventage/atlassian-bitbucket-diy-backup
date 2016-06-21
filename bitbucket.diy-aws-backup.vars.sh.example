@@ -76,6 +76,7 @@ RESTORE_RDS_SECURITY_GROUP=
 # The AWS Account ID, used when copying EBS + RDS snapshots across region
 BACKUP_AWS_ACCOUNT_ID=
 
+# The following two variables are only required if you wish to copy the EBS and RDS snapshots to another region
 # If set, this variable will copy the EBS snapshot to the specified region
 BACKUP_EBS_DEST_REGION=
 # If set, this variable will copy the RDS snapshot to the specified region
