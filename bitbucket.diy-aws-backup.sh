@@ -51,7 +51,7 @@ fi
 bitbucket_prepare_home
 bitbucket_prepare_db
 
-# Attempt to lock the bitbucket instance
+# If necessary, lock the bitbucket instance
 bitbucket_lock
 
 # Attempt to start an external backup and wait for instance readiness
@@ -64,7 +64,7 @@ bitbucket_backup_wait
 wait $(jobs -p)
 bitbucket_backup_progress 100
 
-# Attempt to unlock the bitbucket instance
+# If necessary, unlock the bitbucket instance
 bitbucket_unlock
 
 success "Successfully completed the backup of your ${PRODUCT} instance"

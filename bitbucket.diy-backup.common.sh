@@ -10,7 +10,6 @@ PRODUCT=Bitbucket
 
 function bitbucket_lock {
     if [ "$BACKUP_ZERO_DOWNTIME" = "true" ]; then
-        info "Skipping application lock as Zero_Downtime_Backup is set to true"
         return
     fi
     BITBUCKET_LOCK_RESULT=`curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X POST -H "Content-type: application/json" "${BITBUCKET_URL}/mvc/maintenance/lock"`
@@ -28,7 +27,6 @@ function bitbucket_lock {
 
 function bitbucket_backup_start {
     if [ "$BACKUP_ZERO_DOWNTIME" = "true" ]; then
-        info "Skipping entering back mode as Zero_Downtime_Backup is set to true"
         return
     fi
 
@@ -47,7 +45,6 @@ function bitbucket_backup_start {
 
 function bitbucket_backup_wait {
     if [ "$BACKUP_ZERO_DOWNTIME" = "true" ]; then
-        info "Skipping backup wait as Zero_Downtime_Backup is set to true"
         return
     fi
 
@@ -81,7 +78,6 @@ function bitbucket_backup_wait {
 
 function bitbucket_backup_progress {
     if [ "$BACKUP_ZERO_DOWNTIME" = "true" ]; then
-        info "Skipping setting the backup progress as Zero_Downtime_Backup is set to true"
         return
     fi
 
@@ -95,7 +91,6 @@ function bitbucket_backup_progress {
 
 function bitbucket_unlock {
     if [ "$BACKUP_ZERO_DOWNTIME" = "true" ]; then
-        info "Skipping application unlock as Zero_Downtime_Backup is set to true"
         return
     fi
 
