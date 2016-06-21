@@ -73,5 +73,14 @@ RESTORE_RDS_SUBNET_GROUP_NAME=
 # The security group to assign to the restored instance
 RESTORE_RDS_SECURITY_GROUP=
 
-# If set to true, this param will lock the application before taking filesystem and database snapshots
-BACKUP_LOCK_BITBUCKET=false
+# The AWS Account ID, used when copying EBS + RDS snapshots across region
+BACKUP_AWS_ACCOUNT_ID=
+
+# If set to true, this variable will copy the EBS snapshot to the specified region
+BACKUP_EBS_SNAPSHOT_TO_ANOTHER_REGION=false
+# The region where the EBS snapshot will be copied to
+BACKUP_EBS_DEST_REGION=
+
+# If set to true, this variable will copy the RDS snapshot to the specified region
+BACKUP_RDS_SNAPSHOT_TO_ANOTHER_REGION=false
+BACKUP_RDS_DEST_REGION=

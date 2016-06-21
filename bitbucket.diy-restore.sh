@@ -54,12 +54,12 @@ source ${SCRIPT_DIR}/bitbucket.diy-backup.${BACKUP_ARCHIVE_TYPE}.sh
 # The actual restore process. It has the following steps
 
 function available_backups {
-	echo "Available backups:"
+	echo "Available backups:"  > /dev/stderr
 	ls ${BITBUCKET_BACKUP_ARCHIVE_ROOT}
 }
 
 if [ $# -lt 1 ]; then
-    echo "Usage: $0 <backup-file-name>.tar.gz"
+    echo "Usage: $0 <backup-file-name>.tar.gz"  > /dev/stderr
     if [ ! -d ${BITBUCKET_BACKUP_ARCHIVE_ROOT} ]; then
         error "${BITBUCKET_BACKUP_ARCHIVE_ROOT} does not exist!"
     else

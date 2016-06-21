@@ -61,6 +61,9 @@ function snapshot_ebs_volume {
        aws ec2 create-tags --resources "${SNAPSHOT_ID}" --tags "[ ${AWS_ADDITIONAL_TAGS} ]"
        info "Tagged ${SNAPSHOT_ID} with additional tags: ${AWS_ADDITIONAL_TAGS}"
     fi
+
+    # Return EBS snapshot ID
+    echo ${SNAPSHOT_ID}
 }
 
 function create_volume {
@@ -189,6 +192,9 @@ function snapshot_rds_instance {
     success "Taken snapshot ${SNAPSHOT_TAG_VALUE} of RDS instance ${INSTANCE_ID}"
 
     info "Tagged ${SNAPSHOT_TAG_VALUE} with ${AWS_TAGS}"
+
+    # Return RDS Snapshot ID
+    echo ${SNAPSHOT_TAG_VALUE}
 }
 
 function restore_rds_instance {
@@ -291,4 +297,40 @@ function list_old_ebs_snapshot_ids {
 function delete_ebs_snapshot {
     local SNAPSHOT_ID="$1"
     aws ec2 delete-snapshot --snapshot-id "${SNAPSHOT_ID}"
+}
+
+function copy_ebs_snapshot_to_another_region {
+    local SNAPSHOT_ID="$1"
+    local SOURCE_REGION="$2"
+    local DEST_REGION="$3"
+
+    COPIED_SNAPSHOT_ID= aws --region "${DEST_REGION}" ec2 copy-snapshot --source-region "${SOURCE_REGION}" \
+     --source-snapshot-id "${SNAPSHOT_ID}" | jq -r '.SnapshotId'
+
+    info "Copied ${SNAPSHOT_ID} from ${SOURCE_REGION} to ${DEST_REGION}. New snapshot ID: ${COPIED_SNAPSHOT_ID}"
+}
+
+function give_create_volume_permission_on_snapshot {
+    local ACCOUNT_ID="$1"
+    local SNAPSHOT_ID="$2"
+
+    aws ec2 modify-snapshot-attribute --snapshot-id "${SNAPSHOT_ID}" \
+     --attribute createVolumePermission --operation-type add --user-ids "${ACCOUNT_ID}"
+
+    info "Granted create volume permission on ${SNAPSHOT_ID} for account:${ACCOUNT_ID}"
+}
+
+function copy_rds_snapshot_to_another_region {
+    local SOURCE_RDS_SNAPSHOT_ID="$1"
+    local DEST_REGION="$2"
+    local DEST_RDS_ID="$3"
+
+    aws rds copy-db-snapshot --source-db-snapshot-identifier "${SOURCE_RDS_SNAPSHOT_ID}" \
+     --region "${DEST_REGION}" --target-db-snapshot-identifier "${DEST_RDS_ID}"
+
+    # Wait until db snapshot is available, this must run in same region as the source snapshot.
+    info "Waiting for ${DEST_RDS_ID} to become available in ${DEST_REGION}. This could take some time."
+    aws rds wait db-snapshot-completed --db-snapshot-identifier "${DEST_RDS_ID}"
+
+    info "Copied RDS Snapshot as ${DEST_RDS_ID} to ${DEST_REGION}"
 }

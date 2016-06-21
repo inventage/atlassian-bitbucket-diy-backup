@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function error {
-    echo "[${BITBUCKET_URL}] ERROR: $*"
+    echo "[${BITBUCKET_URL}] ERROR: $*" > /dev/stderr
     hc_announce "[${BITBUCKET_URL}] ERROR: $*" "red" 1
 }
 
@@ -12,19 +12,19 @@ function bail {
 
 function info {
     if [ "${BITBUCKET_VERBOSE_BACKUP}" == "TRUE" ]; then
-        echo "[${BITBUCKET_URL}]  INFO: $*"
+        echo "[${BITBUCKET_URL}]  INFO: $*" > /dev/stderr
         hc_announce "[${BITBUCKET_URL}]  INFO: $*" "gray"
     fi
 }
 
 function success {
-    echo "[${BITBUCKET_URL}]  SUCC: $*"
+    echo "[${BITBUCKET_URL}]  SUCC: $*" > /dev/stderr
     hc_announce "[${BITBUCKET_URL}]  SUCC: $*" "green"
 }
 
 function print {
     if [ "${BITBUCKET_VERBOSE_BACKUP}" == "TRUE" ]; then
-        echo "$@"
+        echo "$@" > /dev/stderr
     fi
 }
 
@@ -42,7 +42,7 @@ function hc_announce {
     fi
 
     if [ -z "$1" ]; then
-        echo "ERROR: HipChat notification message is missing."
+        echo "ERROR: HipChat notification message is missing." > /dev/stderr
         return 1
     fi
 
