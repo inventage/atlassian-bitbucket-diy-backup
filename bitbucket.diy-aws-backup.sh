@@ -54,7 +54,7 @@ bitbucket_prepare_db
 # If necessary, lock the bitbucket instance
 bitbucket_lock
 
-# Attempt to start an external backup and wait for instance readiness
+# If necessary, start an external backup and wait for instance readiness
 bitbucket_backup_start
 bitbucket_backup_wait
 
