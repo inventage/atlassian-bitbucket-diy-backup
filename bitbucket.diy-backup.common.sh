@@ -9,6 +9,10 @@ BITBUCKET_HTTP_AUTH="-u ${BITBUCKET_BACKUP_USER}:${BITBUCKET_BACKUP_PASS}"
 PRODUCT=Bitbucket
 
 function bitbucket_lock {
+    if [ "$ZERO_DOWNTIME_BACKUP" = "true" ]; then
+        info "Skipping application lock as Zero_Downtime_Backup is set to true"
+        return
+    fi
     BITBUCKET_LOCK_RESULT=`curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X POST -H "Content-type: application/json" "${BITBUCKET_URL}/mvc/maintenance/lock"`
     if [ -z "${BITBUCKET_LOCK_RESULT}" ]; then
         bail "Locking this Bitbucket instance failed"
@@ -23,6 +27,11 @@ function bitbucket_lock {
 }
 
 function bitbucket_backup_start {
+    if [ "$ZERO_DOWNTIME_BACKUP" = "true" ]; then
+        info "Skipping entering back mode as Zero_Downtime_Backup is set to true"
+        return
+    fi
+
     BITBUCKET_BACKUP_RESULT=`curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X POST -H "X-Atlassian-Maintenance-Token: ${BITBUCKET_LOCK_TOKEN}" -H "Accept: application/json" -H "Content-type: application/json" "${BITBUCKET_URL}/mvc/admin/backups?external=true"`
     if [ -z "${BITBUCKET_BACKUP_RESULT}" ]; then
         bail "Entering backup mode failed"
@@ -37,6 +46,11 @@ function bitbucket_backup_start {
 }
 
 function bitbucket_backup_wait {
+    if [ "$ZERO_DOWNTIME_BACKUP" = "true" ]; then
+        info "Skipping backup wait as Zero_Downtime_Backup is set to true"
+        return
+    fi
+
     BITBUCKET_PROGRESS_DB_STATE="AVAILABLE"
     BITBUCKET_PROGRESS_SCM_STATE="AVAILABLE"
 
@@ -66,6 +80,11 @@ function bitbucket_backup_wait {
 }
 
 function bitbucket_backup_progress {
+    if [ "$ZERO_DOWNTIME_BACKUP" = "true" ]; then
+        info "Skipping setting the backup progress as Zero_Downtime_Backup is set to true"
+        return
+    fi
+
     BITBUCKET_REPORT_RESULT=`curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X POST -H "Accept: application/json" -H "Content-type: application/json" "${BITBUCKET_URL}/mvc/admin/backups/progress/client?token=${BITBUCKET_LOCK_TOKEN}&percentage=$1"`
     if [ $? != 0 ]; then
         bail "Unable to update backup progress"
@@ -75,6 +94,11 @@ function bitbucket_backup_progress {
 }
 
 function bitbucket_unlock {
+    if [ "$ZERO_DOWNTIME_BACKUP" = "true" ]; then
+        info "Skipping application unlock as Zero_Downtime_Backup is set to true"
+        return
+    fi
+
     BITBUCKET_UNLOCK_RESULT=`curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X DELETE -H "Accept: application/json" -H "Content-type: application/json" "${BITBUCKET_URL}/mvc/maintenance/lock?token=${BITBUCKET_LOCK_TOKEN}"`
     if [ $? != 0 ]; then
         bail "Unable to unlock instance with lock ${BITBUCKET_LOCK_TOKEN}"

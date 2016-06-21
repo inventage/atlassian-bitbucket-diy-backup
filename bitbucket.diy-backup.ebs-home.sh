@@ -35,7 +35,7 @@ function bitbucket_backup_home {
 
     unfreeze_home_directory
 
-    if [ -z "${BACKUP_EBS_SNAPSHOT_TO_ANOTHER_REGION}" ]; then
+    if [ -z "${BACKUP_EBS_DEST_REGION}" ]; then
         copy_ebs_snapshot_to_another_region SNAPSHOT_ID ${AWS_REGION} ${BACKUP_EBS_DEST_REGION}
         give_create_volume_permission_on_snapshot ${BACKUP_AWS_ACCOUNT_ID} SNAPSHOT_ID
     fi
