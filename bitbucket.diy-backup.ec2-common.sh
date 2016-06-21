@@ -49,21 +49,21 @@ SNAPSHOT_TAG_VALUE="${SNAPSHOT_TAG_PREFIX}`date +"%Y%m%d-%H%M%S-%3N"`"
 function snapshot_ebs_volume {
     local VOLUME_ID="$1"
 
-    local SNAPSHOT_ID=$(aws ec2 create-snapshot --volume-id "${VOLUME_ID}" --description "$2" | jq -r '.SnapshotId')
+    local EBS_SNAPSHOT_ID=$(aws ec2 create-snapshot --volume-id "${VOLUME_ID}" --description "$2" | jq -r '.SnapshotId')
 
-    success "Taken snapshot ${SNAPSHOT_ID} of volume ${VOLUME_ID}"
+    success "Taken snapshot ${EBS_SNAPSHOT_ID} of volume ${VOLUME_ID}"
 
-    aws ec2 create-tags --resources "${SNAPSHOT_ID}" --tags Key="${SNAPSHOT_TAG_KEY}",Value="${SNAPSHOT_TAG_VALUE}"
+    aws ec2 create-tags --resources "${EBS_SNAPSHOT_ID}" --tags Key="${SNAPSHOT_TAG_KEY}",Value="${SNAPSHOT_TAG_VALUE}"
 
-    info "Tagged ${SNAPSHOT_ID} with ${SNAPSHOT_TAG_KEY}=${SNAPSHOT_TAG_VALUE}"
+    info "Tagged ${EBS_SNAPSHOT_ID} with ${SNAPSHOT_TAG_KEY}=${SNAPSHOT_TAG_VALUE}"
 
     if [ ! -z "${AWS_ADDITIONAL_TAGS}" ]; then
-       aws ec2 create-tags --resources "${SNAPSHOT_ID}" --tags "[ ${AWS_ADDITIONAL_TAGS} ]"
-       info "Tagged ${SNAPSHOT_ID} with additional tags: ${AWS_ADDITIONAL_TAGS}"
+       aws ec2 create-tags --resources "${EBS_SNAPSHOT_ID}" --tags "[ ${AWS_ADDITIONAL_TAGS} ]"
+       info "Tagged ${EBS_SNAPSHOT_ID} with additional tags: ${AWS_ADDITIONAL_TAGS}"
     fi
 
     # Return EBS snapshot ID
-    echo ${SNAPSHOT_ID}
+    echo ${EBS_SNAPSHOT_ID}
 }
 
 function create_volume {
@@ -258,14 +258,14 @@ function validate_rds_instance_id {
 function validate_rds_snapshot {
     local SNAPSHOT_TAG="$1"
 
-    local SNAPSHOT_ID="`aws rds describe-db-snapshots --db-snapshot-identifier \"${SNAPSHOT_TAG}\" | jq -r '.DBSnapshots[0]?.DBSnapshotIdentifier'`"
-    if [ -z "${SNAPSHOT_ID}" ] || [ "${SNAPSHOT_ID}" == null ]; then
+    local RDS_SNAPSHOT_ID="`aws rds describe-db-snapshots --db-snapshot-identifier \"${SNAPSHOT_TAG}\" | jq -r '.DBSnapshots[0]?.DBSnapshotIdentifier'`"
+    if [ -z "${RDS_SNAPSHOT_ID}" ] || [ "${RDS_SNAPSHOT_ID}" == null ]; then
          error "Could not find RDS snapshot for tag ${SNAPSHOT_TAG}"
 
         list_available_ebs_snapshot_tags
         bail "Please select a tag with an associated RDS snapshot"
     else
-        info "Found RDS snapshot ${SNAPSHOT_ID} for tag ${SNAPSHOT_TAG}"
+        info "Found RDS snapshot ${RDS_SNAPSHOT_ID} for tag ${SNAPSHOT_TAG}"
     fi
 }
 
@@ -283,8 +283,8 @@ function list_old_rds_snapshot_ids {
 }
 
 function delete_rds_snapshot {
-    local SNAPSHOT_ID="$1"
-    aws rds delete-db-snapshot --db-snapshot-identifier "${SNAPSHOT_ID}" > /dev/null
+    local RDS_SNAPSHOT_ID="$1"
+    aws rds delete-db-snapshot --db-snapshot-identifier "${RDS_SNAPSHOT_ID}" > /dev/null
 }
 
 # List all EBS snapshots older than the most recent ${KEEP_BACKUPS}
@@ -295,42 +295,42 @@ function list_old_ebs_snapshot_ids {
 }
 
 function delete_ebs_snapshot {
-    local SNAPSHOT_ID="$1"
-    aws ec2 delete-snapshot --snapshot-id "${SNAPSHOT_ID}"
+    local EBS_SNAPSHOT_ID="$1"
+    aws ec2 delete-snapshot --snapshot-id "${EBS_SNAPSHOT_ID}"
 }
 
 function copy_ebs_snapshot_to_another_region {
-    local SNAPSHOT_ID="$1"
+    local SOURCE_EBS_SNAPSHOT_ID="$1"
     local SOURCE_REGION="$2"
     local DEST_REGION="$3"
 
-    COPIED_SNAPSHOT_ID=$(aws --region "${DEST_REGION}" ec2 copy-snapshot --source-region "${SOURCE_REGION}" \
-     --source-snapshot-id "${SNAPSHOT_ID}" | jq -r '.SnapshotId')
+    DEST_SNAPSHOT_ID=$(aws --region "${DEST_REGION}" ec2 copy-snapshot --source-region "${SOURCE_REGION}" \
+     --source-snapshot-id "${SOURCE_EBS_SNAPSHOT_ID}" | jq -r '.SnapshotId')
 
-    info "Copied ${SNAPSHOT_ID} from ${SOURCE_REGION} to ${DEST_REGION}. New snapshot ID: ${COPIED_SNAPSHOT_ID}"
+    info "Copied ${SOURCE_EBS_SNAPSHOT_ID} from ${SOURCE_REGION} to ${DEST_REGION}. New snapshot ID: ${DEST_SNAPSHOT_ID}"
 }
 
 function give_create_volume_permission_on_snapshot {
     local ACCOUNT_ID="$1"
-    local SNAPSHOT_ID="$2"
+    local EBS_SNAPSHOT_ID="$2"
 
-    aws ec2 modify-snapshot-attribute --snapshot-id "${SNAPSHOT_ID}" \
+    aws ec2 modify-snapshot-attribute --snapshot-id "${EBS_SNAPSHOT_ID}" \
      --attribute createVolumePermission --operation-type add --user-ids "${ACCOUNT_ID}"
 
-    info "Granted create volume permission on ${SNAPSHOT_ID} for account:${ACCOUNT_ID}"
+    info "Granted create volume permission on ${EBS_SNAPSHOT_ID} for account:${ACCOUNT_ID}"
 }
 
 function copy_rds_snapshot_to_another_region {
-    local SOURCE_RDS_SNAPSHOT_ID="$1"
+    local SOURCE_RDS_SNAPSHOT_ARN="$1"
     local DEST_REGION="$2"
-    local DEST_RDS_NAME="$3"
+    local DEST_RDS_ID="$3"
 
     # Wait until db snapshot is available, this must run in same region as the source snapshot.
-    info "Waiting for ${DEST_RDS_ID} to become available in ${DEST_REGION}. This could take some time."
-    aws rds wait db-snapshot-completed --db-snapshot-identifier "${DEST_RDS_NAME}"
+    info "Waiting for ${SOURCE_RDS_SNAPSHOT_ARN} to become available. This could take some time."
+    aws rds wait db-snapshot-completed --db-snapshot-identifier "${SOURCE_RDS_SNAPSHOT_ARN}"
 
-    aws rds copy-db-snapshot --source-db-snapshot-identifier "${SOURCE_RDS_SNAPSHOT_ID}" \
-     --region "${DEST_REGION}" --target-db-snapshot-identifier "${DEST_RDS_NAME}"
+    aws rds copy-db-snapshot --source-db-snapshot-identifier "${SOURCE_RDS_SNAPSHOT_ARN}" \
+     --region "${DEST_REGION}" --target-db-snapshot-identifier "${DEST_RDS_ID}"
 
-    info "Copied RDS Snapshot as ${DEST_RDS_NAME} to ${DEST_REGION}"
+    info "Copied RDS Snapshot as ${DEST_RDS_ID} to ${DEST_REGION}"
 }
