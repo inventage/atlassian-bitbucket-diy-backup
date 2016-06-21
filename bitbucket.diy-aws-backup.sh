@@ -51,21 +51,27 @@ fi
 bitbucket_prepare_home
 bitbucket_prepare_db
 
-# Locking the bitbucket instance, starting an external backup and waiting for instance readiness
-bitbucket_lock
-bitbucket_backup_start
-bitbucket_backup_wait
+if [ "$BACKUP_LOCK_BITBUCKET" = "true" ]; then
+    # Locking the bitbucket instance, starting an external backup and waiting for instance readiness
+    bitbucket_lock
+    bitbucket_backup_start
+    bitbucket_backup_wait
 
-# Backing up the database and reporting 50% progress
-bitbucket_backup_db
-bitbucket_backup_progress 50
+    # Backing up the database and reporting 50% progress
+    bitbucket_backup_db
+    bitbucket_backup_progress 50
 
-# Backing up the filesystem and reporting 100% progress
-bitbucket_backup_home
-bitbucket_backup_progress 100
+    # Backing up the filesystem and reporting 100% progress
+    bitbucket_backup_home
+    bitbucket_backup_progress 100
 
-# Unlocking the bitbucket instance
-bitbucket_unlock
+    # Unlocking the bitbucket instance
+    bitbucket_unlock
+else
+    # Backing up the database and filesystem without locking application
+    bitbucket_backup_db
+    bitbucket_backup_home
+fi
 
 success "Successfully completed the backup of your ${PRODUCT} instance"
 
