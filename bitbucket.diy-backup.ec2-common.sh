@@ -304,8 +304,12 @@ function copy_ebs_snapshot_to_another_region {
     local SOURCE_REGION="$2"
     local DEST_REGION="$3"
 
+    # Copy snapshot to DEST_REGION
     DEST_SNAPSHOT_ID=$(aws --region "${DEST_REGION}" ec2 copy-snapshot --source-region "${SOURCE_REGION}" \
      --source-snapshot-id "${SOURCE_EBS_SNAPSHOT_ID}" | jq -r '.SnapshotId')
+
+    # Add tag to copied snapshot, used to find EBS & RDS snapshot pairs for restoration
+    aws ec2 create-tags --resources "${DEST_SNAPSHOT_ID}" --tags Key=Name,Value="${SOURCE_EBS_SNAPSHOT_ID}"
 
     info "Copied ${SOURCE_EBS_SNAPSHOT_ID} from ${SOURCE_REGION} to ${DEST_REGION}. New snapshot ID: ${DEST_SNAPSHOT_ID}"
 }
@@ -330,7 +334,7 @@ function copy_rds_snapshot_to_another_region {
     aws rds wait db-snapshot-completed --db-snapshot-identifier "${SOURCE_RDS_SNAPSHOT_ARN}"
 
     aws rds copy-db-snapshot --source-db-snapshot-identifier "${SOURCE_RDS_SNAPSHOT_ARN}" \
-     --region "${DEST_REGION}" --target-db-snapshot-identifier "${DEST_RDS_ID}"
+     --region "${DEST_REGION}" --target-db-snapshot-identifier "${DEST_RDS_ID}" --copy-tags
 
     info "Copied RDS Snapshot as ${DEST_RDS_ID} to ${DEST_REGION}"
 }

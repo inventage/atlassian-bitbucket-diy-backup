@@ -9,7 +9,7 @@ BITBUCKET_HTTP_AUTH="-u ${BITBUCKET_BACKUP_USER}:${BITBUCKET_BACKUP_PASS}"
 PRODUCT=Bitbucket
 
 function bitbucket_lock {
-    if [ "$BACKUP_ZERO_DOWNTIME" = "true" ]; then
+    if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
     fi
     BITBUCKET_LOCK_RESULT=`curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X POST -H "Content-type: application/json" "${BITBUCKET_URL}/mvc/maintenance/lock"`
@@ -26,7 +26,7 @@ function bitbucket_lock {
 }
 
 function bitbucket_backup_start {
-    if [ "$BACKUP_ZERO_DOWNTIME" = "true" ]; then
+    if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
     fi
 
@@ -44,7 +44,7 @@ function bitbucket_backup_start {
 }
 
 function bitbucket_backup_wait {
-    if [ "$BACKUP_ZERO_DOWNTIME" = "true" ]; then
+    if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
     fi
 
@@ -77,7 +77,7 @@ function bitbucket_backup_wait {
 }
 
 function bitbucket_backup_progress {
-    if [ "$BACKUP_ZERO_DOWNTIME" = "true" ]; then
+    if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
     fi
 
@@ -90,7 +90,7 @@ function bitbucket_backup_progress {
 }
 
 function bitbucket_unlock {
-    if [ "$BACKUP_ZERO_DOWNTIME" = "true" ]; then
+    if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
     fi
 
