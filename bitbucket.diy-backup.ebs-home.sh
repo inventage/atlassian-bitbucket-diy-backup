@@ -37,7 +37,7 @@ function bitbucket_backup_home {
 
     if [ -n "${BACKUP_EBS_DEST_REGION}" ]; then
         copy_ebs_snapshot_to_another_region ${EBS_SNAPSHOT_ID} ${AWS_REGION} ${BACKUP_EBS_DEST_REGION}
-        give_create_volume_permission_on_snapshot ${BACKUP_AWS_ACCOUNT_ID} ${EBS_SNAPSHOT_ID}
+        give_create_volume_permission_on_snapshot ${BACKUP_DEST_AWS_ACCOUNT_ID} ${EBS_SNAPSHOT_ID}
     fi
 }
 

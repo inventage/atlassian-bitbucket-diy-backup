@@ -16,7 +16,7 @@ function bitbucket_backup_db {
     local SOURCE_RDS_SNAPSHOT_ID=$(snapshot_rds_instance "${BACKUP_RDS_INSTANCE_ID}")
 
     if [ -n "${BACKUP_RDS_DEST_REGION}" ]; then
-        local SOURCE_RDS_SNAPSHOT_ARN=arn:aws:rds:${AWS_REGION}:${BACKUP_AWS_ACCOUNT_ID}:snapshot:${SOURCE_RDS_SNAPSHOT_ID}
+        local SOURCE_RDS_SNAPSHOT_ARN=arn:aws:rds:${AWS_REGION}:${BACKUP_DEST_AWS_ACCOUNT_ID}:snapshot:${SOURCE_RDS_SNAPSHOT_ID}
         copy_rds_snapshot_to_another_region ${SOURCE_RDS_SNAPSHOT_ARN} ${BACKUP_RDS_DEST_REGION} ${SOURCE_RDS_SNAPSHOT_ID}
     fi
 }
