@@ -33,11 +33,9 @@ function bitbucket_backup_home {
 
     local EBS_SNAPSHOT_ID=$(snapshot_ebs_volume "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" "Perform backup: ${PRODUCT} home directory snapshot")
 
-    unfreeze_home_directory
-
     if [ -n "${BACKUP_EBS_DEST_REGION}" ]; then
-        copy_ebs_snapshot_to_another_region ${EBS_SNAPSHOT_ID} ${AWS_REGION} ${BACKUP_EBS_DEST_REGION}
-        give_create_volume_permission_on_snapshot ${BACKUP_DEST_AWS_ACCOUNT_ID} ${EBS_SNAPSHOT_ID}
+        local copied_snapshot_id=$(copy_ebs_snapshot_to_another_region ${EBS_SNAPSHOT_ID} ${AWS_REGION} ${BACKUP_EBS_DEST_REGION})
+        give_create_volume_permission_on_snapshot ${BACKUP_DEST_AWS_ACCOUNT_ID} ${copied_snapshot_id} ${BACKUP_EBS_DEST_REGION}
     fi
 }
 

@@ -81,3 +81,6 @@ BACKUP_DEST_AWS_ACCOUNT_ID=
 BACKUP_EBS_DEST_REGION=
 # If set, this variable will copy the RDS snapshot to the specified region
 BACKUP_RDS_DEST_REGION=
+
+# If set to true, this variable will backup the filesystem and database without locking the application
+BACKUP_ZERO_DOWNTIME=false

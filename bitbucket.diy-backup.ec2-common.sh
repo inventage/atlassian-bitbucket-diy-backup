@@ -300,41 +300,59 @@ function delete_ebs_snapshot {
 }
 
 function copy_ebs_snapshot_to_another_region {
-    local SOURCE_EBS_SNAPSHOT_ID="$1"
-    local SOURCE_REGION="$2"
-    local DEST_REGION="$3"
+    local source_ebs_snapshot_id="$1"
+    local source_region="$2"
+    local dest_region="$3"
 
     # Copy snapshot to DEST_REGION
-    DEST_SNAPSHOT_ID=$(aws --region "${DEST_REGION}" ec2 copy-snapshot --source-region "${SOURCE_REGION}" \
-     --source-snapshot-id "${SOURCE_EBS_SNAPSHOT_ID}" | jq -r '.SnapshotId')
+    local dest_snapshot_id=$(aws --region "${dest_region}" ec2 copy-snapshot --source-region "${source_region}" \
+     --source-snapshot-id "${source_ebs_snapshot_id}" | jq -r '.SnapshotId')
+
+    info "Copied EBS snapshot: ${source_ebs_snapshot_id} from ${source_region} to ${dest_region}. New snapshot ID: ${dest_snapshot_id}"
 
     # Add tag to copied snapshot, used to find EBS & RDS snapshot pairs for restoration
-    aws ec2 create-tags --resources "${DEST_SNAPSHOT_ID}" --tags Key=Name,Value="${SOURCE_EBS_SNAPSHOT_ID}"
+    $(aws ec2 create-tags --region ${dest_region} --resources "${dest_snapshot_id}" \
+    --tags Key=Name,Value="${source_ebs_snapshot_id}")
 
-    info "Copied ${SOURCE_EBS_SNAPSHOT_ID} from ${SOURCE_REGION} to ${DEST_REGION}. New snapshot ID: ${DEST_SNAPSHOT_ID}"
+    info "Tagged EBS snapshot ${dest_snapshot_id} with {Name: ${source_ebs_snapshot_id}}"
+    echo ${dest_snapshot_id}
 }
 
 function give_create_volume_permission_on_snapshot {
-    local ACCOUNT_ID="$1"
-    local EBS_SNAPSHOT_ID="$2"
+    local account_id="$1"
+    local ebs_snapshot_id="$2"
+    local region="$3"
 
-    aws ec2 modify-snapshot-attribute --snapshot-id "${EBS_SNAPSHOT_ID}" \
-     --attribute createVolumePermission --operation-type add --user-ids "${ACCOUNT_ID}"
+    aws ec2 modify-snapshot-attribute --snapshot-id "${ebs_snapshot_id}" --region ${region} \
+     --attribute createVolumePermission --operation-type add --user-ids "${account_id}"
 
-    info "Granted create volume permission on ${EBS_SNAPSHOT_ID} for account:${ACCOUNT_ID}"
+    info "Granted create volume permission on ${ebs_snapshot_id} for account:${account_id}"
 }
 
 function copy_rds_snapshot_to_another_region {
-    local SOURCE_RDS_SNAPSHOT_ARN="$1"
-    local DEST_REGION="$2"
-    local DEST_RDS_ID="$3"
+    local source_rds_snapshot_id="$1"
+    local dest_region="$2"
+    local dest_rds_id="$3"
 
-    # Wait until db snapshot is available, this must run in same region as the source snapshot.
-    info "Waiting for ${SOURCE_RDS_SNAPSHOT_ARN} to become available. This could take some time."
-    aws rds wait db-snapshot-completed --db-snapshot-identifier "${SOURCE_RDS_SNAPSHOT_ARN}"
+    # Get account ID we are using
+    local account_id=$(get_aws_account_id)
+    local source_rds_snapshot_arn="arn:aws:rds:${AWS_REGION}:${account_id}:snapshot:${source_rds_snapshot_id}"
 
-    aws rds copy-db-snapshot --source-db-snapshot-identifier "${SOURCE_RDS_SNAPSHOT_ARN}" \
-     --region "${DEST_REGION}" --target-db-snapshot-identifier "${DEST_RDS_ID}" --copy-tags
+    # Wait until db snapshot is available before copying, this must run in same region as the source snapshot.
+    info "Waiting for ${source_rds_snapshot_id} to become available. This could take some time."
+    aws rds wait db-snapshot-completed --db-snapshot-identifier "${source_rds_snapshot_id}"
 
-    info "Copied RDS Snapshot as ${DEST_RDS_ID} to ${DEST_REGION}"
+    aws rds copy-db-snapshot --region "${dest_region}" --source-db-snapshot-identifier "${source_rds_snapshot_arn}"  --target-db-snapshot-identifier "${dest_rds_id}"
+    info "Copied RDS Snapshot as ${dest_rds_id} to ${dest_region}"
+
+    # Tag copied RDS snapshot with {Name: ${source_rds_snapshot_id}
+    local dest_rds_snapshot_arn="arn:aws:rds:${dest_region}:${BACKUP_DEST_AWS_ACCOUNT_ID}:snapshot:${dest_rds_id}"
+    aws rds add-tags-to-resource --resource-name ${dest_rds_snapshot_arn} --tags Key=Name,Value=${source_rds_snapshot_id}
+    info "Tagged RDS Snapshot ${dest_rds_id} with { Name: ${source_rds_snapshot_id} }"
+}
+
+function get_aws_account_id {
+    # Returns the ID of the AWS account that this instance is running in.
+    local account_id=$(curl http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r '.accountId')
+    echo ${account_id}
 }
