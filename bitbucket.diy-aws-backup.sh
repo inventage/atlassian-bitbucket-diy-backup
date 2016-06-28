@@ -58,6 +58,9 @@ bitbucket_lock
 bitbucket_backup_start
 bitbucket_backup_wait
 
+
+SNAPSHOT_TIME=`date +%Y-%m-%dT%H:%M:%S.000Z`
+
 # Back up the database and filesystem in parallel, reporting progress
 (bitbucket_backup_db; bitbucket_backup_progress 50) &
 (bitbucket_backup_home; bitbucket_backup_progress 50) &

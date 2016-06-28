@@ -17,6 +17,7 @@ function bitbucket_backup_db {
 
     if [ -n "${BACKUP_RDS_DEST_REGION}" ]; then
         copy_rds_snapshot_to_another_region ${source_rds_snapshot_id} ${BACKUP_RDS_DEST_REGION} ${source_rds_snapshot_id}
+        give_account_rds_permissions ${source_rds_snapshot_id} ${BACKUP_RDS_DEST_REGION} ${BACKUP_DEST_AWS_ACCOUNT_ID}
     fi
 }
 

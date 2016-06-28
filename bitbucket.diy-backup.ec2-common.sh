@@ -13,7 +13,7 @@ if [ -z "${AWS_ACCESS_KEY_ID}" ] ||  [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then
     AWS_INSTANCE_ROLE=`curl ${CURL_OPTIONS} http://169.254.169.254/latest/meta-data/iam/security-credentials/`
     if [ -z "${AWS_INSTANCE_ROLE}" ]; then
         error "Could not find the necessary credentials to run backup"
-        error "We recommend launching the instance with an appropiate IAM role"
+        error "We recommend launching the instance with an appropriate IAM role"
         error "Alternatively AWS credentials can be set as AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in ${BACKUP_VARS_FILE}"
         bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
     else
@@ -304,17 +304,16 @@ function copy_ebs_snapshot_to_another_region {
     local source_region="$2"
     local dest_region="$3"
 
+    info "Waiting for EBS snapshot ${source_ebs_snapshot_id} to become available in ${source_region} before copying to ${dest_region}"
+    aws ec2 wait snapshot-completed --region ${source_region} --snapshot-ids ${source_ebs_snapshot_id}
+
     # Copy snapshot to DEST_REGION
     local dest_snapshot_id=$(aws --region "${dest_region}" ec2 copy-snapshot --source-region "${source_region}" \
      --source-snapshot-id "${source_ebs_snapshot_id}" | jq -r '.SnapshotId')
+    info "Copied EBS snapshot ${source_ebs_snapshot_id} from ${source_region} to ${dest_region}. New snapshot ID: ${dest_snapshot_id}"
 
-    info "Copied EBS snapshot: ${source_ebs_snapshot_id} from ${source_region} to ${dest_region}. New snapshot ID: ${dest_snapshot_id}"
+    tag_rds_snapshots ${dest_region} ${dest_snapshot_id} ${SNAPSHOT_TIME}
 
-    # Add tag to copied snapshot, used to find EBS & RDS snapshot pairs for restoration
-    $(aws ec2 create-tags --region ${dest_region} --resources "${dest_snapshot_id}" \
-    --tags Key=Name,Value="${source_ebs_snapshot_id}")
-
-    info "Tagged EBS snapshot ${dest_snapshot_id} with {Name: ${source_ebs_snapshot_id}}"
     echo ${dest_snapshot_id}
 }
 
@@ -322,6 +321,9 @@ function give_create_volume_permission_on_snapshot {
     local account_id="$1"
     local ebs_snapshot_id="$2"
     local region="$3"
+
+    info "Waiting for EBS snapshot ${ebs_snapshot_id} to become available in ${region} before modifying permissions"
+    aws ec2 wait snapshot-completed --region ${region} --snapshot-ids ${ebs_snapshot_id}
 
     aws ec2 modify-snapshot-attribute --snapshot-id "${ebs_snapshot_id}" --region ${region} \
      --attribute createVolumePermission --operation-type add --user-ids "${account_id}"
@@ -339,16 +341,62 @@ function copy_rds_snapshot_to_another_region {
     local source_rds_snapshot_arn="arn:aws:rds:${AWS_REGION}:${account_id}:snapshot:${source_rds_snapshot_id}"
 
     # Wait until db snapshot is available before copying, this must run in same region as the source snapshot.
-    info "Waiting for ${source_rds_snapshot_id} to become available. This could take some time."
+    info "Waiting for RDS snapshot ${source_rds_snapshot_id} to become available. This could take some time."
     aws rds wait db-snapshot-completed --db-snapshot-identifier "${source_rds_snapshot_id}"
 
     aws rds copy-db-snapshot --region "${dest_region}" --source-db-snapshot-identifier "${source_rds_snapshot_arn}"  --target-db-snapshot-identifier "${dest_rds_id}"
     info "Copied RDS Snapshot as ${dest_rds_id} to ${dest_region}"
 
-    # Tag copied RDS snapshot with {Name: ${source_rds_snapshot_id}
-    local dest_rds_snapshot_arn="arn:aws:rds:${dest_region}:${BACKUP_DEST_AWS_ACCOUNT_ID}:snapshot:${dest_rds_id}"
-    aws rds add-tags-to-resource --resource-name ${dest_rds_snapshot_arn} --tags Key=Name,Value=${source_rds_snapshot_id}
-    info "Tagged RDS Snapshot ${dest_rds_id} with { Name: ${source_rds_snapshot_id} }"
+    tag_rds_snapshots ${dest_region} ${dest_rds_id} ${SNAPSHOT_TIME}
+}
+
+function tag_ebs_snapshots {
+    local region=$1
+    local ebs_snapshot_id=$2
+    local snapshot_time=$3
+
+    local creds=$(aws sts assume-role --role-arn ${BACKUP_DEST_AWS_ROLE} --role-session-name "BitbucketServerDIYBackup")
+
+    # Add tag to copied snapshot, used to find EBS & RDS snapshot pairs for restoration
+    AWS_ACCESS_KEY_ID="$(echo $creds | jq -r .Credentials.AccessKeyId)" \
+        AWS_SECRET_ACCESS_KEY="$(echo $creds | jq -r .Credentials.SecretAccessKey)" \
+        AWS_SESSION_TOKEN="$(echo $creds | jq -r .Credentials.SessionToken)" \
+        aws ec2 create-tags --region ${region} --resources "${ebs_snapshot_id}" \
+        --tags Key=Name,Value="${SNAPSHOT_TAG_VALUE}",Key=snapshot_time,Value=${snapshot_time}
+
+    info "Tagged EBS snapshot ${ebs_snapshot_id} with {Name: ${SNAPSHOT_TAG_VALUE}, snapshot_time: ${snapshot_time}"
+}
+
+function tag_rds_snapshots {
+    local region=$1
+    local rds_snapshot_id=$2
+    local snapshot_time=$3
+
+    local creds=$(aws sts assume-role --role-arn ${BACKUP_DEST_AWS_ROLE} --role-session-name "BitbucketServerDIYBackup")
+
+    # Tag the copied RDS snapshot with {Name: ${SNAPSHOT_TAG_VALUE}
+    local rds_snapshot_arn="arn:aws:rds:${region}:${BACKUP_DEST_AWS_ACCOUNT_ID}:snapshot:${rds_snapshot_id}"
+
+    AWS_ACCESS_KEY_ID="$(echo $creds | jq -r .Credentials.AccessKeyId)" \
+        AWS_SECRET_ACCESS_KEY="$(echo $creds | jq -r .Credentials.SecretAccessKey)" \
+        AWS_SESSION_TOKEN="$(echo $creds | jq -r .Credentials.SessionToken)" \
+        aws rds add-tags-to-resource --region ${region} --resource-name ${rds_snapshot_arn} \
+        --tags Key=Name,Value=${SNAPSHOT_TAG_VALUE},Key=snapshot_time,Value=${snapshot_time}
+
+    info "Tagged RDS Snapshot ${rds_snapshot_arn} with {Name: ${SNAPSHOT_TAG_VALUE}, snapshot_time: ${snapshot_time}"
+}
+
+function give_account_rds_permissions {
+    local dest_rds_id="$1"
+    local dest_region="$2"
+    local aws_account_id="$3"
+
+    info "Waiting for RDS snapshot copy ${dest_rds_id} to become available in ${dest_region}. This could take some time."
+    aws rds wait db-snapshot-completed --region ${dest_region} --db-snapshot-identifier "${dest_rds_id}"
+
+    # Give permission to destination AWS account
+    aws rds modify-db-snapshot-attribute --db-snapshot-identifier "${dest_rds_id}" --attribute-name restore --values-to-add "${aws_account_id}"
+    info "Granted permissions on RDS snapshot ${dest_rds_id} for account:${aws_account_id}"
 }
 
 function get_aws_account_id {
