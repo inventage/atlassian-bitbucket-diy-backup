@@ -31,9 +31,14 @@ function bitbucket_backup_home {
 
     info "Performing backup of home directory"
 
-    snapshot_ebs_volume "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" "Perform backup: ${PRODUCT} home directory snapshot"
+    local EBS_SNAPSHOT_ID=$(snapshot_ebs_volume "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" "Perform backup: ${PRODUCT} home directory snapshot")
 
+    # Unfreeze the home directory as soon as the EBS snapshot has been taken
     unfreeze_home_directory
+
+    if [ -n "${BACKUP_EBS_DEST_REGION}" ]; then
+        backup_ebs_snapshot ${EBS_SNAPSHOT_ID} ${AWS_REGION} ${BACKUP_EBS_DEST_REGION}
+    fi
 }
 
 function bitbucket_prepare_home_restore {

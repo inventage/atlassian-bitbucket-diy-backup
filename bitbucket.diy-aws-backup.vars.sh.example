@@ -72,3 +72,17 @@ RESTORE_RDS_INSTANCE_CLASS=db.r3.large
 RESTORE_RDS_SUBNET_GROUP_NAME=
 # The security group to assign to the restored instance
 RESTORE_RDS_SECURITY_GROUP=
+
+# The AWS Account ID, used when copying EBS + RDS snapshots across region
+BACKUP_DEST_AWS_ACCOUNT_ID=
+# The AWS Role to assume when tagging the EBS + RDS snapshots
+BACKUP_DEST_AWS_ROLE=
+
+# The following two variables are only required if you wish to copy the EBS and RDS snapshots to another region
+# If set, this variable will copy the EBS snapshot to the specified region
+BACKUP_EBS_DEST_REGION=
+# If set, this variable will copy the RDS snapshot to the specified region
+BACKUP_RDS_DEST_REGION=
+
+# If set to true, this variable will backup the filesystem and database without locking the application
+BACKUP_ZERO_DOWNTIME=false

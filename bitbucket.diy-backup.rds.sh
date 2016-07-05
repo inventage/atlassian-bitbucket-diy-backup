@@ -13,7 +13,11 @@ function bitbucket_prepare_db {
 function bitbucket_backup_db {
     info "Performing backup of RDS instance ${BACKUP_RDS_INSTANCE_ID}"
 
-    snapshot_rds_instance "${BACKUP_RDS_INSTANCE_ID}"
+    local source_rds_snapshot_id=$(snapshot_rds_instance "${BACKUP_RDS_INSTANCE_ID}")
+
+    if [ -n "${BACKUP_RDS_DEST_REGION}" ]; then
+        backup_rds_snapshot ${source_rds_snapshot_id} ${BACKUP_RDS_DEST_REGION} ${source_rds_snapshot_id}
+    fi
 }
 
 function bitbucket_prepare_db_restore {
