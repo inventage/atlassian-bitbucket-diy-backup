@@ -26,18 +26,23 @@ function bitbucket_prepare_home {
 function bitbucket_backup_home {
     # Freeze the home directory filesystem to ensure consistency
     freeze_home_directory
+
     # Add a clean up routine to ensure we unfreeze the home directory filesystem
     add_cleanup_routine unfreeze_home_directory
 
     info "Performing backup of home directory"
-
     local EBS_SNAPSHOT_ID=$(snapshot_ebs_volume "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" "Perform backup: ${PRODUCT} home directory snapshot")
 
     # Unfreeze the home directory as soon as the EBS snapshot has been taken
     unfreeze_home_directory
 
+    # Copy/Share EBS Snapshot if respective vars are set
     if [ -n "${BACKUP_EBS_DEST_REGION}" ]; then
-        backup_ebs_snapshot ${EBS_SNAPSHOT_ID} ${AWS_REGION} ${BACKUP_EBS_DEST_REGION}
+        if [ -n "${BACKUP_DEST_AWS_ACCOUNT_ID}" ]; then
+            copy_and_share_ebs_snapshot ${EBS_SNAPSHOT_ID} ${AWS_REGION} ${BACKUP_EBS_DEST_REGION}
+        else
+            copy_ebs_snapshot ${EBS_SNAPSHOT_ID} ${AWS_REGION} ${BACKUP_EBS_DEST_REGION}
+        fi
     fi
 }
 

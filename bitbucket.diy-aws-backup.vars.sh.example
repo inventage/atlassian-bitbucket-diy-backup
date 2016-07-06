@@ -84,5 +84,6 @@ BACKUP_EBS_DEST_REGION=
 # If set, this variable will copy the RDS snapshot to the specified region
 BACKUP_RDS_DEST_REGION=
 
+TODO: Add more detailed information about the consequences of setting BACKUP_ZERO_DOWNTIME=true
 # If set to true, this variable will backup the filesystem and database without locking the application
 BACKUP_ZERO_DOWNTIME=false
