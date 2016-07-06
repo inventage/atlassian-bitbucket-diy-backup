@@ -38,7 +38,7 @@ function bitbucket_backup_home {
 
     # Copy/Share EBS Snapshot if respective vars are set
     if [ -n "${BACKUP_EBS_DEST_REGION}" ]; then
-        if [ -n "${BACKUP_DEST_AWS_ACCOUNT_ID}"] && [ -n "${BACKUP_DEST_AWS_ROLE}" ]; then
+        if [ -n "${BACKUP_DEST_AWS_ACCOUNT_ID}" ] && [ -n "${BACKUP_DEST_AWS_ROLE}" ]; then
             copy_and_share_ebs_snapshot ${EBS_SNAPSHOT_ID} ${AWS_REGION}
         else
             copy_ebs_snapshot ${EBS_SNAPSHOT_ID} ${AWS_REGION} ${BACKUP_EBS_DEST_REGION}

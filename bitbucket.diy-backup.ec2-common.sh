@@ -305,11 +305,6 @@ function copy_ebs_snapshot {
     local source_ebs_snapshot_id="$1"
     local source_region="$2"
 
-   if [ -z "${BACKUP_EBS_DEST_REGION}" ]; then
-        error "Cannot share EBS snapshot across account as vars have not been set."
-        bail "Please ensure var BACKUP_EBS_DEST_REGION has been correctly set"
-   fi
-
     info "Waiting for EBS snapshot ${source_ebs_snapshot_id} to become available in ${source_region} before copying to ${BACKUP_EBS_DEST_REGION}"
     aws ec2 wait snapshot-completed --region ${source_region} --snapshot-ids ${source_ebs_snapshot_id}
 
@@ -364,12 +359,7 @@ function copy_and_share_ebs_snapshot {
 function share_and_copy_rds_snapshot {
     local rds_snapshot_id="$1"
     local source_aws_account_id=$(get_aws_account_id)
-
-    if [ -z "${BACKUP_DEST_AWS_ROLE}" ] ; then
-        error "Cannot share RDS snapshot across account as vars aren't correctly set."
-        bail "Please ensure both BACKUP_DEST_AWS_ROLE has been set"
-    fi
-
+    
     info "Waiting for RDS snapshot copy ${rds_snapshot_id} to become available before giving AWS account:${BACKUP_DEST_AWS_ACCOUNT_ID} permissions."
     aws rds wait db-snapshot-completed --db-snapshot-identifier "${rds_snapshot_id}"
 
