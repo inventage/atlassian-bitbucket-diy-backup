@@ -304,52 +304,50 @@ function delete_ebs_snapshot {
 function copy_ebs_snapshot {
     local source_ebs_snapshot_id="$1"
     local source_region="$2"
-    local dest_region="$3"
 
-    info "Waiting for EBS snapshot ${source_ebs_snapshot_id} to become available in ${source_region} before copying to ${dest_region}"
+   if [ -z "${BACKUP_EBS_DEST_REGION}" ]; then
+        error "Cannot share EBS snapshot across account as vars have not been set."
+        bail "Please ensure var BACKUP_EBS_DEST_REGION has been correctly set"
+   fi
+
+    info "Waiting for EBS snapshot ${source_ebs_snapshot_id} to become available in ${source_region} before copying to ${BACKUP_EBS_DEST_REGION}"
     aws ec2 wait snapshot-completed --region ${source_region} --snapshot-ids ${source_ebs_snapshot_id}
 
     # Copy snapshot to DEST_REGION
-    local dest_snapshot_id=$(aws ec2 copy-snapshot --region "${dest_region}" --source-region "${source_region}" \
+    local dest_snapshot_id=$(aws ec2 copy-snapshot --region "${BACKUP_EBS_DEST_REGION}" --source-region "${source_region}" \
      --source-snapshot-id "${source_ebs_snapshot_id}" | jq -r '.SnapshotId')
-    info "Copied EBS snapshot ${source_ebs_snapshot_id} from ${source_region} to ${dest_region}. Snapshot copy ID: ${dest_snapshot_id}"
+    info "Copied EBS snapshot ${source_ebs_snapshot_id} from ${source_region} to ${BACKUP_EBS_DEST_REGION}. Snapshot copy ID: ${dest_snapshot_id}"
 
-    info "Waiting for EBS snapshot ${dest_snapshot_id} to become available in ${dest_region} before tagging"
-    aws ec2 wait snapshot-completed --region ${dest_region} --snapshot-ids ${dest_snapshot_id}
+    info "Waiting for EBS snapshot ${dest_snapshot_id} to become available in ${BACKUP_EBS_DEST_REGION} before tagging"
+    aws ec2 wait snapshot-completed --region ${BACKUP_EBS_DEST_REGION} --snapshot-ids ${dest_snapshot_id}
 
     # Add tags to copied snapshot
-    aws ec2 create-tags --region ${dest_region} --resources "${dest_snapshot_id}" --tags Key=Name,Value="${SNAPSHOT_TAG_VALUE}"
+    aws ec2 create-tags --region ${BACKUP_EBS_DEST_REGION} --resources "${dest_snapshot_id}" --tags Key=Name,Value="${SNAPSHOT_TAG_VALUE}"
     info "Tagged EBS snapshot ${dest_snapshot_id} with {Name: ${SNAPSHOT_TAG_VALUE}}"
 }
 
 function copy_and_share_ebs_snapshot {
     local source_ebs_snapshot_id="$1"
     local source_region="$2"
-    local dest_region="$3"
 
-    if [ -z "${BACKUP_DEST_AWS_ACCOUNT_ID}" ]; then
-        error "Cannot share EBS snapshot across account. BACKUP_DEST_AWS_ACCOUNT_ID has not been set."
-        bail "Please set BACKUP_DEST_AWS_ACCOUNT_ID in the vars"
-    fi
-
-    info "Waiting for EBS snapshot ${source_ebs_snapshot_id} to become available in ${source_region} before copying to ${dest_region}"
+    info "Waiting for EBS snapshot ${source_ebs_snapshot_id} to become available in ${source_region} before copying to ${BACKUP_EBS_DEST_REGION}"
     aws ec2 wait snapshot-completed --region ${source_region} --snapshot-ids ${source_ebs_snapshot_id}
 
-    # Copy snapshot to DST_REGION
-    local dest_snapshot_id=$(aws ec2 copy-snapshot --region "${dest_region}" --source-region "${source_region}" \
-     --source-snapshot-id "${source_ebs_snapshot_id}" | jq -r '.SnapshotId')
-    info "Copied EBS snapshot ${source_ebs_snapshot_id} from ${source_region} to ${dest_region}. Snapshot copy ID: ${dest_snapshot_id}"
+    # Copy snapshot to BACKUP_EBS_DEST_REGION
+    local dest_snapshot_id=$(aws ec2 copy-snapshot --region "${BACKUP_EBS_DEST_REGION}" --source-region "${source_region}" \
+        --source-snapshot-id "${source_ebs_snapshot_id}" | jq -r '.SnapshotId')
+    info "Copied EBS snapshot ${source_ebs_snapshot_id} from ${source_region} to ${BACKUP_EBS_DEST_REGION}. Snapshot copy ID: ${dest_snapshot_id}"
 
-    info "Waiting for EBS snapshot ${dest_snapshot_id} to become available in ${dest_region} before modifying permissions"
-    aws ec2 wait snapshot-completed --region ${dest_region} --snapshot-ids ${dest_snapshot_id}
+    info "Waiting for EBS snapshot ${dest_snapshot_id} to become available in ${BACKUP_EBS_DEST_REGION} before modifying permissions"
+    aws ec2 wait snapshot-completed --region ${BACKUP_EBS_DEST_REGION} --snapshot-ids ${dest_snapshot_id}
 
     # Give BACKUP_DEST_AWS_ACCOUNT_ID permissions on the copied snapshot
-    aws ec2 modify-snapshot-attribute --snapshot-id "${dest_snapshot_id}" --region ${dest_region} \
-     --attribute createVolumePermission --operation-type add --user-ids "${BACKUP_DEST_AWS_ACCOUNT_ID}"
+    aws ec2 modify-snapshot-attribute --snapshot-id "${dest_snapshot_id}" --region ${BACKUP_EBS_DEST_REGION} \
+        --attribute createVolumePermission --operation-type add --user-ids "${BACKUP_DEST_AWS_ACCOUNT_ID}"
     info "Granted create volume permission on ${dest_snapshot_id} for account:${BACKUP_DEST_AWS_ACCOUNT_ID}"
 
-    info "Waiting for EBS snapshot ${dest_snapshot_id} to become available in ${dest_region} before tagging"
-    aws ec2 wait snapshot-completed --region ${dest_region} --snapshot-ids ${dest_snapshot_id}
+    info "Waiting for EBS snapshot ${dest_snapshot_id} to become available in ${BACKUP_EBS_DEST_REGION} before tagging"
+    aws ec2 wait snapshot-completed --region ${BACKUP_EBS_DEST_REGION} --snapshot-ids ${dest_snapshot_id}
 
     info "Assuming AWS role ${BACKUP_DEST_AWS_ROLE} to tag copied snapshot"
     local creds=$(aws sts assume-role --role-arn ${BACKUP_DEST_AWS_ROLE} --role-session-name "BitbucketServerDIYBackup")
@@ -358,32 +356,18 @@ function copy_and_share_ebs_snapshot {
     AWS_ACCESS_KEY_ID="$(echo $creds | jq -r .Credentials.AccessKeyId)" \
         AWS_SECRET_ACCESS_KEY="$(echo $creds | jq -r .Credentials.SecretAccessKey)" \
         AWS_SESSION_TOKEN="$(echo $creds | jq -r .Credentials.SessionToken)" \
-        aws ec2 create-tags --region ${dest_region} --resources "${dest_snapshot_id}" \
-        --tags Key=Name,Value="${SNAPSHOT_TAG_VALUE}"
+        aws ec2 create-tags --region ${BACKUP_EBS_DEST_REGION} --resources "${dest_snapshot_id}" \
+            --tags Key=Name,Value="${SNAPSHOT_TAG_VALUE}"
     info "Tagged EBS snapshot ${dest_snapshot_id} with {Name: ${SNAPSHOT_TAG_VALUE}}"
-}
-
-function give_create_volume_permission_on_snapshot {
-    local account_id="$1"
-    local ebs_snapshot_id="$2"
-    local region="$3"
-
-    info "Waiting for EBS snapshot ${ebs_snapshot_id} to become available in ${region} before modifying permissions"
-    aws ec2 wait snapshot-completed --region ${region} --snapshot-ids ${ebs_snapshot_id}
-
-    aws ec2 modify-snapshot-attribute --snapshot-id "${ebs_snapshot_id}" --region ${region} \
-     --attribute createVolumePermission --operation-type add --user-ids "${account_id}"
-
-    info "Granted create volume permission on ${ebs_snapshot_id} for account:${account_id}"
 }
 
 function share_and_copy_rds_snapshot {
     local rds_snapshot_id="$1"
     local source_aws_account_id=$(get_aws_account_id)
 
-    if [ -z "${BACKUP_DEST_AWS_ACCOUNT_ID}" ]; then
-        error "Cannot share RDS snapshot across account. BACKUP_DEST_AWS_ACCOUNT_ID has not been set."
-        bail "Please set BACKUP_DEST_AWS_ACCOUNT_ID in the vars"
+    if [ -z "${BACKUP_DEST_AWS_ROLE}" ] ; then
+        error "Cannot share RDS snapshot across account as vars aren't correctly set."
+        bail "Please ensure both BACKUP_DEST_AWS_ROLE has been set"
     fi
 
     info "Waiting for RDS snapshot copy ${rds_snapshot_id} to become available before giving AWS account:${BACKUP_DEST_AWS_ACCOUNT_ID} permissions."
@@ -391,7 +375,7 @@ function share_and_copy_rds_snapshot {
 
     # Give permission to BACKUP_DEST_AWS_ACCOUNT_ID
     aws rds modify-db-snapshot-attribute --db-snapshot-identifier "${rds_snapshot_id}" --attribute-name restore \
-    --values-to-add "${BACKUP_DEST_AWS_ACCOUNT_ID}" > /dev/null
+        --values-to-add "${BACKUP_DEST_AWS_ACCOUNT_ID}" > /dev/null
     info "Granted permissions on RDS snapshot ${rds_snapshot_id} for AWS account:${BACKUP_DEST_AWS_ACCOUNT_ID}"
 
     # Assume BACKUP_DEST_AWS_ROLE
@@ -404,7 +388,7 @@ function share_and_copy_rds_snapshot {
     local source_rds_snapshot_arn="arn:aws:rds:${AWS_REGION}:${source_aws_account_id}:snapshot:${rds_snapshot_id}"
     AWS_ACCESS_KEY_ID=${aws_access_key_id} AWS_SECRET_ACCESS_KEY=${aws_secret_access_key} AWS_SESSION_TOKEN=${aws_session_token} \
         aws rds copy-db-snapshot --region "${BACKUP_RDS_DEST_REGION}" --source-db-snapshot-identifier "${source_rds_snapshot_arn}" \
-         --target-db-snapshot-identifier "${rds_snapshot_id}" > /dev/null
+            --target-db-snapshot-identifier "${rds_snapshot_id}" > /dev/null
     info "Copied RDS Snapshot ${source_rds_snapshot_arn} as ${rds_snapshot_id} to ${BACKUP_RDS_DEST_REGION}"
 }
 

@@ -16,7 +16,7 @@ function bitbucket_backup_db {
     local source_rds_snapshot_id=$(snapshot_rds_instance "${BACKUP_RDS_INSTANCE_ID}")
 
     if [ -n "${BACKUP_RDS_DEST_REGION}" ]; then
-        if [ -n "${BACKUP_DEST_AWS_ACCOUNT_ID}" ]; then
+        if [ -n "${BACKUP_DEST_AWS_ACCOUNT_ID}" ] && [ -n "${BACKUP_DEST_AWS_ROLE}" ]; then
             share_and_copy_rds_snapshot "${source_rds_snapshot_id}"
         else
             copy_rds_snapshot "${source_rds_snapshot_id}"
