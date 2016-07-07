@@ -83,10 +83,10 @@ function cleanup_old_offsite_snapshots {
 
         old_offsite_snapshots=$(AWS_ACCESS_KEY_ID=${aws_access_key_id} AWS_SECRET_ACCESS_KEY=${aws_secret_access_key} AWS_SESSION_TOKEN=${aws_session_token} \
             aws rds describe-db-snapshots --region ${BACKUP_RDS_DEST_REGION} --snapshot-type manual \
-            | jq -r ".DBSnapshots | map(select(.DBSnapshotIdentifier | startswith(\"${SNAPSHOT_TAG_PREFIX}\"))) | sort_by(.SnapshotCreateTime) | reverse | .[${KEEP_BACKUPS}:] | map(.DBSnapshotIdentifier)[]")
+                | jq -r ".DBSnapshots | map(select(.DBSnapshotIdentifier | startswith(\"${SNAPSHOT_TAG_PREFIX}\"))) | sort_by(.SnapshotCreateTime) | reverse | .[${KEEP_BACKUPS}:] | map(.DBSnapshotIdentifier)[]")
 
         # Delete old RDS snapshots from BACKUP_DEST_AWS_ACCOUNT_ID in region BACKUP_RDS_DEST_REGION
-        for snapshot_id in old_offsite_snapshots; do
+        for snapshot_id in $old_offsite_snapshots; do
             info "Deleting old cross-account RDS snapshot ${snapshot_id}"
             AWS_ACCESS_KEY_ID=${aws_access_key_id} AWS_SECRET_ACCESS_KEY=${aws_secret_access_key} AWS_SESSION_TOKEN=${aws_session_token} \
                 aws rds delete-db-snapshot --region ${BACKUP_RDS_DEST_REGION} --db-snapshot-identifier "${snapshot_id}" > /dev/null

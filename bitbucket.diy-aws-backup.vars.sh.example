@@ -85,7 +85,9 @@ BACKUP_EBS_DEST_REGION=
 BACKUP_RDS_DEST_REGION=
 
 # If set to true, this variable will backup the filesystem and database without locking the application.
-# Note that without a Bitbucket Data Center License, Bitbucket Server will not attempt to fix any inconsistencies upon restoration of these backups.
+# The resulting backups may contain inconsistencies, so you must run Bitbucket Server 4.8 or higher and check recently
+# modified repositories and pull requests after restoring. Bitbucket Data Center with the disaster.recovery=true option
+# can actively scan for such inconsistencies and resolve them automatically.
 # For more information, see https://confluence.atlassian.com/display/BitbucketServer/Using+Bitbucket+Data+Center+Zero+Downtime+Backup
-# WARNING: Setting this variable to TRUE without adhering to these instructions may result in data loss.
+# Make sure you read and understand this document before setting this variable to "true"
 BACKUP_ZERO_DOWNTIME=false
