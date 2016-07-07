@@ -36,7 +36,8 @@ function bitbucket_backup_home {
     # Unfreeze the home directory as soon as the EBS snapshot has been taken
     unfreeze_home_directory
 
-    # Copy/Share EBS Snapshot if respective vars are set
+    # Optionally copy/share the EBS snapshot to another region and/or account.
+    # This is useful to retain a cross region/account copy of the backup.
     if [ -n "${BACKUP_EBS_DEST_REGION}" ]; then
         if [ -n "${BACKUP_DEST_AWS_ACCOUNT_ID}" ] && [ -n "${BACKUP_DEST_AWS_ROLE}" ]; then
             copy_and_share_ebs_snapshot ${EBS_SNAPSHOT_ID} ${AWS_REGION}

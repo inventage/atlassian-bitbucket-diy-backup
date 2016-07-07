@@ -85,6 +85,7 @@ BACKUP_EBS_DEST_REGION=
 BACKUP_RDS_DEST_REGION=
 
 # If set to true, this variable will backup the filesystem and database without locking the application.
-# Note that this requires a Bitbucket Data Center License.
-# See https://confluence.atlassian.com/display/BitbucketServer/Using+Bitbucket+Data+Center+Zero+Downtime+Backup
+# Note that without a Bitbucket Data Center License, Bitbucket Server will not attempt to fix any inconsistencies upon restoration of these backups.
+# For more information, see https://confluence.atlassian.com/display/BitbucketServer/Using+Bitbucket+Data+Center+Zero+Downtime+Backup
+# WARNING: Setting this variable to TRUE without adhering to these instructions may result in data loss.
 BACKUP_ZERO_DOWNTIME=false

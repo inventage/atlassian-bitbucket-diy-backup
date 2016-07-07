@@ -43,6 +43,8 @@ elif [ ${#INSTANCE_NAME} -ge 100 ]; then
 fi
 
 SNAPSHOT_TAG_KEY="Name"
+# This is used to identify RDS + EBS snapshots.
+# Note that this prefix is used to delete old backups and if set improperly will delete incorrect snapshots on cleanup.
 SNAPSHOT_TAG_PREFIX="${INSTANCE_NAME}-"
 SNAPSHOT_TIME=`date +"%Y%m%d-%H%M%S-%3N"`
 SNAPSHOT_TAG_VALUE="${SNAPSHOT_TAG_PREFIX}${SNAPSHOT_TIME}"
@@ -278,8 +280,10 @@ function list_available_ebs_snapshot_tags {
 
 # List all RDS DB snapshots older than the most recent ${KEEP_BACKUPS}
 function list_old_rds_snapshot_ids {
+    local region=$1
     if [ "${KEEP_BACKUPS}" -gt 0 ]; then
-        aws rds describe-db-snapshots --snapshot-type manual | jq -r ".DBSnapshots | map(select(.DBSnapshotIdentifier | startswith(\"${SNAPSHOT_TAG_PREFIX}\"))) | sort_by(.SnapshotCreateTime) | reverse | .[${KEEP_BACKUPS}:] | map(.DBSnapshotIdentifier)[]"
+        aws rds describe-db-snapshots --region ${region} --snapshot-type manual \
+            | jq -r ".DBSnapshots | map(select(.DBSnapshotIdentifier | startswith(\"${SNAPSHOT_TAG_PREFIX}\"))) | sort_by(.SnapshotCreateTime) | reverse | .[${KEEP_BACKUPS}:] | map(.DBSnapshotIdentifier)[]"
     fi
 }
 
@@ -308,9 +312,9 @@ function copy_ebs_snapshot {
     info "Waiting for EBS snapshot ${source_ebs_snapshot_id} to become available in ${source_region} before copying to ${BACKUP_EBS_DEST_REGION}"
     aws ec2 wait snapshot-completed --region ${source_region} --snapshot-ids ${source_ebs_snapshot_id}
 
-    # Copy snapshot to DEST_REGION
+    # Copy snapshot to BACKUP_EBS_DEST_REGION
     local dest_snapshot_id=$(aws ec2 copy-snapshot --region "${BACKUP_EBS_DEST_REGION}" --source-region "${source_region}" \
-     --source-snapshot-id "${source_ebs_snapshot_id}" | jq -r '.SnapshotId')
+         --source-snapshot-id "${source_ebs_snapshot_id}" | jq -r '.SnapshotId')
     info "Copied EBS snapshot ${source_ebs_snapshot_id} from ${source_region} to ${BACKUP_EBS_DEST_REGION}. Snapshot copy ID: ${dest_snapshot_id}"
 
     info "Waiting for EBS snapshot ${dest_snapshot_id} to become available in ${BACKUP_EBS_DEST_REGION} before tagging"

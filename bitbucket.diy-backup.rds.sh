@@ -56,8 +56,46 @@ function bitbucket_restore_db {
 }
 
 function cleanup_old_db_snapshots {
-    for snapshot_id in $(list_old_rds_snapshot_ids); do
-        info "Deleting old snapshot ${snapshot_id}"
-        delete_rds_snapshot "${snapshot_id}"
+
+    if ! [ "${KEEP_BACKUPS}" -gt 0 ]; then
+        info "Skipping cleanup of RDS snapshots"
+        return
+    fi
+
+    # Delete old snapshots in source AWS account
+    for snapshot_id in $(list_old_rds_snapshot_ids ${AWS_REGION}); do
+        info "Deleting old RDS snapshot ${snapshot_id}"
+        aws rds delete-db-snapshot --db-snapshot-identifier "${snapshot_id}" > /dev/null
     done
+
+    if [ -n "${BACKUP_RDS_DEST_REGION}" ]; then
+        cleanup_old_offsite_snapshots
+    fi
+}
+
+function cleanup_old_offsite_snapshots {
+    if [ -n "${BACKUP_DEST_AWS_ACCOUNT_ID}" ] && [ -n "${BACKUP_DEST_AWS_ROLE}" ]; then
+        # Assume BACKUP_DEST_AWS_ROLE
+        local creds=$(aws sts assume-role --role-arn ${BACKUP_DEST_AWS_ROLE} --role-session-name "BitbucketServerDIYBackup")
+        local aws_access_key_id="$(echo $creds | jq -r .Credentials.AccessKeyId)"
+        local aws_secret_access_key="$(echo $creds | jq -r .Credentials.SecretAccessKey)"
+        local aws_session_token="$(echo $creds | jq -r .Credentials.SessionToken)"
+
+        old_offsite_snapshots=$(AWS_ACCESS_KEY_ID=${aws_access_key_id} AWS_SECRET_ACCESS_KEY=${aws_secret_access_key} AWS_SESSION_TOKEN=${aws_session_token} \
+            aws rds describe-db-snapshots --region ${BACKUP_RDS_DEST_REGION} --snapshot-type manual \
+            | jq -r ".DBSnapshots | map(select(.DBSnapshotIdentifier | startswith(\"${SNAPSHOT_TAG_PREFIX}\"))) | sort_by(.SnapshotCreateTime) | reverse | .[${KEEP_BACKUPS}:] | map(.DBSnapshotIdentifier)[]")
+
+        # Delete old RDS snapshots from BACKUP_DEST_AWS_ACCOUNT_ID in region BACKUP_RDS_DEST_REGION
+        for snapshot_id in old_offsite_snapshots; do
+            info "Deleting old cross-account RDS snapshot ${snapshot_id}"
+            AWS_ACCESS_KEY_ID=${aws_access_key_id} AWS_SECRET_ACCESS_KEY=${aws_secret_access_key} AWS_SESSION_TOKEN=${aws_session_token} \
+                aws rds delete-db-snapshot --region ${BACKUP_RDS_DEST_REGION} --db-snapshot-identifier "${snapshot_id}" > /dev/null
+        done
+    else
+        # Delete old RDS snapshots in BACKUP_RDS_DEST_REGION
+        for snapshot_id in $(list_old_rds_snapshot_ids ${AWS_REGION}); do
+            info "Deleting old cross-region RDS snapshot ${snapshot_id}"
+            aws rds delete-db-snapshot --db-snapshot-identifier "${snapshot_id}" > /dev/null
+        done
+    fi
 }
