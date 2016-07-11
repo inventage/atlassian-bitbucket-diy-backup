@@ -70,5 +70,10 @@ HIPCHAT_TOKEN=
 # Options for the tar-gpg archive type
 BITBUCKET_BACKUP_GPG_RECIPIENT=
 
-# If set to true, this variable will backup the filesystem and database without locking the application
+# If set to true, this variable will backup the filesystem and database without locking the application.
+# The resulting backups may contain inconsistencies, so you must run Bitbucket Server 4.8 or higher and check recently
+# modified repositories and pull requests after restoring. Bitbucket Data Center with the disaster.recovery=true option
+# can actively scan for such inconsistencies and resolve them automatically.
+# For more information, see https://confluence.atlassian.com/display/BitbucketServer/Using+Bitbucket+Data+Center+Zero+Downtime+Backup
+# Make sure you read and understand this document before setting this variable to "true"
 BACKUP_ZERO_DOWNTIME=false

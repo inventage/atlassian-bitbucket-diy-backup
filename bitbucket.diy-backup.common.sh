@@ -12,6 +12,7 @@ function bitbucket_lock {
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
     fi
+
     BITBUCKET_LOCK_RESULT=`curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X POST -H "Content-type: application/json" "${BITBUCKET_URL}/mvc/maintenance/lock"`
     if [ -z "${BITBUCKET_LOCK_RESULT}" ]; then
         bail "Locking this Bitbucket instance failed"

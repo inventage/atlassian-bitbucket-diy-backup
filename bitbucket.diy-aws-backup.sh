@@ -61,7 +61,11 @@ bitbucket_backup_wait
 # Back up the database and filesystem in parallel, reporting progress
 (bitbucket_backup_db && bitbucket_backup_progress 50) &
 (bitbucket_backup_home && bitbucket_backup_progress 50) &
+
+# Wait until home and database backups are complete
 wait $(jobs -p)
+
+# If necessary, report 100% progress back to the application
 bitbucket_backup_progress 100
 
 # If necessary, unlock the bitbucket instance
