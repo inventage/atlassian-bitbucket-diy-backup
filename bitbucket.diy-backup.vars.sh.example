@@ -112,6 +112,17 @@ RESTORE_HOME_DIRECTORY_VOLUME_TYPE=gp2
 # The IOPS that should be provisioned for the new volume. Note: Maximum IOPS to volume size ratio is 30
 RESTORE_HOME_DIRECTORY_IOPS=1000
 
+# The AWS Account ID, used when copying EBS + RDS snapshots across region
+BACKUP_DEST_AWS_ACCOUNT_ID=
+# The AWS Role ARN to assume when tagging the EBS + RDS snapshots
+BACKUP_DEST_AWS_ROLE=
+
+# The following two variables are only required if you wish to copy the EBS and RDS snapshots to another region
+# If set, this variable will copy the EBS snapshot to the specified region
+BACKUP_EBS_DEST_REGION=
+# If set, this variable will copy the RDS snapshot to the specified region
+BACKUP_RDS_DEST_REGION=
+
 # === AWS RDS Variables ===
 
 # The RDS instance ID for the database to backup
