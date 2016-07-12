@@ -13,8 +13,7 @@ function bitbucket_prepare_home {
         bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
     fi
 
-    BACKUP_HOME_DIRECTORY_VOLUME_ID=
-    validate_ebs_volume "${HOME_DIRECTORY_DEVICE_NAME}" BACKUP_HOME_DIRECTORY_VOLUME_ID
+    BACKUP_HOME_DIRECTORY_VOLUME_ID="$(find_attached_ebs_volume "${HOME_DIRECTORY_DEVICE_NAME}")"
 
     if [ -z "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" ] || [ "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" == null ]; then
         error "Device name ${HOME_DIRECTORY_DEVICE_NAME} specified in ${BACKUP_VARS_FILE} as HOME_DIRECTORY_DEVICE_NAME could not be resolved to a volume."
@@ -83,9 +82,7 @@ function bitbucket_prepare_home_restore {
         bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
     fi
 
-    check_mount_point "${HOME_DIRECTORY_MOUNT_POINT}"
-
-    validate_device_name "${HOME_DIRECTORY_DEVICE_NAME}"
+    BACKUP_HOME_DIRECTORY_VOLUME_ID="$(find_attached_ebs_volume "${HOME_DIRECTORY_DEVICE_NAME}")"
 
     RESTORE_HOME_DIRECTORY_SNAPSHOT_ID=
     validate_ebs_snapshot "${SNAPSHOT_TAG}" RESTORE_HOME_DIRECTORY_SNAPSHOT_ID
@@ -94,7 +91,9 @@ function bitbucket_prepare_home_restore {
 function bitbucket_restore_home {
     unmount_device "${HOME_DIRECTORY_MOUNT_POINT}"
 
-    detach_volume "${HOME_DIRECTORY_MOUNT_POINT}"
+    if [ -n "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" ]; then
+        detach_volume "${BACKUP_HOME_DIRECTORY_VOLUME_ID}"
+    fi
 
     info "Restoring home directory from snapshot ${RESTORE_HOME_DIRECTORY_SNAPSHOT_ID} into a ${RESTORE_HOME_DIRECTORY_VOLUME_TYPE} volume"
 

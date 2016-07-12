@@ -46,7 +46,7 @@ else
 fi
 
 # Exports the following functions
-#     bitbucket_backup_archive - for archiving the backup folder and puting the archive in archive folder
+#     bitbucket_backup_archive - for archiving the backup folder and putting the archive in archive folder
 source ${SCRIPT_DIR}/bitbucket.diy-backup.${BACKUP_ARCHIVE_TYPE}.sh
 
 ##########################################################

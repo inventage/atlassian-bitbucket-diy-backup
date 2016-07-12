@@ -99,19 +99,13 @@ function attach_volume {
 }
 
 function detach_volume {
-    local DEVICE_NAME="$1"
+    local VOLUME_ID="$1"
 
-    local VOLUME_ID=$(aws ec2 describe-volumes --filter Name=attachment.instance-id,Values="${AWS_EC2_INSTANCE_ID}" \
-            Name=attachment.device,Values="${DEVICE_NAME}" | jq -r '.Volumes[0].VolumeId')
-    if [ -z "${VOLUME_ID}" ]; then
-        bail "Could not find volume attached to device ${DEVICE_NAME} on instance ${AWS_EC2_INSTANCE_ID}"
-    fi
-
-    info "Detaching volume ${VOLUME_ID} from device ${DEVICE_NAME} at instance ${AWS_EC2_INSTANCE_ID}"
+    info "Detaching volume ${VOLUME_ID} from instance ${AWS_EC2_INSTANCE_ID}"
 
     aws ec2 detach-volume --volume-id "${VOLUME_ID}" > /dev/null
 
-    success "Detached volume ${VOLUME_ID} from device ${DEVICE_NAME} at instance ${AWS_EC2_INSTANCE_ID}"
+    success "Detached volume ${VOLUME_ID} from instance ${AWS_EC2_INSTANCE_ID}"
 }
 
 function wait_attached_volume {
@@ -171,22 +165,6 @@ function validate_ebs_snapshot {
     fi
 }
 
-function validate_device_name {
-    local DEVICE_NAME="${1}"
-
-    # If there's a volume taking the provided DEVICE_NAME it must be unmounted and detached
-    info "Checking for existing volumes using device name ${DEVICE_NAME}"
-    local VOLUME_ID="$(aws ec2 describe-volumes --filter Name=attachment.instance-id,Values=${AWS_EC2_INSTANCE_ID} \
-            Name=attachment.device,Values=${DEVICE_NAME} | jq -r '.Volumes[0].VolumeId')"
-
-    case "${VOLUME_ID}" in vol-*)
-        error "Device name ${DEVICE_NAME} appears to be taken by volume ${VOLUME_ID}"
-
-        bail "Please stop Bitbucket. Stop PostgreSQL if it is running. Unmount the device and detach the volume"
-        ;;
-    esac
-}
-
 function snapshot_rds_instance {
     local INSTANCE_ID="$1"
 
@@ -243,15 +221,12 @@ function restore_rds_instance {
     fi
 }
 
-function validate_ebs_volume {
+function find_attached_ebs_volume {
     local DEVICE_NAME="${1}"
-    local __RETURN=$2
 
     info "Looking up volume for device name ${DEVICE_NAME}"
-    local VOLUME_ID="$(aws ec2 describe-volumes --filter Name=attachment.instance-id,Values=${AWS_EC2_INSTANCE_ID} \
-            Name=attachment.device,Values=${DEVICE_NAME} | jq -r '.Volumes[0].VolumeId')"
-
-    eval ${__RETURN}="${VOLUME_ID}"
+    aws ec2 describe-volumes --filter Name=attachment.instance-id,Values=${AWS_EC2_INSTANCE_ID} \
+            Name=attachment.device,Values=${DEVICE_NAME} | jq -r '.Volumes[0].VolumeId'
 }
 
 function validate_rds_instance_id {
