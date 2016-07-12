@@ -90,13 +90,28 @@ function create_volume {
 function attach_volume {
     local VOLUME_ID="$1"
     local DEVICE_NAME="$2"
-    local INSTANCE_ID="$3"
 
-    aws ec2 attach-volume --volume-id "${VOLUME_ID}" --instance "${INSTANCE_ID}" --device "${DEVICE_NAME}" > /dev/null
+    aws ec2 attach-volume --volume-id "${VOLUME_ID}" --instance "${AWS_EC2_INSTANCE_ID}" --device "${DEVICE_NAME}" > /dev/null
 
     wait_attached_volume "${VOLUME_ID}"
 
-    success "Attached volume ${VOLUME_ID} to device ${DEVICE_NAME} at instance ${INSTANCE_ID}"
+    success "Attached volume ${VOLUME_ID} to device ${DEVICE_NAME} at instance ${AWS_EC2_INSTANCE_ID}"
+}
+
+function detach_volume {
+    local DEVICE_NAME="$1"
+
+    local VOLUME_ID=$(aws ec2 describe-volumes --filter Name=attachment.instance-id,Values="${AWS_EC2_INSTANCE_ID}" \
+            Name=attachment.device,Values="${DEVICE_NAME}" | jq -r '.Volumes[0].VolumeId')
+    if [ -z "${VOLUME_ID}" ]; then
+        bail "Could not find volume attached to device ${DEVICE_NAME} on instance ${AWS_EC2_INSTANCE_ID}"
+    fi
+
+    info "Detaching volume ${VOLUME_ID} from device ${DEVICE_NAME} at instance ${AWS_EC2_INSTANCE_ID}"
+
+    aws ec2 detach-volume --volume-id "${VOLUME_ID}" > /dev/null
+
+    success "Detached volume ${VOLUME_ID} from device ${DEVICE_NAME} at instance ${AWS_EC2_INSTANCE_ID}"
 }
 
 function wait_attached_volume {
@@ -126,7 +141,7 @@ function wait_attached_volume {
     fi
 }
 
-function restore_from_snapshot {
+function create_and_attach_volume {
     local SNAPSHOT_ID="$1"
     local VOLUME_TYPE="$2"
     local PROVISIONED_IOPS="$3"
@@ -134,13 +149,9 @@ function restore_from_snapshot {
     local MOUNT_POINT="$5"
 
     local VOLUME_ID=
-    create_volume "${SNAPSHOT_ID}" "${VOLUME_TYPE}" "${PROVISIONED_IOPS}" VOLUME_ID
+    create_volume "${SNAPSHOT_ID}" "${VOLUME_TYPE}" "${PROVISIONED_IOPS}"
 
-    local INSTANCE_ID=`curl ${CURL_OPTIONS} http://169.254.169.254/latest/meta-data/instance-id`
-
-    attach_volume "${VOLUME_ID}" "${DEVICE_NAME}" "${INSTANCE_ID}"
-
-    mount_device "${DEVICE_NAME}" "${MOUNT_POINT}"
+    attach_volume "${VOLUME_ID}" "${DEVICE_NAME}"
 }
 
 function validate_ebs_snapshot {
@@ -162,11 +173,11 @@ function validate_ebs_snapshot {
 
 function validate_device_name {
     local DEVICE_NAME="${1}"
-    local INSTANCE_ID=`curl ${CURL_OPTIONS} http://169.254.169.254/latest/meta-data/instance-id`
 
     # If there's a volume taking the provided DEVICE_NAME it must be unmounted and detached
     info "Checking for existing volumes using device name ${DEVICE_NAME}"
-    local VOLUME_ID="$(aws ec2 describe-volumes --filter Name=attachment.instance-id,Values=${INSTANCE_ID} Name=attachment.device,Values=${DEVICE_NAME} | jq -r '.Volumes[0].VolumeId')"
+    local VOLUME_ID="$(aws ec2 describe-volumes --filter Name=attachment.instance-id,Values=${AWS_EC2_INSTANCE_ID} \
+            Name=attachment.device,Values=${DEVICE_NAME} | jq -r '.Volumes[0].VolumeId')"
 
     case "${VOLUME_ID}" in vol-*)
         error "Device name ${DEVICE_NAME} appears to be taken by volume ${VOLUME_ID}"
@@ -235,10 +246,10 @@ function restore_rds_instance {
 function validate_ebs_volume {
     local DEVICE_NAME="${1}"
     local __RETURN=$2
-    local INSTANCE_ID=`curl ${CURL_OPTIONS} http://169.254.169.254/latest/meta-data/instance-id`
 
     info "Looking up volume for device name ${DEVICE_NAME}"
-    local VOLUME_ID="$(aws ec2 describe-volumes --filter Name=attachment.instance-id,Values=${INSTANCE_ID} Name=attachment.device,Values=${DEVICE_NAME} | jq -r '.Volumes[0].VolumeId')"
+    local VOLUME_ID="$(aws ec2 describe-volumes --filter Name=attachment.instance-id,Values=${AWS_EC2_INSTANCE_ID} \
+            Name=attachment.device,Values=${DEVICE_NAME} | jq -r '.Volumes[0].VolumeId')"
 
     eval ${__RETURN}="${VOLUME_ID}"
 }

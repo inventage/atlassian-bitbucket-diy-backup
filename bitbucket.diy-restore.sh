@@ -21,8 +21,8 @@ fi
 
 # Ensure we know which user:group things should be owned as
 if [[ -z ${BITBUCKET_UID} || -z ${BITBUCKET_GID} ]]; then
-  error "Both BITBUCKET_UID and BITBUCKET_GID must be set in bitbucket.diy-backup.vars.sh"
-  bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
+    error "Both BITBUCKET_UID and BITBUCKET_GID must be set in bitbucket.diy-backup.vars.sh"
+    bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
 fi
 
 # The following scripts contain functions which are dependent on the configuration of this bitbucket instance.
