@@ -62,11 +62,11 @@ fi
 bitbucket_prepare_home_restore "${1}"
 bitbucket_prepare_db_restore "${1}"
 
+# Restore the home directory volume
+bitbucket_restore_home
+
 # Restore the database
 bitbucket_restore_db
-
-# Restore the filesystem
-bitbucket_restore_home
 
 success "Successfully completed the restore of your ${PRODUCT} instance"
 

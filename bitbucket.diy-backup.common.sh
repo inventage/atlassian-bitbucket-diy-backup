@@ -119,8 +119,19 @@ function mount_device {
     local DEVICE_NAME="$1"
     local MOUNT_POINT="$2"
 
+    info "Remounting ${DEVICE_NAME} to ${MOUNT_POINT}"
+
     sudo mount "${DEVICE_NAME}" "${MOUNT_POINT}" > /dev/null
     success "Mounted device ${DEVICE_NAME} to ${MOUNT_POINT}"
+}
+
+function unmount_device {
+    local MOUNT_POINT="$1"
+
+    info "Unmounting ${MOUNT_POINT}"
+
+    sudo umount "${MOUNT_POINT}" > /dev/null
+    success "Unmounted ${MOUNT_POINT}"
 }
 
 function add_cleanup_routine() {
