@@ -21,3 +21,8 @@ function bitbucket_restore_archive {
 
     info "Extracted ${BITBUCKET_BACKUP_ARCHIVE_NAME} into ${BITBUCKET_RESTORE_ROOT}"
 }
+
+function bitbucket_cleanup {
+    # Cleanup of old backups is not currently implemented
+    no_op
+}

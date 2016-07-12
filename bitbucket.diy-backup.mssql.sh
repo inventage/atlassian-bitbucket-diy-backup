@@ -11,3 +11,7 @@ function bitbucket_backup_db {
     sqlcmd -Q "BACKUP DATABASE ${BITBUCKET_DB} to disk='${BITBUCKET_BACKUP_WIN_DB}' WITH DIFFERENTIAL"
 }
 
+function bitbucket_cleanup_db_backups {
+    no_op
+}
+

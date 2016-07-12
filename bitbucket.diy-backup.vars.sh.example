@@ -17,6 +17,10 @@ BACKUP_HOME_TYPE=rsync
 # rds means your Bitbucket instance is using an RDS instance and we need to produce a snapshot of it on backup
 BACKUP_DATABASE_TYPE=postgresql
 
+# What to use to archive the database and home directory backups and (optionally) copy them to offsite locations
+# (ex: tar, tar-gpg).
+BACKUP_ARCHIVE_TYPE=tar
+
 # Used by the scripts for verbose logging. If not true only errors will be shown.
 BITBUCKET_VERBOSE_BACKUP=TRUE
 
@@ -41,9 +45,6 @@ HIPCHAT_ROOM=
 HIPCHAT_TOKEN=
 
 # === Non-AWS Variables ===
-
-# Which archive backup script to use (ex: tar, tar-gpg), if any.
-BACKUP_ARCHIVE_TYPE=
 
 # The name of the database used by this instance.
 BITBUCKET_DB=bitbucket

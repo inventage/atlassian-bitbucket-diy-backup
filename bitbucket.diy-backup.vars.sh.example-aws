@@ -16,6 +16,9 @@ BACKUP_DATABASE_TYPE=ebs-collocated
 # ebs-home means the Bitbucket home (and the database if selected ebs-collocated) will be backed up by taking a snapshot of the EBS volume
 BACKUP_HOME_TYPE=ebs-home
 
+# What to use to archive your backups to another location (e.g., copy to another region)
+BACKUP_ARCHIVE_TYPE=aws-snapshots
+
 # Used by the scripts for verbose logging. If not true only errors will be shown.
 BITBUCKET_VERBOSE_BACKUP=TRUE
 

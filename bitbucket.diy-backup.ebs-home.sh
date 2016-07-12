@@ -1,5 +1,6 @@
 #!/bin/bash
 
+source ${SCRIPT_DIR}/bitbucket.diy-backup.ec2-common.sh
 
 function bitbucket_prepare_home {
     # Validate that all the configuration parameters have been provided to avoid bailing out and leaving Bitbucket locked
@@ -31,20 +32,10 @@ function bitbucket_backup_home {
     add_cleanup_routine unfreeze_home_directory
 
     info "Performing backup of home directory"
-    local EBS_SNAPSHOT_ID=$(snapshot_ebs_volume "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" "Perform backup: ${PRODUCT} home directory snapshot")
+    BACKUP_EBS_SNAPSHOT_ID=$(snapshot_ebs_volume "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" "Perform backup: ${PRODUCT} home directory snapshot")
 
     # Unfreeze the home directory as soon as the EBS snapshot has been taken
     unfreeze_home_directory
-
-    # Optionally copy/share the EBS snapshot to another region and/or account.
-    # This is useful to retain a cross region/account copy of the backup.
-    if [ -n "${BACKUP_EBS_DEST_REGION}" ]; then
-        if [ -n "${BACKUP_DEST_AWS_ACCOUNT_ID}" ] && [ -n "${BACKUP_DEST_AWS_ROLE}" ]; then
-            copy_and_share_ebs_snapshot ${EBS_SNAPSHOT_ID} ${AWS_REGION}
-        else
-            copy_ebs_snapshot ${EBS_SNAPSHOT_ID} ${AWS_REGION} ${BACKUP_EBS_DEST_REGION}
-        fi
-    fi
 }
 
 function bitbucket_prepare_home_restore {
@@ -108,11 +99,4 @@ function freeze_home_directory {
 
 function unfreeze_home_directory {
     unfreeze_mount_point ${HOME_DIRECTORY_MOUNT_POINT}
-}
-
-function cleanup_old_home_snapshots {
-    for snapshot_id in $(list_old_ebs_snapshot_ids); do
-        info "Deleting old EBS snapshot ${snapshot_id}"
-        delete_ebs_snapshot "${snapshot_id}"
-    done
 }
