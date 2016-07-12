@@ -38,8 +38,10 @@ BITBUCKET_HOME=/var/atlassian/application-data/bitbucket/
 BITBUCKET_UID=atlbitbucket
 # The mount point for the home directory volume
 HOME_DIRECTORY_MOUNT_POINT=/media/atl
-# The device name to which the home directory volume is attached as it appears in your Amazon console
-# Do NOT use the 'mount' command to retrieve this value as the linux device-driver might have assigned a different value
+
+# The device name to which the home directory volume is attached as it appears in your Amazon console.
+# If you have launched Bitbucket from an existing EBS snapshot, this device might be designated /dev/sdf, see
+# https://jira.atlassian.com/browse/BSERV-8477.
 HOME_DIRECTORY_DEVICE_NAME=/dev/xvdf
 
 # HipChat options
@@ -51,12 +53,16 @@ HIPCHAT_TOKEN=
 AWS_AVAILABILITY_ZONE=`curl ${CURL_OPTIONS} http://169.254.169.254/latest/meta-data/placement/availability-zone`
 # The region for the resources Bitbucket is using (volumes, instances, snapshots, etc)
 AWS_REGION="`echo \"${AWS_AVAILABILITY_ZONE}\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"
+
+# The AWS EC2 instance ID that the home directory EBS volume is attached to.
+AWS_EC2_INSTANCE_ID=`curl ${CURL_OPTIONS} http://169.254.169.254/latest/meta-data/instance-id`
+
 # Additional AWS tags for EBS and RDS snapshot, tags needs to be in JSON format without enclosing square brackets:
 # Example: AWS_ADDITIONAL_TAGS='{"Key":"Value"}, {"Key":"Value"}'
 AWS_ADDITIONAL_TAGS=
 
-# The number of backups to keep.  After backups are taken, all old snapshots except for the most recent ${KEEP_BACKUPS}
-# are deleted.  Set to 0 to disable cleanup of old snapshots.
+# The number of backups to keep. After backups are taken, all old snapshots except for the most recent ${KEEP_BACKUPS}
+# are deleted. Set to 0 to disable cleanup of old snapshots.
 KEEP_BACKUPS=0
 
 # The type of volume to create when restoring the home directory

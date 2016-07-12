@@ -10,13 +10,17 @@ function bitbucket_prepare_db {
 }
 
 function bitbucket_backup_db {
-   no_op
+    no_op
 }
 
 function bitbucket_prepare_db_restore {
-    no_op
+    # When PostgreSQL is running as a service with its data on the same volume as the home directory, all its data will
+    # restored implicitly when the home volume is restored.  All we need to do is stop the service beforehand.
+    sudo service postgresql93 stop
 }
 
 function bitbucket_restore_db {
-    no_op
+    # All of PostgreSQL's data has already been restored with the home directory volume.  All we need to do is start
+    # the service back up again.
+    sudo service postgresql93 start
 }
