@@ -4,9 +4,11 @@ SCRIPT_DIR=$(dirname $0)
 source ${SCRIPT_DIR}/bitbucket.diy-backup.utils.sh
 source ${SCRIPT_DIR}/bitbucket.diy-backup.common.sh
 
-BACKUP_VARS_FILE="${BACKUP_VARS_FILE:-${SCRIPT_DIR}/bitbucket.diy-backup.vars.sh}"
+BACKUP_VARS_FILE=${BACKUP_VARS_FILE:-"${SCRIPT_DIR}"/bitbucket.diy-backup.vars.sh}
+
 if [ -f ${BACKUP_VARS_FILE} ]; then
     source ${BACKUP_VARS_FILE}
+    info "Using vars file: ${BACKUP_VARS_FILE}"
 else
     error "${BACKUP_VARS_FILE} not found"
     bail "You should create it using ${SCRIPT_DIR}/bitbucket.diy-backup.vars.sh.example as a template"

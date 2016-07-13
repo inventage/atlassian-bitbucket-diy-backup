@@ -93,6 +93,9 @@ AWS_AVAILABILITY_ZONE=`curl ${CURL_OPTIONS} http://169.254.169.254/latest/meta-d
 # The region for the resources Bitbucket is using (volumes, instances, snapshots, etc)
 AWS_REGION="`echo \"${AWS_AVAILABILITY_ZONE}\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"
 
+# The EC2 instance ID
+AWS_EC2_INSTANCE_ID="$(curl ${CURL_OPTIONS} http://169.254.169.254/latest/meta-data/instance-id)"
+
 # Additional AWS tags for EBS and RDS snapshot, tags needs to be in JSON format without enclosing square brackets:
 # Example: AWS_ADDITIONAL_TAGS='{"Key":"Value"}, {"Key":"Value"}'
 AWS_ADDITIONAL_TAGS=
@@ -118,11 +121,9 @@ BACKUP_DEST_AWS_ACCOUNT_ID=
 # The AWS Role ARN to assume when tagging the EBS + RDS snapshots
 BACKUP_DEST_AWS_ROLE=
 
-# The following two variables are only required if you wish to copy the EBS and RDS snapshots to another region
-# If set, this variable will copy the EBS snapshot to the specified region
-BACKUP_EBS_DEST_REGION=
-# If set, this variable will copy the RDS snapshot to the specified region
-BACKUP_RDS_DEST_REGION=
+# This variable is only required if you wish to copy the EBS and RDS snapshots to another region
+# If set, this variable will copy the EBS & RDS snapshot to the specified region
+BACKUP_DEST_REGION=
 
 # === AWS RDS Variables ===
 

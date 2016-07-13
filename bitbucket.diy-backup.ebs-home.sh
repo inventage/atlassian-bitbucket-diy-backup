@@ -1,5 +1,6 @@
 #!/bin/bash
 
+SCRIPT_DIR=$(dirname $0)
 source ${SCRIPT_DIR}/bitbucket.diy-backup.ec2-common.sh
 
 function bitbucket_prepare_home {
@@ -19,7 +20,7 @@ function bitbucket_prepare_home {
     if [ -z "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" ] || [ "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" == null ]; then
         error "Device name ${HOME_DIRECTORY_DEVICE_NAME} specified in ${BACKUP_VARS_FILE} as HOME_DIRECTORY_DEVICE_NAME could not be resolved to a volume."
 
-        bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
+        bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
     fi
 }
 

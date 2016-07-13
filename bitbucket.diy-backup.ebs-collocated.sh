@@ -3,6 +3,7 @@
 # This script is meant to be used when the database data directory is collocated in the same volume
 # as the home directory. In that scenario 'bitbucket.diy-backup.ebs-home.sh' should be enough to backup / restore a Bitbucket instance.
 
+SCRIPT_DIR=$(dirname $0)
 source ${SCRIPT_DIR}/bitbucket.diy-backup.ec2-common.sh
 
 function bitbucket_prepare_db {

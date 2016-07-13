@@ -8,6 +8,7 @@
 #     bitbucket_prepare_db_restore
 #     bitbucket_restore
 
+SCRIPT_DIR=$(dirname $0)
 source ${SCRIPT_DIR}/bitbucket.diy-backup.ec2-common.sh
 
 function bitbucket_prepare_db {

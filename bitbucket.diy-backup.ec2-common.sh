@@ -225,8 +225,11 @@ function find_attached_ebs_volume {
     local DEVICE_NAME="${1}"
 
     info "Looking up volume for device name ${DEVICE_NAME}"
-    aws ec2 describe-volumes --filter Name=attachment.instance-id,Values=${AWS_EC2_INSTANCE_ID} \
-            Name=attachment.device,Values=${DEVICE_NAME} | jq -r '.Volumes[0].VolumeId'
+    info "aws ID: ${AWS_EC2_INSTANCE_ID}"
+    local ebs_volume=$(aws ec2 describe-volumes --filter Name=attachment.instance-id,Values=${AWS_EC2_INSTANCE_ID} \
+            Name=attachment.device,Values=${DEVICE_NAME} | jq -r '.Volumes[0].VolumeId')
+    info "ebs vol: ${ebs_volume}"
+    echo "${ebs_volume}"
 }
 
 function validate_rds_instance_id {

@@ -87,11 +87,9 @@ BACKUP_DEST_AWS_ACCOUNT_ID=
 # The AWS Role to assume when tagging the EBS + RDS snapshots
 BACKUP_DEST_AWS_ROLE=
 
-# The following two variables are only required if you wish to copy the EBS and RDS snapshots to another region
-# If set, this variable will copy the EBS snapshot to the specified region
-BACKUP_EBS_DEST_REGION=
-# If set, this variable will copy the RDS snapshot to the specified region
-BACKUP_RDS_DEST_REGION=
+# This variable is only required if you wish to copy the EBS and RDS snapshots to another region
+# If set, this variable will copy the EBS * RDS snapshot to the specified region
+BACKUP_DEST_REGION=
 
 # If set to true, this variable will backup the filesystem and database without locking the application.
 # The resulting backups may contain inconsistencies, so you must run Bitbucket Server 4.8 or higher and check recently
