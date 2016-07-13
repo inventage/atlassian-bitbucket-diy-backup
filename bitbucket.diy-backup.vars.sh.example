@@ -8,6 +8,9 @@
 
 CURL_OPTIONS="-L -s -f"
 
+# The base url used to lock/access this bitbucket instance. It cannot end on a '/'. This value can be retrieved from the admin page your Bitbucket instance
+BITBUCKET_URL=http://localhost:7990
+
 # Which filesystem backup script to use (ex: rsync, ebs-home)
 # ebs-home means the Bitbucket home (and the database if selected ebs-collocated) will be backed up by taking a snapshot of the EBS volume
 BACKUP_HOME_TYPE=rsync
@@ -24,20 +27,17 @@ BACKUP_ARCHIVE_TYPE=tar
 # Used by the scripts for verbose logging. If not true only errors will be shown.
 BITBUCKET_VERBOSE_BACKUP=TRUE
 
-# The base url used to lock/access this bitbucket instance. It cannot end on a '/'. This value can be retrieved from the admin page your Bitbucket instance
-BITBUCKET_URL=
-
 # The username and password to a user with the necessary permissions required make non-AWS backups.
 BITBUCKET_BACKUP_USER=
 BITBUCKET_BACKUP_PASS=
 
-# If set to true, this variable will backup the filesystem and database without locking the application.
+# If set to true, this variable will backup the filesystem and database without locking Bitbucket in maintenance mode.
 # The resulting backups may contain inconsistencies, so you must run Bitbucket Server 4.8 or higher and check recently
 # modified repositories and pull requests after restoring. Bitbucket Data Center with the disaster.recovery=true option
 # can actively scan for such inconsistencies and resolve them automatically.
-# For more information, see https://confluence.atlassian.com/display/BitbucketServer/Using+Bitbucket+Data+Center+Zero+Downtime+Backup
-# Make sure you read and understand this document before setting this variable to "true"
-BACKUP_ZERO_DOWNTIME=false
+# For more information, see https://confluence.atlassian.com/display/BitbucketServer/Using+Bitbucket+Zero+Downtime+Backup
+# Make sure you read and understand this document before uncommenting.
+#BACKUP_ZERO_DOWNTIME=true
 
 # HipChat options
 HIPCHAT_URL=https://api.hipchat.com
