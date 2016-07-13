@@ -3,7 +3,7 @@
 # Functions implementing archiving of backups and copy to offsite location for AWS snapshots.
 # AWS snapshots reside in AWS and are not archived in this implementation.
 #
-# You can optionally set BACKUP_DEST_REGION and BACKUP_DEST_REGION to copy every snapshot to another AWS region,
+# You can optionally set BACKUP_DEST_REGION to copy every snapshot to another AWS region,
 # for example, as part of a disaster recovery plan.
 #
 # Additionally, you can also set the variables BACKUP_DEST_AWS_ACCOUNT_ID and BACKUP_DEST_AWS_ROLE to share every

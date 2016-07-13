@@ -17,6 +17,22 @@ fi
 # The following scripts contain functions which are dependent on the configuration of this bitbucket instance.
 # Generally each of them exports certain functions, which can be implemented in different ways
 
+if [ "ebs-home" = "${BACKUP_HOME_TYPE}" -o "rds" = "${BACKUP_DATABASE_TYPE}" ]; then
+
+    AWS_INFO=$(curl ${CURL_OPTIONS} http://169.254.169.254/latest/dynamic/instance-identity/document)
+
+     # The availability zone in which volumes will be created when restoring an instance.
+    AWS_AVAILABILITY_ZONE=$(echo "${AWS_INFO}" | jq -r .availabilityZone)
+
+    # The region for the resources Bitbucket is using (volumes, instances, snapshots, etc)
+    AWS_REGION=$(echo "${AWS_INFO}" | jq -r .region)
+fi
+
+if [ "ebs-home" = "${BACKUP_HOME_TYPE}" ]; then
+    # The EC2 instance ID
+    AWS_EC2_INSTANCE_ID=$(echo "${AWS_INFO}" | jq -r .instanceId)
+fi
+
 if [ -e "${SCRIPT_DIR}/bitbucket.diy-backup.${BACKUP_HOME_TYPE}.sh" ]; then
     source ${SCRIPT_DIR}/bitbucket.diy-backup.${BACKUP_HOME_TYPE}.sh
 else

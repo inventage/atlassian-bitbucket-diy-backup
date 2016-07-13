@@ -32,7 +32,7 @@ function bitbucket_backup_home {
     add_cleanup_routine unfreeze_home_directory
 
     info "Performing backup of home directory"
-    BACKUP_EBS_SNAPSHOT_ID=$(snapshot_ebs_volume "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" "Perform backup: ${PRODUCT} home directory snapshot")
+    snapshot_ebs_volume "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" "Perform backup: ${PRODUCT} home directory snapshot"
 
     # Unfreeze the home directory as soon as the EBS snapshot has been taken
     unfreeze_home_directory

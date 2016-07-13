@@ -64,9 +64,6 @@ function snapshot_ebs_volume {
        aws ec2 create-tags --resources "${EBS_SNAPSHOT_ID}" --tags "[ ${AWS_ADDITIONAL_TAGS} ]"
        info "Tagged EBS snapshot ${EBS_SNAPSHOT_ID} with additional tags: ${AWS_ADDITIONAL_TAGS}"
     fi
-
-    # Return EBS snapshot ID
-    echo ${EBS_SNAPSHOT_ID}
 }
 
 function create_volume {
@@ -184,9 +181,6 @@ function snapshot_rds_instance {
     success "Taken snapshot ${SNAPSHOT_TAG_VALUE} of RDS instance ${INSTANCE_ID}"
 
     info "Tagged ${SNAPSHOT_TAG_VALUE} with ${AWS_TAGS}"
-
-    # Return RDS Snapshot ID
-    echo ${SNAPSHOT_TAG_VALUE}
 }
 
 function restore_rds_instance {
@@ -225,10 +219,9 @@ function find_attached_ebs_volume {
     local DEVICE_NAME="${1}"
 
     info "Looking up volume for device name ${DEVICE_NAME}"
-    info "aws ID: ${AWS_EC2_INSTANCE_ID}"
     local ebs_volume=$(aws ec2 describe-volumes --filter Name=attachment.instance-id,Values=${AWS_EC2_INSTANCE_ID} \
             Name=attachment.device,Values=${DEVICE_NAME} | jq -r '.Volumes[0].VolumeId')
-    info "ebs vol: ${ebs_volume}"
+
     echo "${ebs_volume}"
 }
 
@@ -236,6 +229,7 @@ function validate_rds_instance_id {
     local INSTANCE_ID="$1"
 
     STATE=$(aws rds describe-db-instances --db-instance-identifier ${INSTANCE_ID} | jq -r '.DBInstances[0].DBInstanceStatus')
+
     if [ -z "${STATE}" ] || [ "${STATE}" == null ]; then
         error "Could not retrieve instance status for db ${INSTANCE_ID}"
 

@@ -23,8 +23,7 @@ function bitbucket_prepare_db {
 
 function bitbucket_backup_db {
     info "Performing backup of RDS instance ${BACKUP_RDS_INSTANCE_ID}"
-
-    BACKUP_RDS_SNAPSHOT_ID=$(snapshot_rds_instance "${BACKUP_RDS_INSTANCE_ID}")
+    snapshot_rds_instance "${BACKUP_RDS_INSTANCE_ID}"
 }
 
 function bitbucket_prepare_db_restore {
