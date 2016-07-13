@@ -19,17 +19,23 @@ function bitbucket_lock {
         return
     fi
 
-    BITBUCKET_LOCK_RESULT=`curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X POST -H "Content-type: application/json" "${BITBUCKET_URL}/mvc/maintenance/lock"`
-    if [ -z "${BITBUCKET_LOCK_RESULT}" ]; then
-        bail "Locking this Bitbucket instance failed"
+    local lock_response=$(run curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X POST -H "Content-type: application/json" \
+        "${BITBUCKET_URL}/mvc/maintenance/lock")
+    if [ -z "${lock_response}" ]; then
+        bail "Unable to lock Bitbucket for maintenance. POST to '${BITBUCKET_URL}/mvc/maintenance/lock' \
+            returned '${lock_response}'"
     fi
 
-    BITBUCKET_LOCK_TOKEN=`echo ${BITBUCKET_LOCK_RESULT} | jq -r ".unlockToken" | tr -d '\r'`
+    BITBUCKET_LOCK_TOKEN=$(echo ${lock_response} | jq -r ".unlockToken" | tr -d '\r')
     if [ -z "${BITBUCKET_LOCK_TOKEN}" ]; then
-        bail "Unable to find lock token. Result was '$BITBUCKET_LOCK_RESULT'"
+        bail "Unable to get Bitbucket unlock token from maintenance mode response. \
+            Could not find 'unlockToken' in response '${lock_response}'"
     fi
 
-    info "locked with '$BITBUCKET_LOCK_TOKEN'"
+    add_cleanup_routine bitbucket_unlock
+
+    info "Bitbucket has been locked for maintenance.  It can be unlocked with:"
+    info "    curl -u ... -X DELETE -H 'Content-type:application/json' '${BITBUCKET_URL}/mvc/maintenance/lock?token=${BITBUCKET_LOCK_TOKEN}'"
 }
 
 function bitbucket_backup_start {
@@ -37,17 +43,21 @@ function bitbucket_backup_start {
         return
     fi
 
-    BITBUCKET_BACKUP_RESULT=`curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X POST -H "X-Atlassian-Maintenance-Token: ${BITBUCKET_LOCK_TOKEN}" -H "Accept: application/json" -H "Content-type: application/json" "${BITBUCKET_URL}/mvc/admin/backups?external=true"`
-    if [ -z "${BITBUCKET_BACKUP_RESULT}" ]; then
-        bail "Entering backup mode failed"
+    local backup_response=$(run curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X POST -H \
+        "X-Atlassian-Maintenance-Token: ${BITBUCKET_LOCK_TOKEN}" -H "Accept: application/json" \
+        -H "Content-type: application/json" "${BITBUCKET_URL}/mvc/admin/backups?external=true")
+    if [ -z "${backup_response}" ]; then
+        bail "Unable to enter backup mode. POST to '${BITBUCKET_URL}/mvc/admin/backups?external=true' \
+            returned '${backup_response}'"
     fi
 
-    BITBUCKET_BACKUP_TOKEN=`echo ${BITBUCKET_BACKUP_RESULT} | jq -r ".cancelToken" | tr -d '\r'`
+    BITBUCKET_BACKUP_TOKEN=$(echo ${backup_response} | jq -r ".cancelToken" | tr -d '\r')
     if [ -z "${BITBUCKET_BACKUP_TOKEN}" ]; then
-        bail "Unable to find backup token. Result was '${BITBUCKET_BACKUP_RESULT}'"
+        bail "Unable to enter backup mode. Could not find 'cancelToken' in response '${backup_response}'"
     fi
 
-    info "backup started with '${BITBUCKET_BACKUP_TOKEN}'"
+    info "Backup started. It can be cancelled with:"
+    info "    curl -u ... -X DELETE -H 'Content-type:application/json' '${BITBUCKET_URL}/mvc/admin/backups/${BITBUCKET_BACKUP_TOKEN}'"
 }
 
 function bitbucket_backup_wait {
@@ -55,45 +65,42 @@ function bitbucket_backup_wait {
         return
     fi
 
-    BITBUCKET_PROGRESS_DB_STATE="AVAILABLE"
-    BITBUCKET_PROGRESS_SCM_STATE="AVAILABLE"
+    local db_state="AVAILABLE"
+    local scm_state="AVAILABLE"
 
-    print -n "[${BITBUCKET_URL}]  INFO: Waiting for DRAINED state"
-    while [ "${BITBUCKET_PROGRESS_DB_STATE}_${BITBUCKET_PROGRESS_SCM_STATE}" != "DRAINED_DRAINED" ]; do
-        print -n "."
-
-        BITBUCKET_PROGRESS_RESULT=`curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X GET -H "X-Atlassian-Maintenance-Token: ${BITBUCKET_LOCK_TOKEN}" -H "Accept: application/json" -H "Content-type: application/json" "${BITBUCKET_URL}/mvc/maintenance"`
-        if [ -z "${BITBUCKET_PROGRESS_RESULT}" ]; then
-            bail "[${BITBUCKET_URL}] ERROR: Unable to check for backup progress"
+    print "Waiting for Bitbucket to be in DRAINED state"
+    while [ "${db_state}_${scm_state}" != "DRAINED_DRAINED" ]; do
+        local progress_response=$(run curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X GET \
+            -H "X-Atlassian-Maintenance-Token: ${BITBUCKET_LOCK_TOKEN}" -H "Accept: application/json" \
+            -H "Content-type: application/json" "${BITBUCKET_URL}/mvc/maintenance")
+        if [ -z "${progress_response}" ]; then
+            bail "Unable to check for backup progress. \
+                GET to '${BITBUCKET_URL}/mvc/maintenance' did not return any content"
         fi
 
-        BITBUCKET_PROGRESS_DB_STATE=`echo ${BITBUCKET_PROGRESS_RESULT} | jq -r '.["db-state"]' | tr -d '\r'`
-        BITBUCKET_PROGRESS_SCM_STATE=`echo ${BITBUCKET_PROGRESS_RESULT} | jq -r '.["scm-state"]' | tr -d '\r'`
-        BITBUCKET_PROGRESS_STATE=`echo ${BITBUCKET_PROGRESS_RESULT} | jq -r '.task.state' | tr -d '\r'`
+        db_state=$(echo ${progress_response} | jq -r '.["db-state"]' | tr -d '\r')
+        scm_state=$(echo ${progress_response} | jq -r '.["scm-state"]' | tr -d '\r')
+        local drained_state=$(echo ${progress_response} | jq -r '.task.state' | tr -d '\r')
 
-        if [ "${BITBUCKET_PROGRESS_STATE}" != "RUNNING" ]; then
-            error "Unable to start backup, try unlocking"
+        if [ "${drained_state}" != "RUNNING" ]; then
             bitbucket_unlock
-            bail "Failed to start backup"
+            bail "Unable to start Bitbucket backup"
         fi
     done
 
-    print " done"
-    info "db state '${BITBUCKET_PROGRESS_DB_STATE}'"
-    info "scm state '${BITBUCKET_PROGRESS_SCM_STATE}'"
+    print "db state '${db_state}'"
+    print "scm state '${scm_state}'"
 }
 
 function bitbucket_backup_progress {
+    local backup_progress=$1
+
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
     fi
 
-    BITBUCKET_REPORT_RESULT=`curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X POST -H "Accept: application/json" -H "Content-type: application/json" "${BITBUCKET_URL}/mvc/admin/backups/progress/client?token=${BITBUCKET_LOCK_TOKEN}&percentage=$1"`
-    if [ $? != 0 ]; then
-        bail "Unable to update backup progress"
-    fi
-
-    info "Backup progress updated to $1"
+    run curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X POST -H "Accept: application/json" -H "Content-type: application/json" \
+        "${BITBUCKET_URL}/mvc/admin/backups/progress/client?token=${BITBUCKET_LOCK_TOKEN}&percentage=${backup_progress}"
 }
 
 function bitbucket_unlock {
@@ -101,48 +108,37 @@ function bitbucket_unlock {
         return
     fi
 
-    BITBUCKET_UNLOCK_RESULT=`curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X DELETE -H "Accept: application/json" -H "Content-type: application/json" "${BITBUCKET_URL}/mvc/maintenance/lock?token=${BITBUCKET_LOCK_TOKEN}"`
-    if [ $? != 0 ]; then
-        bail "Unable to unlock instance with lock ${BITBUCKET_LOCK_TOKEN}"
-    fi
+    remove_cleanup_routine bitbucket_unlock
 
-    info "Bitbucket instance unlocked"
+    run curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X DELETE -H "Accept: application/json" \
+        -H "Content-type: application/json" "${BITBUCKET_URL}/mvc/maintenance/lock?token=${BITBUCKET_LOCK_TOKEN}"
 }
 
 function freeze_mount_point {
-    info "Freezing filesystem at mount point ${1}"
-
-    sudo fsfreeze -f ${1} > /dev/null
+    run sudo fsfreeze -f ${1}
 }
 
 function unfreeze_mount_point {
-    info "Unfreezing filesystem at mount point ${1}"
-
-    sudo fsfreeze -u ${1} > /dev/null 2>&1
+    run sudo fsfreeze -u ${1}
 }
 
-function mount_device {
-    local DEVICE_NAME="$1"
-    local MOUNT_POINT="$2"
-
-    info "Remounting ${DEVICE_NAME} to ${MOUNT_POINT}"
-
-    sudo mount "${DEVICE_NAME}" "${MOUNT_POINT}" > /dev/null
-    success "Mounted device ${DEVICE_NAME} to ${MOUNT_POINT}"
+function remount_device {
+    remove_cleanup_routine remount_device
+    run sudo mount "${HOME_DIRECTORY_DEVICE_NAME}" "${HOME_DIRECTORY_MOUNT_POINT}"
 }
 
 function unmount_device {
-    local MOUNT_POINT="$1"
-
-    info "Unmounting ${MOUNT_POINT}"
-
-    sudo umount "${MOUNT_POINT}" > /dev/null
-    success "Unmounted ${MOUNT_POINT}"
+    run sudo umount "${HOME_DIRECTORY_MOUNT_POINT}"
+    add_cleanup_routine remount_device
 }
 
 function add_cleanup_routine() {
-    cleanup_queue+=($1)
-    trap run_cleanup EXIT
+    cleanup_queue=($1 ${cleanup_queue[@]})
+    trap run_cleanup EXIT INT ABRT PIPE
+}
+
+function remove_cleanup_routine() {
+    cleanup_queue=("${cleanup_queue[@]/$1}")
 }
 
 function run_cleanup() {
@@ -153,20 +149,9 @@ function run_cleanup() {
     done
 }
 
-function check_mount_point {
-    local MOUNT_POINT="${1}"
-
-    # mountpoint check will return a non-zero exit code when mount point is free
-    mountpoint -q "${MOUNT_POINT}"
-    if [ $? == 0 ]; then
-        error "The directory mount point ${MOUNT_POINT} appears to be taken"
-        bail "Please stop Bitbucket. Stop PostgreSQL if it is running. Unmount the device and detach the volume"
-    fi
-}
-
 # This removes config.lock, index.lock, gc.pid, and refs/heads/*.lock
 function cleanup_locks {
-    local HOME_DIRECTORY="$1"
+    local home_directory="$1"
 
     # From the shopt man page:
     # globstar
@@ -175,8 +160,8 @@ function cleanup_locks {
     shopt -s globstar
 
     # Remove lock files in the repositories
-    sudo -u ${BITBUCKET_UID} rm -f ${HOME_DIRECTORY}/shared/data/repositories/*/{HEAD,config,index,gc,packed-refs,stash-packed-refs}.{pid,lock}
-    sudo -u ${BITBUCKET_UID} rm -f ${HOME_DIRECTORY}/shared/data/repositories/*/refs/**/*.lock
-    sudo -u ${BITBUCKET_UID} rm -f ${HOME_DIRECTORY}/shared/data/repositories/*/stash-refs/**/*.lock
-    sudo -u ${BITBUCKET_UID} rm -f ${HOME_DIRECTORY}/shared/data/repositories/*/logs/**/*.lock
+    run sudo -u ${BITBUCKET_UID} rm -f ${home_directory}/shared/data/repositories/*/{HEAD,config,index,gc,packed-refs,stash-packed-refs}.{pid,lock}
+    run sudo -u ${BITBUCKET_UID} rm -f ${home_directory}/shared/data/repositories/*/refs/**/*.lock
+    run sudo -u ${BITBUCKET_UID} rm -f ${home_directory}/shared/data/repositories/*/stash-refs/**/*.lock
+    run sudo -u ${BITBUCKET_UID} rm -f ${home_directory}/shared/data/repositories/*/logs/**/*.lock
 }

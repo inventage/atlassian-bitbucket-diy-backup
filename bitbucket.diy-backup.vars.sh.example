@@ -41,6 +41,7 @@ BITBUCKET_BACKUP_PASS=
 
 # HipChat options
 HIPCHAT_URL=https://api.hipchat.com
+# Note: The Hipchat room name must be URL encoded. i.e. My Hipchat Room should be My%20Hipchat%20Room
 HIPCHAT_ROOM=
 HIPCHAT_TOKEN=
 

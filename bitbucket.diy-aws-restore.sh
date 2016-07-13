@@ -28,7 +28,7 @@ source ${SCRIPT_DIR}/bitbucket.diy-backup.common.sh
 # Exports aws specific function to be used during the restore
 source ${SCRIPT_DIR}/bitbucket.diy-backup.ec2-common.sh
 
-if [ "ebs-collocated" == "${BACKUP_DATABASE_TYPE}" ] || [ "rds" == "${BACKUP_DATABASE_TYPE}" ]; then
+if [ "ebs-collocated" = "${BACKUP_DATABASE_TYPE}" -o "rds" = "${BACKUP_DATABASE_TYPE}" ]; then
     # Exports the following functions
     #     bitbucket_restore_db     - for restoring the bitbucket DB
     source ${SCRIPT_DIR}/bitbucket.diy-backup.${BACKUP_DATABASE_TYPE}.sh
@@ -37,7 +37,7 @@ else
     bail "Please update BACKUP_DATABASE_TYPE in ${BACKUP_VARS_FILE} or consider running bitbucket.diy-restore.sh instead"
 fi
 
-if [ "ebs-home" == "${BACKUP_HOME_TYPE}" ]; then
+if [ "ebs-home" = "${BACKUP_HOME_TYPE}" ]; then
     # Exports the following functions
     #     bitbucket_restore_home   -  for restoring the filesystem backup
     source ${SCRIPT_DIR}/bitbucket.diy-backup.${BACKUP_HOME_TYPE}.sh

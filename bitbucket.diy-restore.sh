@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 SCRIPT_DIR=$(dirname $0)
 
 # Contains util functions (bail, info, print)
@@ -28,7 +30,7 @@ fi
 # The following scripts contain functions which are dependent on the configuration of this bitbucket instance.
 # Generally each of them exports certain functions, which can be implemented in different ways
 
-if [ "mssql" = "${BACKUP_DATABASE_TYPE}" ] || [ "postgresql" = "${BACKUP_DATABASE_TYPE}" ] || [ "mysql" = "${BACKUP_DATABASE_TYPE}" ]; then
+if [ "mssql" = "${BACKUP_DATABASE_TYPE}" -o "postgresql" = "${BACKUP_DATABASE_TYPE}" -o "mysql" = "${BACKUP_DATABASE_TYPE}" ]; then
     # Exports the following functions
     #     bitbucket_restore_db     - for restoring the bitbucket DB
     source ${SCRIPT_DIR}/bitbucket.diy-backup.${BACKUP_DATABASE_TYPE}.sh

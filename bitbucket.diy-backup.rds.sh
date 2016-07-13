@@ -10,6 +10,7 @@
 
 SCRIPT_DIR=$(dirname $0)
 source ${SCRIPT_DIR}/bitbucket.diy-backup.ec2-common.sh
+source ${SCRIPT_DIR}/bitbucket.diy-backup.utils.sh
 
 function bitbucket_prepare_db {
     # Validate that all the configuration parameters have been provided to avoid bailing out and leaving Bitbucket locked

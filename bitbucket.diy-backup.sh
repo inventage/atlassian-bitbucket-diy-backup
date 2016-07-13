@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Ensure the script terminates whenever a required operation encounters an error
+set -e
+
 SCRIPT_DIR=$(dirname $0)
 source ${SCRIPT_DIR}/bitbucket.diy-backup.utils.sh
 source ${SCRIPT_DIR}/bitbucket.diy-backup.common.sh
