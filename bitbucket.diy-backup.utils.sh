@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Contains util functions (bail, info, print)
+
 function bail {
     error $*
     exit 99

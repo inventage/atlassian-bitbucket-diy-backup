@@ -38,3 +38,7 @@ function bitbucket_restore_home {
     rsync -av ${RSYNC_QUIET} ${BITBUCKET_RESTORE_HOME}/ ${BITBUCKET_HOME}/
     info "Performed restore of ${BITBUCKET_RESTORE_HOME} to ${BITBUCKET_HOME}"
 }
+
+function bitbucket_cleanup_home_backups {
+    no_op
+}

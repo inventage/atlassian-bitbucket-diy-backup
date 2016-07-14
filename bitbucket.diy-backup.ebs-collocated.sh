@@ -3,9 +3,8 @@
 # This script is meant to be used when the database data directory is collocated in the same volume
 # as the home directory. In that scenario 'bitbucket.diy-backup.ebs-home.sh' should be enough to backup / restore a Bitbucket instance.
 
-function no_op {
-    echo > /dev/null
-}
+SCRIPT_DIR=$(dirname $0)
+source ${SCRIPT_DIR}/bitbucket.diy-backup.ec2-common.sh
 
 function bitbucket_prepare_db {
     no_op
@@ -25,8 +24,4 @@ function bitbucket_restore_db {
     # All of PostgreSQL's data has already been restored with the home directory volume.  All we need to do is start
     # the service back up again.
     sudo service postgresql93 start
-}
-
-function cleanup_old_db_snapshots {
-    no_op
 }
