@@ -25,9 +25,6 @@ else
     export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 fi
 
-export AWS_DEFAULT_REGION=${AWS_REGION}
-export AWS_DEFAULT_OUTPUT=json
-
 if [ -z "${INSTANCE_NAME}" ]; then
     error "The ${PRODUCT} instance name must be set as INSTANCE_NAME in ${BACKUP_VARS_FILE}"
 
@@ -41,6 +38,9 @@ elif [ ${#INSTANCE_NAME} -ge 100 ]; then
 
     bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
 fi
+
+export AWS_DEFAULT_REGION=${AWS_REGION}
+export AWS_DEFAULT_OUTPUT=json
 
 SNAPSHOT_TAG_KEY="Name"
 # This is used to identify RDS + EBS snapshots.

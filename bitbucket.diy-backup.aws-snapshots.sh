@@ -65,7 +65,7 @@ function bitbucket_cleanup_ebs_snapshots {
 }
 
 function bitbucket_cleanup_rds_snapshots {
-    if ! [ "${KEEP_BACKUPS}" -gt 0 ]; then
+    if [ ! "${KEEP_BACKUPS}" -gt 0 ]; then
         info "Skipping cleanup of RDS snapshots"
         return
     fi

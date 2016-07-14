@@ -87,14 +87,21 @@ BITBUCKET_BACKUP_GPG_RECIPIENT=
 # Used in AWS backup & restore to tag snapshots. It cannot contain spaces and it must be under 100 characters long
 INSTANCE_NAME=bitbucket
 
-# The availability zone in which volumes will be created when restoring an instance.
-AWS_AVAILABILITY_ZONE=`curl ${CURL_OPTIONS} http://169.254.169.254/latest/meta-data/placement/availability-zone`
+if [ "ebs-home" = "${BACKUP_HOME_TYPE}" -o "rds" = "${BACKUP_DATABASE_TYPE}" ]; then
 
-# The region for the resources Bitbucket is using (volumes, instances, snapshots, etc)
-AWS_REGION="`echo \"${AWS_AVAILABILITY_ZONE}\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"
+    AWS_INFO=$(curl ${CURL_OPTIONS} http://169.254.169.254/latest/dynamic/instance-identity/document)
 
-# The EC2 instance ID
-AWS_EC2_INSTANCE_ID="$(curl ${CURL_OPTIONS} http://169.254.169.254/latest/meta-data/instance-id)"
+     # The availability zone in which volumes will be created when restoring an instance.
+    AWS_AVAILABILITY_ZONE=$(echo "${AWS_INFO}" | jq -r .availabilityZone)
+
+    # The region for the resources Bitbucket is using (volumes, instances, snapshots, etc)
+    AWS_REGION=$(echo "${AWS_INFO}" | jq -r .region)
+fi
+
+if [ "ebs-home" = "${BACKUP_HOME_TYPE}" ]; then
+    # The EC2 instance ID
+    AWS_EC2_INSTANCE_ID=$(echo "${AWS_INFO}" | jq -r .instanceId)
+fi
 
 # Additional AWS tags for EBS and RDS snapshot, tags needs to be in JSON format without enclosing square brackets:
 # Example: AWS_ADDITIONAL_TAGS='{"Key":"Value"}, {"Key":"Value"}'

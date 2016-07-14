@@ -7,12 +7,12 @@ function bitbucket_prepare_home {
     # Validate that all the configuration parameters have been provided to avoid bailing out and leaving Bitbucket locked
     if [ -z "${HOME_DIRECTORY_MOUNT_POINT}" ]; then
         error "The home directory mount point must be set as HOME_DIRECTORY_MOUNT_POINT in ${BACKUP_VARS_FILE}"
-        bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
+        bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
     fi
 
     if [ -z "${HOME_DIRECTORY_DEVICE_NAME}" ]; then
         error "The home directory volume device name must be set as HOME_DIRECTORY_DEVICE_NAME in ${BACKUP_VARS_FILE}"
-        bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
+        bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
     fi
 
     BACKUP_HOME_DIRECTORY_VOLUME_ID="$(find_attached_ebs_volume "${HOME_DIRECTORY_DEVICE_NAME}")"
