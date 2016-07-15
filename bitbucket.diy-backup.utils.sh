@@ -12,7 +12,7 @@ function check_command {
 }
 
 function error {
-    echo "[${BITBUCKET_URL}] ERROR: $*" > /dev/stderr
+    print "[${BITBUCKET_URL}] ERROR: $*"
     hc_announce "[${BITBUCKET_URL}] ERROR: $*" "red" 1
 }
 
@@ -26,7 +26,7 @@ function hc_announce {
     fi
 
     if [ -z "$1" ]; then
-        echo "ERROR: HipChat notification message is missing." > /dev/stderr
+        print "ERROR: HipChat notification message is missing."
         return 1
     fi
 
@@ -47,7 +47,7 @@ function hc_announce {
 
 function info {
     if [ "${BITBUCKET_VERBOSE_BACKUP}" = "TRUE" ]; then
-        echo "[${BITBUCKET_URL}]  INFO: $*" > /dev/stderr
+        print "[${BITBUCKET_URL}]  INFO: $*"
         hc_announce "[${BITBUCKET_URL}]  INFO: $*" "gray"
     fi
 }
@@ -75,6 +75,6 @@ function run {
 }
 
 function success {
-    echo "[${BITBUCKET_URL}]  SUCC: $*" > /dev/stderr
+    print "[${BITBUCKET_URL}]  SUCC: $*"
     hc_announce "[${BITBUCKET_URL}]  SUCC: $*" "green"
 }

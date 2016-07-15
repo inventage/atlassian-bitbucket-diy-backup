@@ -5,7 +5,7 @@ check_command "jq"
 
 # Ensure the AWS region has been provided
 if [ -z "${AWS_REGION}" -o "${AWS_REGION}" = "null" ]; then
-    error "The AWS region must be set as AWS_REGION in ${BACKUP_VARS_FILE}"
+    error "The AWS region must be set as AWS_REGION in '${BACKUP_VARS_FILE}'"
     bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
 fi
 
@@ -14,29 +14,28 @@ if [ -z "${AWS_ACCESS_KEY_ID}" -o -z "${AWS_SECRET_ACCESS_KEY}" ]; then
     if [ -z "${AWS_INSTANCE_ROLE}" ]; then
         error "Could not find the necessary credentials to run backup"
         error "We recommend launching the instance with an appropriate IAM role"
-        error "Alternatively AWS credentials can be set as AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in ${BACKUP_VARS_FILE}"
-        bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
+        error "Alternatively AWS credentials can be set as AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in '${BACKUP_VARS_FILE}'"
+        bail "See 'bitbucket.diy-aws-backup.vars.sh.example' for the defaults."
     else
-        info "Using IAM instance role ${AWS_INSTANCE_ROLE}"
+        info "Using IAM instance role '${AWS_INSTANCE_ROLE}'"
     fi
 else
-    info "Found AWS credentials"
     export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
     export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 fi
 
 if [ -z "${INSTANCE_NAME}" ]; then
-    error "The ${PRODUCT} instance name must be set as INSTANCE_NAME in ${BACKUP_VARS_FILE}"
+    error "The '${PRODUCT}' instance name must be set as INSTANCE_NAME in '${BACKUP_VARS_FILE}'"
 
-    bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
+    bail "See 'bitbucket.diy-aws-backup.vars.sh.example' for the defaults."
 elif [ ! "${INSTANCE_NAME}" = ${INSTANCE_NAME%[[:space:]]*} ]; then
     error "Instance name cannot contain spaces"
 
-    bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
+    bail "See 'bitbucket.diy-aws-backup.vars.sh.example' for the defaults."
 elif [ ${#INSTANCE_NAME} -ge 100 ]; then
     error "Instance name must be under 100 characters in length"
 
-    bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
+    bail "See 'bitbucket.diy-aws-backup.vars.sh.example' for the defaults."
 fi
 
 export AWS_DEFAULT_REGION=${AWS_REGION}
@@ -123,8 +122,9 @@ function wait_attached_volume {
 
         attachment_state=$(echo "${volume_description}" | jq -r '.Volumes[0].Attachments[0].State')
         if [ -z "${attachment_state}" -o "${attachment_state}" = "null" ]; then
-            bail "Unable to get volume state for volume '${volume_id}'. \
-                Could not find 'Volume' with 'Attachment' with 'State' in response '${volume_description}'"
+            error "Could not find 'Volume' with 'Attachment' with 'State' in response '${volume_description}'"
+            bail "Unable to get volume state for volume '${volume_id}'"
+
         fi
         case "${attachment_state}" in
             "attaching")
@@ -227,8 +227,8 @@ function find_attached_ebs_volume {
 
     local ebs_volume=$(echo "${volume_description}" | jq -r '.Volumes[0].VolumeId')
     if [ -z "${ebs_volume}" -o "${ebs_volume}" = "null" ]; then
-        bail "Unable to retrieve volume information for device '${device_name}'. \
-            Could not find 'Volume' with 'VolumeId' in response '${volume_description}'"
+        error "Could not find 'Volume' with 'VolumeId' in response '${volume_description}'"
+        bail "Unable to retrieve volume information for device '${device_name}'"
     fi
 
     echo "${ebs_volume}"
@@ -241,15 +241,15 @@ function validate_rds_instance_id {
     local db_instance_status=$(echo "${instance_description}" | jq -r '.DBInstances[0].DBInstanceStatus')
     case "${db_instance_status}" in
         -z | "null")
-            bail "Please make sure you have selected an existing RDS instance. \
-                Could not find a 'DBInstance' with 'DBInstanceStatus' in response '${instance_description}'"
-        ;;
+            error "Could not find a 'DBInstance' with 'DBInstanceStatus' in response '${instance_description}'"
+            bail "Please make sure you have selected an existing RDS instance"
+            ;;
         "available")
-        ;;
+            ;;
         *)
-            bail "The instance must be 'available' before the backup can be started. \
-                The instance '${instance_id}' status is '${db_instance_status}', expected 'available'"
-        ;;
+            error "The instance '${instance_id}' status is '${db_instance_status}', expected 'available'"
+            bail "The instance must be 'available' before the backup can be started."
+            ;;
     esac
 }
 
@@ -288,7 +288,7 @@ function list_available_ebs_snapshot_tags {
 function list_old_rds_snapshot_ids {
     local region=$1
     if [ "${KEEP_BACKUPS}" -gt 0 ]; then
-        run aws rds describe-db-snapshots --region ${region} --snapshot-type manual | \
+        run aws rds describe-db-snapshots --region "${region}" --snapshot-type manual | \
             jq -r ".DBSnapshots | map(select(.DBSnapshotIdentifier | \
             startswith(\"${SNAPSHOT_TAG_PREFIX}\"))) | sort_by(.SnapshotCreateTime) | reverse | .[${KEEP_BACKUPS}:] | \
             map(.DBSnapshotIdentifier)[]"

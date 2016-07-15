@@ -115,11 +115,11 @@ function bitbucket_unlock {
 }
 
 function freeze_mount_point {
-    run sudo fsfreeze -f ${1}
+    run sudo fsfreeze -f "${1}"
 }
 
 function unfreeze_mount_point {
-    run sudo fsfreeze -u ${1}
+    run sudo fsfreeze -u "${1}"
 }
 
 function remount_device {

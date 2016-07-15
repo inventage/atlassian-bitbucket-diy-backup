@@ -82,7 +82,8 @@ function bitbucket_cleanup_rds_snapshots {
 function cleanup_old_offsite_rds_snapshots {
     if [ -n "${BACKUP_DEST_AWS_ACCOUNT_ID}" -a -n "${BACKUP_DEST_AWS_ROLE}" ]; then
         # Assume BACKUP_DEST_AWS_ROLE
-        local credentials=$(run aws sts assume-role --role-arn "${BACKUP_DEST_AWS_ROLE}" --role-session-name "BitbucketServerDIYBackup")
+        local credentials=$(run aws sts assume-role --role-arn "${BACKUP_DEST_AWS_ROLE}" \
+            --role-session-name "BitbucketServerDIYBackup")
         local aws_access_key_id=$(echo ${credentials} | jq -r .Credentials.AccessKeyId)
         local aws_secret_access_key=$(echo ${credentials} | jq -r .Credentials.SecretAccessKey)
         local aws_session_token=$(echo ${credentials} | jq -r .Credentials.SessionToken)
@@ -128,7 +129,8 @@ function share_and_copy_rds_snapshot {
     info "Granted permissions on RDS snapshot '${rds_snapshot_id}' for AWS account: '${BACKUP_DEST_AWS_ACCOUNT_ID}'"
 
     # Assume BACKUP_DEST_AWS_ROLE
-    local credentials=$(run aws sts assume-role --role-arn "${BACKUP_DEST_AWS_ROLE}" --role-session-name "BitbucketServerDIYBackup")
+    local credentials=$(run aws sts assume-role --role-arn "${BACKUP_DEST_AWS_ROLE}" \
+        --role-session-name "BitbucketServerDIYBackup")
     local aws_access_key_id=$(echo ${credentials} | jq -r .Credentials.AccessKeyId)
     local aws_secret_access_key=$(echo ${credentials} | jq -r .Credentials.SecretAccessKey)
     local aws_session_token=$(echo ${credentials} | jq -r .Credentials.SessionToken)
@@ -205,7 +207,8 @@ function copy_and_share_ebs_snapshot {
     run aws ec2 wait snapshot-completed --region "${BACKUP_DEST_REGION}" --snapshot-ids "${dest_snapshot_id}"
 
     info "Assuming AWS role '${BACKUP_DEST_AWS_ROLE}' to tag copied snapshot"
-    local credentials=$(run aws sts assume-role --role-arn "${BACKUP_DEST_AWS_ROLE}" --role-session-name "BitbucketServerDIYBackup")
+    local credentials=$(run aws sts assume-role --role-arn "${BACKUP_DEST_AWS_ROLE}" \
+        --role-session-name "BitbucketServerDIYBackup")
     local access_key_id=$(echo ${credentials} | jq -r .Credentials.AccessKeyId)
     local secret_access_key=$(echo ${credentials} | jq -r .Credentials.SecretAccessKey)
     local session_token=$(echo ${credentials} | jq -r .Credentials.SessionToken)
