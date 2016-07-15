@@ -17,8 +17,8 @@ function prepare_restore_home {
 }
 
 function restore_home {
-    rsync_quiet=-q
-    if [ "${BITBUCKET_VERBOSE_BACKUP}" == "TRUE" ]; then
+    local rsync_quiet=-q
+    if [ "${BITBUCKET_VERBOSE_BACKUP}" = "TRUE" ]; then
         rsync_quiet=
     fi
 
@@ -31,8 +31,8 @@ function perform_rsync {
       rsync_exclude_repos="${rsync_exclude_repos} --exclude=/shared/data/repositories/${repo_id}"
     done
 
-    rsync_quiet=-q
-    if [ "${BITBUCKET_VERBOSE_BACKUP}" == "TRUE" ]; then
+    local rsync_quiet=-q
+    if [ "${BITBUCKET_VERBOSE_BACKUP}" = "TRUE" ]; then
         rsync_quiet=
     fi
 

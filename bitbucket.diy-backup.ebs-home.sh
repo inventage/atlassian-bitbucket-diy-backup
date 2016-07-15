@@ -39,16 +39,6 @@ function backup_home {
 }
 
 function prepare_restore_home {
-    local SNAPSHOT_TAG="${1}"
-
-    if [ -z ${SNAPSHOT_TAG} ]; then
-        info "Usage: $0 <snapshot-tag>"
-
-        list_available_ebs_snapshot_tags
-
-        exit 99
-    fi
-
     if [ -z "${BITBUCKET_HOME}" ]; then
         error "The ${PRODUCT} home directory must be set as BITBUCKET_HOME in ${BACKUP_VARS_FILE}"
         bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
@@ -81,11 +71,6 @@ function prepare_restore_home {
         error "The home directory mount point must be set as HOME_DIRECTORY_MOUNT_POINT in ${BACKUP_VARS_FILE}"
         bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
     fi
-
-    BACKUP_HOME_DIRECTORY_VOLUME_ID="$(find_attached_ebs_volume "${HOME_DIRECTORY_DEVICE_NAME}")"
-
-    RESTORE_HOME_DIRECTORY_SNAPSHOT_ID=
-    validate_ebs_snapshot "${SNAPSHOT_TAG}" RESTORE_HOME_DIRECTORY_SNAPSHOT_ID
 }
 
 function restore_home {

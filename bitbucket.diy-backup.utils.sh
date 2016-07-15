@@ -44,14 +44,14 @@ function hc_announce {
 }
 
 function info {
-    if [ "${BITBUCKET_VERBOSE_BACKUP}" == "TRUE" ]; then
+    if [ "${BITBUCKET_VERBOSE_BACKUP}" = "TRUE" ]; then
         echo "[${BITBUCKET_URL}]  INFO: $*" > /dev/stderr
         hc_announce "[${BITBUCKET_URL}]  INFO: $*" "gray"
     fi
 }
 
 function print {
-    if [ "${BITBUCKET_VERBOSE_BACKUP}" == "TRUE" ]; then
+    if [ "${BITBUCKET_VERBOSE_BACKUP}" = "TRUE" ]; then
         echo "$@" > /dev/stderr
     fi
 }

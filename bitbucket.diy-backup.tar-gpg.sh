@@ -1,8 +1,10 @@
 #!/bin/bash
 
+check_command "tar"
+check_command "gpg-zip"
+
 function prepare_archive_backup {
-    check_command "tar"
-    check_command "gpg-zip"
+    no_op
 }
 
 function archive_backup {
@@ -74,6 +76,6 @@ function cleanup_old_archives {
 }
 
 function print_available_backups {
-	echo "Available backups:"  > /dev/stderr
-	ls ${BITBUCKET_BACKUP_ARCHIVE_ROOT}
+    echo "Available backups:"  > /dev/stderr
+    ls ${BITBUCKET_BACKUP_ARCHIVE_ROOT}
 }

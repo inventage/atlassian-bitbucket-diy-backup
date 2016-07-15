@@ -48,8 +48,24 @@ function archive_backup {
 }
 
 function prepare_restore_archive {
-    # Probably not necessary to prepare to do nothing
-    no_op
+    local SNAPSHOT_TAG="${1}"
+
+    if [ -z ${SNAPSHOT_TAG} ]; then
+        info "Usage: $0 <snapshot-tag>"
+
+        list_available_ebs_snapshot_tags
+
+        exit 99
+    fi
+
+    BACKUP_HOME_DIRECTORY_VOLUME_ID="$(find_attached_ebs_volume "${HOME_DIRECTORY_DEVICE_NAME}")"
+
+    RESTORE_HOME_DIRECTORY_SNAPSHOT_ID=
+    validate_ebs_snapshot "${SNAPSHOT_TAG}" RESTORE_HOME_DIRECTORY_SNAPSHOT_ID
+
+    validate_rds_snapshot "${SNAPSHOT_TAG}"
+
+    RESTORE_RDS_SNAPSHOT_ID="${SNAPSHOT_TAG}"
 }
 
 function restore_archive {

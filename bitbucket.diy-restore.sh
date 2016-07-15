@@ -52,11 +52,14 @@ fi
 ##########################################################
 
 # Prepare for restore process
-prepare_restore_home "${1}"
+if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then
+    prepare_restore_archive "${1}"
+fi
+
+prepare_restore_home
 prepare_restore_db "${1}"
 
 if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then
-    prepare_restore_archive "${1}"
     restore_archive "${1}"
 fi
 

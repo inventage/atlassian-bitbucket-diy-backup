@@ -1,8 +1,9 @@
 #!/bin/bash
 
+check_command "tar"
 
 function prepare_archive_backup {
-    check_command "tar"
+    no_op
 }
 
 function archive_backup {
