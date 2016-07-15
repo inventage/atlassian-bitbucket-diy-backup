@@ -107,13 +107,6 @@ function bitbucket_restore_home {
     info "Performed restore of home directory snapshot"
 }
 
-function bitbucket_cleanup_home {
-    for snapshot_id in $(list_old_ebs_snapshot_ids); do
-        info "Deleting old EBS snapshot ${snapshot_id}"
-        delete_ebs_snapshot "${snapshot_id}"
-    done
-}
-
 function freeze_home_directory {
     freeze_mount_point ${HOME_DIRECTORY_MOUNT_POINT}
 }

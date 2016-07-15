@@ -25,8 +25,3 @@ function bitbucket_restore_db {
     # the service back up again.
     sudo service postgresql93 start
 }
-
-function bitbucket_cleanup_db {
-    # Database exists within the home snapshot
-    no_op
-}

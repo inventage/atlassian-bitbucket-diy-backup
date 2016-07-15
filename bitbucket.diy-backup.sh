@@ -64,6 +64,3 @@ if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then
     bitbucket_backup_archive
     bitbucket_cleanup_archive
 fi
-
-bitbucket_cleanup_home
-bitbucket_cleanup_db

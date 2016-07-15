@@ -36,7 +36,3 @@ function bitbucket_restore_db {
     fi
     info "Performed restore of ${BITBUCKET_RESTORE_DB} to DB ${BITBUCKET_DB}"
 }
-
-function bitbucket_cleanup_db {
-    no_op
-}

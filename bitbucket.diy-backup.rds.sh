@@ -65,16 +65,3 @@ function bitbucket_restore_db {
 
     info "Performed restore of ${RESTORE_RDS_SNAPSHOT_ID} to RDS instance ${RESTORE_RDS_INSTANCE_ID}"
 }
-
-function bitbucket_cleanup_db {
-    if [ ! "${KEEP_BACKUPS}" -gt 0 ]; then
-        info "Skipping cleanup of RDS snapshots"
-        return
-    fi
-
-    # Delete old snapshots in source AWS account
-    for snapshot_id in $(list_old_rds_snapshot_ids ${AWS_REGION}); do
-        info "Deleting old RDS snapshot ${snapshot_id}"
-        aws rds delete-db-snapshot --db-snapshot-identifier "${snapshot_id}" > /dev/null
-    done
-}

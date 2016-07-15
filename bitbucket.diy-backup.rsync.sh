@@ -26,10 +26,6 @@ function bitbucket_restore_home {
     info "Performed restore of ${BITBUCKET_RESTORE_HOME} to ${BITBUCKET_HOME}"
 }
 
-function bitbucket_cleanup_home {
-    no_op
-}
-
 function bitbucket_perform_rsync {
     for repo_id in ${BITBUCKET_BACKUP_EXCLUDE_REPOS[@]}; do
       rsync_exclude_repos="${rsync_exclude_repos} --exclude=/shared/data/repositories/${repo_id}"
