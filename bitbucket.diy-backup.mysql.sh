@@ -23,8 +23,10 @@ function bitbucket_backup_db {
 }
 
 function bitbucket_prepare_restore_db {
-    bitbucket_bail_if_db_exists
-    no_op
+    mysqlshow ${MYSQL_HOST_CMD} -u ${MYSQL_USERNAME} -p${MYSQL_PASSWORD} ${BITBUCKET_DB}
+    if [ $? = 0 ]; then
+        bail "Cannot restore over existing database ${BITBUCKET_DB}. Try renaming or droping ${BITBUCKET_DB} first."
+    fi
 }
 
 function bitbucket_restore_db {
@@ -37,11 +39,4 @@ function bitbucket_restore_db {
 
 function bitbucket_cleanup_db {
     no_op
-}
-
-function bitbucket_bail_if_db_exists {
-    mysqlshow ${MYSQL_HOST_CMD} -u ${MYSQL_USERNAME} -p${MYSQL_PASSWORD} ${BITBUCKET_DB}
-    if [ $? = 0 ]; then
-        bail "Cannot restore over existing database ${BITBUCKET_DB}. Try renaming or droping ${BITBUCKET_DB} first."
-    fi
 }
