@@ -317,7 +317,7 @@ function get_aws_account_id {
     # Returns the ID of the AWS account that this instance is running in.
     local instance_info=$(run curl http://169.254.169.254/latest/dynamic/instance-identity/document)
 
-    local account_id=$(echo "${instance_id}" | jq -r '.accountId')
+    local account_id=$(echo "${instance_info}" | jq -r '.accountId')
     if [ -z "${account_id}" ]; then
         bail "Unable to determine account id. Could not find 'accountId' in response '${instance_info}'"
     fi

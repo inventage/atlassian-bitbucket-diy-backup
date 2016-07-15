@@ -12,7 +12,7 @@ function check_command {
 }
 
 function error {
-    print "[${BITBUCKET_URL}] ERROR: $*"
+    echo "[${BITBUCKET_URL}] ERROR: $*" > /dev/stderr
     hc_announce "[${BITBUCKET_URL}] ERROR: $*" "red" 1
 }
 
@@ -39,15 +39,16 @@ function hc_announce {
         hc_notify="true"
     fi
 
-    local hc_message=`echo "$1" | sed -e 's|"|\\\"|g'`
-    ! curl -s -S -X POST -H "Content-Type: application/json" \
-        -d "{\"message\":\"${hc_message}\",\"color\":\"${hc_color}\",\"notify\":${hc_notify}}" \
-        "${HIPCHAT_URL}/v2/room/${HIPCHAT_ROOM}/notification?auth_token=${HIPCHAT_TOKEN}" > /dev/null
+    local hc_message=$(echo "$1" | sed -e 's|"|\\\"|g')
+    local hipchat_payload="{\"message\":\"${hc_message}\",\"color\":\"${hc_color}\",\"notify\":\"${hc_notify}\"}"
+    local hipchat_url="${HIPCHAT_URL}/v2/room/${HIPCHAT_ROOM}/notification?auth_token=${HIPCHAT_TOKEN}"
+    ! curl -s -S -X POST -H "Content-Type: application/json" -d "${hipchat_payload}" "${hipchat_url}"
+    true
 }
 
 function info {
     if [ "${BITBUCKET_VERBOSE_BACKUP}" = "TRUE" ]; then
-        print "[${BITBUCKET_URL}]  INFO: $*"
+        echo "[${BITBUCKET_URL}]  INFO: $*"
         hc_announce "[${BITBUCKET_URL}]  INFO: $*" "gray"
     fi
 }
