@@ -2,21 +2,21 @@
 
 check_command "rsync"
 
-function bitbucket_prepare_backup_home {
-    bitbucket_perform_rsync
+function prepare_backup_home {
+    perform_rsync
     info "Prepared backup of ${BITBUCKET_HOME} to ${BITBUCKET_BACKUP_HOME}"
 }
 
-function bitbucket_backup_home {
-    bitbucket_perform_rsync
+function backup_home {
+    perform_rsync
     info "Performed backup of ${BITBUCKET_HOME} to ${BITBUCKET_BACKUP_HOME}"
 }
 
-function bitbucket_prepare_restore_home {
+function prepare_restore_home {
     no_op
 }
 
-function bitbucket_restore_home {
+function restore_home {
     rsync_quiet=-q
     if [ "${BITBUCKET_VERBOSE_BACKUP}" == "TRUE" ]; then
         rsync_quiet=
@@ -26,7 +26,7 @@ function bitbucket_restore_home {
     info "Performed restore of ${BITBUCKET_RESTORE_HOME} to ${BITBUCKET_HOME}"
 }
 
-function bitbucket_perform_rsync {
+function perform_rsync {
     for repo_id in ${BITBUCKET_BACKUP_EXCLUDE_REPOS[@]}; do
       rsync_exclude_repos="${rsync_exclude_repos} --exclude=/shared/data/repositories/${repo_id}"
     done

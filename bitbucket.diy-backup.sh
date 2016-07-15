@@ -38,29 +38,29 @@ fi
 ##########################################################
 
 # Prepare the database and the filesystem for taking a backup
-bitbucket_prepare_backup_db
-bitbucket_prepare_backup_home
+prepare_backup_db
+prepare_backup_home
 
 # If necessary, lock Bitbucket, start an external backup and wait for instance readiness
-bitbucket_lock
-bitbucket_backup_start
-bitbucket_backup_wait
+lock_application
+backup_start
+backup_wait
 
 # Back up the database and filesystem in parallel, reporting progress
-(bitbucket_backup_db && bitbucket_backup_progress 50) &
-(bitbucket_backup_home && bitbucket_backup_progress 50) &
+(backup_db && update_backup_progress 50) &
+(backup_home && update_backup_progress 50) &
 
 # Wait until home and database backups are complete
 wait $(jobs -p)
 
 # If necessary, report 100% progress back to the application, and unlock Bitbucket
-bitbucket_backup_progress 100
-bitbucket_unlock
+update_backup_progress 100
+unlock_application
 
 success "Successfully completed the backup of your ${PRODUCT} instance"
 
 if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then
-    bitbucket_prepare_backup_archive
-    bitbucket_backup_archive
-    bitbucket_cleanup_archive
+    prepare_backup_archive
+    backup_archive
+    cleanup_archive
 fi

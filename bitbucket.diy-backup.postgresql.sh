@@ -32,11 +32,11 @@ if [[ -z ${POSTGRES_PORT} ]]; then
     POSTGRES_PORT=5432
 fi
 
-function bitbucket_prepare_backup_db {
+function prepare_backup_db {
     no_op
 }
 
-function bitbucket_backup_db {
+function backup_db {
     rm -r ${BITBUCKET_BACKUP_DB}
     pg_dump ${PG_USER} ${PG_HOST} --port=${POSTGRES_PORT} ${PG_PARALLEL} -Fd ${BITBUCKET_DB} ${PG_SNAPSHOT_OPT} -f ${BITBUCKET_BACKUP_DB}
     if [ $? != 0 ]; then
@@ -45,14 +45,14 @@ function bitbucket_backup_db {
     info "Performed backup of DB ${BITBUCKET_DB} in ${BITBUCKET_BACKUP_DB}"
 }
 
-function bitbucket_prepare_restore_db {
+function prepare_restore_db {
     psql ${PG_USER} ${PG_HOST} --port=${POSTGRES_PORT} -d ${BITBUCKET_DB} -c '' > /dev/null 2>&1
     if [ $? = 0 ]; then
         bail "Cannot restore over existing database ${BITBUCKET_DB}. Try dropdb ${BITBUCKET_DB} first."
     fi
 }
 
-function bitbucket_restore_db {
+function restore_db {
     pg_restore ${PG_USER} ${PG_HOST} --port=${POSTGRES_PORT} -d postgres -C -Fd ${PG_PARALLEL} ${BITBUCKET_RESTORE_DB}
     if [ $? != 0 ]; then
         bail "Unable to restore ${BITBUCKET_RESTORE_DB} to ${BITBUCKET_DB}"

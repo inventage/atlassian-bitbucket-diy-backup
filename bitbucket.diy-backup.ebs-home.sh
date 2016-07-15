@@ -3,7 +3,7 @@
 SCRIPT_DIR=$(dirname $0)
 source ${SCRIPT_DIR}/bitbucket.diy-backup.ec2-common.sh
 
-function bitbucket_prepare_backup_home {
+function prepare_backup_home {
     # Validate that all the configuration parameters have been provided to avoid bailing out and leaving Bitbucket locked
     if [ -z "${HOME_DIRECTORY_MOUNT_POINT}" ]; then
         error "The home directory mount point must be set as HOME_DIRECTORY_MOUNT_POINT in ${BACKUP_VARS_FILE}"
@@ -24,7 +24,7 @@ function bitbucket_prepare_backup_home {
     fi
 }
 
-function bitbucket_backup_home {
+function backup_home {
     # Freeze the home directory filesystem to ensure consistency
     freeze_home_directory
 
@@ -38,7 +38,7 @@ function bitbucket_backup_home {
     unfreeze_home_directory
 }
 
-function bitbucket_prepare_restore_home {
+function prepare_restore_home {
     local SNAPSHOT_TAG="${1}"
 
     if [ -z ${SNAPSHOT_TAG} ]; then
@@ -88,7 +88,7 @@ function bitbucket_prepare_restore_home {
     validate_ebs_snapshot "${SNAPSHOT_TAG}" RESTORE_HOME_DIRECTORY_SNAPSHOT_ID
 }
 
-function bitbucket_restore_home {
+function restore_home {
     unmount_device "${HOME_DIRECTORY_MOUNT_POINT}"
 
     if [ -n "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" ]; then

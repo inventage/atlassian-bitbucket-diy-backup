@@ -11,7 +11,7 @@ BITBUCKET_HTTP_AUTH="-u ${BITBUCKET_BACKUP_USER}:${BITBUCKET_BACKUP_PASS}"
 PRODUCT=Bitbucket
 
 
-function bitbucket_lock {
+function lock_application {
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
     fi
@@ -29,7 +29,7 @@ function bitbucket_lock {
     info "locked with '$BITBUCKET_LOCK_TOKEN'"
 }
 
-function bitbucket_backup_start {
+function backup_start {
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
     fi
@@ -47,7 +47,7 @@ function bitbucket_backup_start {
     info "backup started with '${BITBUCKET_BACKUP_TOKEN}'"
 }
 
-function bitbucket_backup_wait {
+function backup_wait {
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
     fi
@@ -70,7 +70,7 @@ function bitbucket_backup_wait {
 
         if [ "${BITBUCKET_PROGRESS_STATE}" != "RUNNING" ]; then
             error "Unable to start backup, try unlocking"
-            bitbucket_unlock
+            unlock_application
             bail "Failed to start backup"
         fi
     done
@@ -80,7 +80,7 @@ function bitbucket_backup_wait {
     info "scm state '${BITBUCKET_PROGRESS_SCM_STATE}'"
 }
 
-function bitbucket_backup_progress {
+function update_backup_progress {
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
     fi
@@ -93,7 +93,7 @@ function bitbucket_backup_progress {
     info "Backup progress updated to $1"
 }
 
-function bitbucket_unlock {
+function unlock_application {
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
     fi

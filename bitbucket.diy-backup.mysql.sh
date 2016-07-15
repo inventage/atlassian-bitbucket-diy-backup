@@ -9,11 +9,11 @@ if [[ -n ${MYSQL_HOST} ]]; then
     MYSQL_HOST_CMD="-h ${MYSQL_HOST}"
 fi
 
-function bitbucket_prepare_backup_db {
+function prepare_backup_db {
     info "Prepared backup of DB ${BITBUCKET_DB} in ${BITBUCKET_BACKUP_DB}"
 }
 
-function bitbucket_backup_db {
+function backup_db {
     rm -r ${BITBUCKET_BACKUP_DB}
     mysqldump ${MYSQL_HOST_CMD} ${MYSQL_BACKUP_OPTIONS} -u ${MYSQL_USERNAME} -p${MYSQL_PASSWORD} --databases ${BITBUCKET_DB} > ${BITBUCKET_BACKUP_DB}
     if [ $? != 0 ]; then
@@ -22,14 +22,14 @@ function bitbucket_backup_db {
     info "Performed backup of DB ${BITBUCKET_DB} in ${BITBUCKET_BACKUP_DB}"
 }
 
-function bitbucket_prepare_restore_db {
+function prepare_restore_db {
     mysqlshow ${MYSQL_HOST_CMD} -u ${MYSQL_USERNAME} -p${MYSQL_PASSWORD} ${BITBUCKET_DB}
     if [ $? = 0 ]; then
         bail "Cannot restore over existing database ${BITBUCKET_DB}. Try renaming or droping ${BITBUCKET_DB} first."
     fi
 }
 
-function bitbucket_restore_db {
+function restore_db {
     mysql ${MYSQL_HOST_CMD} -u ${MYSQL_USERNAME} -p${MYSQL_PASSWORD} < ${BITBUCKET_RESTORE_DB}
     if [ $? != 0 ]; then
         bail "Unable to restore ${BITBUCKET_RESTORE_DB} to ${BITBUCKET_DB}"

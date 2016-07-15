@@ -9,11 +9,11 @@
 # Additionally, you can also set the variables BACKUP_DEST_AWS_ACCOUNT_ID and BACKUP_DEST_AWS_ROLE to share every
 # snapshot with another AWS account.
 
-function bitbucket_prepare_backup_archive {
+function prepare_backup_archive {
     no_op
 }
 
-function bitbucket_backup_archive {
+function backup_archive {
     # AWS snapshots reside in AWS and do not need to be archived.
 
     # Optionally copy/share the EBS snapshot to another region and/or account.
@@ -47,17 +47,17 @@ function bitbucket_backup_archive {
     fi
 }
 
-function bitbucket_prepare_restore_archive {
+function prepare_restore_archive {
     # Probably not necessary to prepare to do nothing
     no_op
 }
 
-function bitbucket_restore_archive {
+function restore_archive {
     # AWS snapshots reside in AWS and do not need any un-archiving.
     no_op
 }
 
-function bitbucket_cleanup_archive {
+function cleanup_archive {
     if [ "${KEEP_BACKUPS}" -gt 0 ]; then
         if [ "${BACKUP_DATABASE_TYPE}" = "rds" ]; then
             for snapshot_id in $(list_old_rds_snapshot_ids ${AWS_REGION}); do

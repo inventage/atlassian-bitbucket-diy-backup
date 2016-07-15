@@ -1,11 +1,11 @@
 #!/bin/bash
 
 
-function bitbucket_prepare_backup_archive {
+function prepare_backup_archive {
     check_command "tar"
 }
 
-function bitbucket_backup_archive {
+function backup_archive {
     mkdir -p ${BITBUCKET_BACKUP_ARCHIVE_ROOT}
     BITBUCKET_BACKUP_ARCHIVE_NAME=`perl -we 'use Time::Piece; my $sydTime = localtime; print "bitbucket-", $sydTime->strftime("%Y%m%d-%H%M%S-"), substr($sydTime->epoch, -3), ".tar.gz"'`
 
@@ -14,7 +14,7 @@ function bitbucket_backup_archive {
     info "Archived ${BITBUCKET_BACKUP_ROOT} into ${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}"
 }
 
-function bitbucket_prepare_restore_archive {
+function prepare_restore_archive {
     BITBUCKET_BACKUP_ARCHIVE_NAME=$1
 
     if [ -z ${BITBUCKET_BACKUP_ARCHIVE_NAME} ]; then
@@ -46,7 +46,7 @@ function bitbucket_prepare_restore_archive {
     BITBUCKET_RESTORE_HOME=${BITBUCKET_RESTORE_ROOT}/bitbucket-home
 }
 
-function bitbucket_restore_archive {
+function restore_archive {
     if [ -f ${BITBUCKET_BACKUP_ARCHIVE_NAME} ]; then
         BITBUCKET_BACKUP_ARCHIVE_NAME=${BITBUCKET_BACKUP_ARCHIVE_NAME}
     else
@@ -57,7 +57,7 @@ function bitbucket_restore_archive {
     info "Extracted ${BITBUCKET_BACKUP_ARCHIVE_NAME} into ${BITBUCKET_RESTORE_ROOT}"
 }
 
-function bitbucket_cleanup_archive {
+function cleanup_archive {
     # Cleanup of old backups is not currently implemented
     no_op
 }
