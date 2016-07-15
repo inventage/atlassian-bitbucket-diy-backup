@@ -60,7 +60,7 @@ unlock_application
 success "Successfully completed the backup of your ${PRODUCT} instance"
 
 if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then
-    prepare_backup_archive
-    backup_archive
-    cleanup_archive
+    prepare_archive_backup
+    archive_backup
+    cleanup_old_archives
 fi

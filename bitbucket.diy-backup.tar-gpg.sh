@@ -1,11 +1,11 @@
 #!/bin/bash
 
-function prepare_backup_archive {
+function prepare_archive_backup {
     check_command "tar"
     check_command "gpg-zip"
 }
 
-function backup_archive {
+function archive_backup {
     if [[ -z ${BITBUCKET_BACKUP_GPG_RECIPIENT} ]]; then
         bail "In order to encrypt the backup you must set the 'BITBUCKET_BACKUP_GPG_RECIPIENT' configuration variable. Exiting..."
     fi
@@ -68,7 +68,7 @@ function restore_archive {
     info "Extracted ${BITBUCKET_BACKUP_ARCHIVE_NAME} into ${BITBUCKET_RESTORE_ROOT}"
 }
 
-function cleanup_archive {
+function cleanup_old_archives {
     # Cleanup of old backups is not currently implemented
     no_op
 }

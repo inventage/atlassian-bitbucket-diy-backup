@@ -9,11 +9,11 @@
 # Additionally, you can also set the variables BACKUP_DEST_AWS_ACCOUNT_ID and BACKUP_DEST_AWS_ROLE to share every
 # snapshot with another AWS account.
 
-function prepare_backup_archive {
+function prepare_archive_backup {
     no_op
 }
 
-function backup_archive {
+function archive_backup {
     # AWS snapshots reside in AWS and do not need to be archived.
 
     # Optionally copy/share the EBS snapshot to another region and/or account.
@@ -57,7 +57,7 @@ function restore_archive {
     no_op
 }
 
-function cleanup_archive {
+function cleanup_old_archives {
     if [ "${KEEP_BACKUPS}" -gt 0 ]; then
         if [ "${BACKUP_DATABASE_TYPE}" = "rds" ]; then
             for snapshot_id in $(list_old_rds_snapshot_ids ${AWS_REGION}); do
