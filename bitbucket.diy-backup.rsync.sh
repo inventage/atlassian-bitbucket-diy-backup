@@ -39,6 +39,10 @@ function bitbucket_restore_home {
     info "Performed restore of ${BITBUCKET_RESTORE_HOME} to ${BITBUCKET_HOME}"
 }
 
+function bitbucket_prepare_restore_home {
+    no_op
+}
+
 function bitbucket_cleanup_home_backups {
     no_op
 }

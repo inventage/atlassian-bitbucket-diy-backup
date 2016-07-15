@@ -60,3 +60,7 @@ function success {
     echo "[${BITBUCKET_URL}]  SUCC: $*" > /dev/stderr
     hc_announce "[${BITBUCKET_URL}]  SUCC: $*" "green"
 }
+
+function no_op {
+    echo > /dev/null
+}

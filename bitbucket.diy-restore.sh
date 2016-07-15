@@ -28,65 +28,33 @@ fi
 # The following scripts contain functions which are dependent on the configuration of this bitbucket instance.
 # Generally each of them exports certain functions, which can be implemented in different ways
 
-if [ "mssql" = "${BACKUP_DATABASE_TYPE}" ] || [ "postgresql" = "${BACKUP_DATABASE_TYPE}" ] || [ "mysql" = "${BACKUP_DATABASE_TYPE}" ]; then
-    # Exports the following functions
-    #     bitbucket_restore_db     - for restoring the bitbucket DB
-    source ${SCRIPT_DIR}/bitbucket.diy-backup.${BACKUP_DATABASE_TYPE}.sh
-else
-    error "${BACKUP_DATABASE_TYPE} is not a supported database backup type"
-    bail "Please update BACKUP_DATABASE_TYPE in ${BACKUP_VARS_FILE} or consider running bitbucket.diy-aws-restore.sh instead"
-fi
-
-if [ "rsync" = "${BACKUP_HOME_TYPE}" ]; then
-    # Exports the following functions
-    #     bitbucket_restore_home   -  for restoring the filesystem backup
+if [ -e "${SCRIPT_DIR}/bitbucket.diy-backup.${BACKUP_HOME_TYPE}.sh" ]; then
     source ${SCRIPT_DIR}/bitbucket.diy-backup.${BACKUP_HOME_TYPE}.sh
 else
-    error "${BACKUP_HOME_TYPE} is not a supported home backup type"
-    bail "Please update BACKUP_HOME_TYPE in ${BACKUP_VARS_FILE} or consider running bitbucket.diy-aws-restore.sh instead"
+    error "BACKUP_HOME_TYPE=${BACKUP_HOME_TYPE} is not implemented, ${SCRIPT_DIR}/bitbucket.diy-backup.${BACKUP_HOME_TYPE}.sh does not exist"
+    bail "Please update BACKUP_HOME_TYPE in ${BACKUP_VARS_FILE}"
 fi
 
-# Exports the following functions
-#     bitbucket_restore_archive - for un-archiving the archive folder
-source ${SCRIPT_DIR}/bitbucket.diy-backup.${BACKUP_ARCHIVE_TYPE}.sh
+if [ -e "${SCRIPT_DIR}/bitbucket.diy-backup.${BACKUP_DATABASE_TYPE}.sh" ]; then
+    source ${SCRIPT_DIR}/bitbucket.diy-backup.${BACKUP_DATABASE_TYPE}.sh
+else
+    error "BACKUP_DATABASE_TYPE=${BACKUP_DATABASE_TYPE} is not implemented, ${SCRIPT_DIR}/bitbucket.diy-backup.${BACKUP_DATABASE_TYPE}.sh does not exist"
+    bail "Please update BACKUP_DATABASE_TYPE in ${BACKUP_VARS_FILE}"
+fi
+
+if [ -e "${SCRIPT_DIR}/bitbucket.diy-backup.${BACKUP_ARCHIVE_TYPE}.sh" ]; then
+    source ${SCRIPT_DIR}/bitbucket.diy-backup.${BACKUP_ARCHIVE_TYPE}.sh
+else
+    error "BACKUP_DATABASE_TYPE=${BACKUP_ARCHIVE_TYPE} is not implemented, ${SCRIPT_DIR}/bitbucket.diy-backup.${BACKUP_DATABASE_TYPE}.sh does not exist"
+    bail "Please update BACKUP_DATABASE_TYPE in ${BACKUP_VARS_FILE}"
+fi
 
 ##########################################################
-# The actual restore process. It has the following steps
 
-function available_backups {
-	echo "Available backups:"  > /dev/stderr
-	ls ${BITBUCKET_BACKUP_ARCHIVE_ROOT}
-}
-
-if [ $# -lt 1 ]; then
-    echo "Usage: $0 <backup-file-name>.tar.gz"  > /dev/stderr
-    if [ ! -d ${BITBUCKET_BACKUP_ARCHIVE_ROOT} ]; then
-        error "${BITBUCKET_BACKUP_ARCHIVE_ROOT} does not exist!"
-    else
-        available_backups
-    fi
-    exit 99
-fi
-BITBUCKET_BACKUP_ARCHIVE_NAME=$1
-if [ ! -f ${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME} ]; then
-	error "${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME} does not exist!"
-	available_backups
-	exit 99
-fi
-
-bitbucket_bail_if_db_exists
-
-# Check and create BITBUCKET_HOME
-if [ -e ${BITBUCKET_HOME} ]; then
-	bail "Cannot restore over existing contents of ${BITBUCKET_HOME}. Please rename or delete this first."
-fi
-mkdir -p ${BITBUCKET_HOME}
-chown ${BITBUCKET_UID}:${BITBUCKET_GID} ${BITBUCKET_HOME}
-
-# Setup restore paths
-BITBUCKET_RESTORE_ROOT=`mktemp -d /tmp/bitbucket.diy-restore.XXXXXX`
-BITBUCKET_RESTORE_DB=${BITBUCKET_RESTORE_ROOT}/bitbucket-db
-BITBUCKET_RESTORE_HOME=${BITBUCKET_RESTORE_ROOT}/bitbucket-home
+# Prepare for restore process
+bitbucket_prepare_restore_archive "${1}"
+bitbucket_prepare_restore_db "${1}"
+bitbucket_prepare_restore_home "${1}"
 
 # Extract the archive for this backup
 bitbucket_restore_archive
@@ -96,5 +64,7 @@ bitbucket_restore_db
 
 # Restore the filesystem
 bitbucket_restore_home
+
+success "Successfully completed the restore of your ${PRODUCT} instance"
 
 ##########################################################

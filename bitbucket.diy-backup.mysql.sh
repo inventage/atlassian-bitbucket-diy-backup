@@ -40,3 +40,8 @@ function bitbucket_restore_db {
 function bitbucket_cleanup_db_backups {
     no_op
 }
+
+function bitbucket_prepare_restore_db {
+    bitbucket_bail_if_db_exists
+    no_op
+}

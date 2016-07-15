@@ -26,8 +26,17 @@ function bitbucket_backup_db {
     snapshot_rds_instance "${BACKUP_RDS_INSTANCE_ID}"
 }
 
-function bitbucket_prepare_db_restore {
+function bitbucket_prepare_restore_db {
     local SNAPSHOT_TAG="${1}"
+
+    if [ -z ${SNAPSHOT_TAG} ]; then
+        info "Usage: $0 <snapshot-tag>"
+
+        # TODO: Rework into snapshot tags?
+        list_available_ebs_snapshot_tags
+
+        exit 99
+    fi
 
     if [ -z "${RESTORE_RDS_INSTANCE_ID}" ]; then
         error "The RDS instance id must be set in ${BACKUP_VARS_FILE}"

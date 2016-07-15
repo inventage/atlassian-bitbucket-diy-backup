@@ -10,9 +10,6 @@ BITBUCKET_HTTP_AUTH="-u ${BITBUCKET_BACKUP_USER}:${BITBUCKET_BACKUP_PASS}"
 # The name of the product
 PRODUCT=Bitbucket
 
-function no_op {
-    echo > /dev/null
-}
 
 function bitbucket_lock {
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then

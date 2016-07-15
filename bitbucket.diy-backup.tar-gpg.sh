@@ -22,6 +22,15 @@ function bitbucket_backup_archive {
 }
 
 function bitbucket_restore_archive {
+    # Create BITBUCKET_HOME
+    mkdir -p ${BITBUCKET_HOME}
+    chown ${BITBUCKET_UID}:${BITBUCKET_GID} ${BITBUCKET_HOME}
+
+    # Setup restore paths
+    BITBUCKET_RESTORE_ROOT=$(mktemp -d /tmp/bitbucket.diy-restore.XXXXXX)
+    BITBUCKET_RESTORE_DB=${BITBUCKET_RESTORE_ROOT}/bitbucket-db
+    BITBUCKET_RESTORE_HOME=${BITBUCKET_RESTORE_ROOT}/bitbucket-home
+
     if [ -f ${BITBUCKET_BACKUP_ARCHIVE_NAME} ]; then
         BITBUCKET_BACKUP_ARCHIVE_NAME=${BITBUCKET_BACKUP_ARCHIVE_NAME}
     else
@@ -32,7 +41,37 @@ function bitbucket_restore_archive {
     info "Extracted ${BITBUCKET_BACKUP_ARCHIVE_NAME} into ${BITBUCKET_RESTORE_ROOT}"
 }
 
+function bitbucket_prepare_restore_archive {
+    BITBUCKET_BACKUP_ARCHIVE_NAME=$1
+
+    if [ -z ${BITBUCKET_BACKUP_ARCHIVE_NAME} ]; then
+        echo "Usage: $0 <backup-file-name>.tar.gz"  > /dev/stderr
+        if [ ! -d ${BITBUCKET_BACKUP_ARCHIVE_ROOT} ]; then
+            error "${BITBUCKET_BACKUP_ARCHIVE_ROOT} does not exist!"
+        else
+            print_available_backups
+        fi
+        exit 99
+    fi
+
+    if [ ! -f ${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME} ]; then
+        error "${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME} does not exist!"
+        print_available_backups
+        exit 99
+    fi
+
+    # Check BITBUCKET_HOME
+    if [ -e ${BITBUCKET_HOME} ]; then
+        bail "Cannot restore over existing contents of ${BITBUCKET_HOME}. Please rename or delete this first."
+    fi
+}
+
 function bitbucket_cleanup {
     # Cleanup of old backups is not currently implemented
     no_op
+}
+
+function print_available_backups {
+	echo "Available backups:"  > /dev/stderr
+	ls ${BITBUCKET_BACKUP_ARCHIVE_ROOT}
 }

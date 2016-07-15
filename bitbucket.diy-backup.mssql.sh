@@ -15,3 +15,6 @@ function bitbucket_cleanup_db_backups {
     no_op
 }
 
+function bitbucket_prepare_restore_db {
+    no_op
+}

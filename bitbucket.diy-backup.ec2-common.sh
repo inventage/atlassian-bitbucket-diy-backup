@@ -198,10 +198,10 @@ function restore_rds_instance {
         OPTIONAL_ARGS="${OPTIONAL_ARGS} --db-subnet-group-name ${RESTORE_RDS_SUBNET_GROUP_NAME}"
     fi
 
-    aws rds restore-db-instance-from-db-snapshot --db-instance-identifier "${INSTANCE_ID}" --db-snapshot-identifier "${SNAPSHOT_ID}" ${OPTIONAL_ARGS} > /dev/null
+    info "Restoring RDS snapshot '${SNAPSHOT_ID}' to instance '${INSTANCE_ID}'"
+    aws rds restore-db-instance-from-db-snapshot --db-instance-identifier "${INSTANCE_ID}" --db-snapshot-identifier "${SNAPSHOT_ID}" ${OPTIONAL_ARGS}
 
     info "Waiting until the RDS instance is available. This could take some time"
-
     aws rds wait db-instance-available --db-instance-identifier "${INSTANCE_ID}"
 
     info "Restored snapshot ${SNAPSHOT_ID} to instance ${INSTANCE_ID}"
@@ -209,7 +209,7 @@ function restore_rds_instance {
     if [ ! -z "${RESTORE_RDS_SECURITY_GROUP}" ]; then
         # When restoring a DB instance outside of a VPC this command will need to be modified to use --db-security-groups instead of --vpc-security-group-ids
         # For more information see http://docs.aws.amazon.com/cli/latest/reference/rds/modify-db-instance.html
-        aws rds modify-db-instance --apply-immediately --db-instance-identifier "${INSTANCE_ID}" --vpc-security-group-ids "${RESTORE_RDS_SECURITY_GROUP}" > /dev/null
+        aws rds modify-db-instance --apply-immediately --db-instance-identifier "${INSTANCE_ID}" --vpc-security-group-ids "${RESTORE_RDS_SECURITY_GROUP}"
 
         info "Changed security groups of ${INSTANCE_ID} to ${RESTORE_RDS_SECURITY_GROUP}"
     fi

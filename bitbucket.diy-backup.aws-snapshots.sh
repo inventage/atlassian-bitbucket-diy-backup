@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 # Functions implementing archiving of backups and copy to offsite location for AWS snapshots.
 # AWS snapshots reside in AWS and are not archived in this implementation.
 #
@@ -206,4 +207,8 @@ function copy_and_share_ebs_snapshot {
         aws ec2 create-tags --region ${BACKUP_DEST_REGION} --resources "${dest_snapshot_id}" \
             --tags Key=Name,Value="${SNAPSHOT_TAG_VALUE}"
     info "Tagged EBS snapshot ${dest_snapshot_id} with {Name: ${SNAPSHOT_TAG_VALUE}}"
+}
+
+function bitbucket_prepare_restore_archive {
+    no_op
 }
