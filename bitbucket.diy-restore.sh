@@ -52,19 +52,18 @@ fi
 ##########################################################
 
 # Prepare for restore process
-bitbucket_prepare_restore_archive "${1}"
-bitbucket_prepare_restore_db "${1}"
 bitbucket_prepare_restore_home "${1}"
+bitbucket_prepare_restore_db "${1}"
 
-# Extract the archive for this backup
-bitbucket_restore_archive
-
-# Restore the database
-bitbucket_restore_db
+if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then
+    bitbucket_prepare_restore_archive "${1}"
+    bitbucket_restore_archive "${1}"
+fi
 
 # Restore the filesystem
 bitbucket_restore_home
 
-success "Successfully completed the restore of your ${PRODUCT} instance"
+# Restore the database
+bitbucket_restore_db
 
-##########################################################
+success "Successfully completed the restore of your ${PRODUCT} instance"

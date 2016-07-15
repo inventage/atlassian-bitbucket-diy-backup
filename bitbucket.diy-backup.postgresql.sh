@@ -32,8 +32,8 @@ if [[ -z ${POSTGRES_PORT} ]]; then
     POSTGRES_PORT=5432
 fi
 
-function bitbucket_prepare_db {
-    info "Prepared backup of DB ${BITBUCKET_DB} in ${BITBUCKET_BACKUP_DB}"
+function bitbucket_prepare_backup_db {
+    no_op
 }
 
 function bitbucket_backup_db {
@@ -45,7 +45,7 @@ function bitbucket_backup_db {
     info "Performed backup of DB ${BITBUCKET_DB} in ${BITBUCKET_BACKUP_DB}"
 }
 
-function bitbucket_bail_if_db_exists {
+function bitbucket_prepare_restore_db {
     psql ${PG_USER} ${PG_HOST} --port=${POSTGRES_PORT} -d ${BITBUCKET_DB} -c '' > /dev/null 2>&1
     if [ $? = 0 ]; then
         bail "Cannot restore over existing database ${BITBUCKET_DB}. Try dropdb ${BITBUCKET_DB} first."
@@ -60,11 +60,6 @@ function bitbucket_restore_db {
     info "Performed restore of ${BITBUCKET_RESTORE_DB} to DB ${BITBUCKET_DB}"
 }
 
-function bitbucket_cleanup_db_backups {
-    no_op
-}
-
-function bitbucket_prepare_restore_db {
-    bitbucket_bail_if_db_exists
+function bitbucket_cleanup_db {
     no_op
 }

@@ -1,7 +1,9 @@
 #!/bin/bash
 
-check_command "tar"
-check_command "gpg-zip"
+function bitbucket_prepare_backup_archive {
+    check_command "tar"
+    check_command "gpg-zip"
+}
 
 function bitbucket_backup_archive {
     if [[ -z ${BITBUCKET_BACKUP_GPG_RECIPIENT} ]]; then
@@ -19,26 +21,6 @@ function bitbucket_backup_archive {
             --output ${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME} .
     )
     info "Archived ${BITBUCKET_BACKUP_ROOT} into ${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}"
-}
-
-function bitbucket_restore_archive {
-    # Create BITBUCKET_HOME
-    mkdir -p ${BITBUCKET_HOME}
-    chown ${BITBUCKET_UID}:${BITBUCKET_GID} ${BITBUCKET_HOME}
-
-    # Setup restore paths
-    BITBUCKET_RESTORE_ROOT=$(mktemp -d /tmp/bitbucket.diy-restore.XXXXXX)
-    BITBUCKET_RESTORE_DB=${BITBUCKET_RESTORE_ROOT}/bitbucket-db
-    BITBUCKET_RESTORE_HOME=${BITBUCKET_RESTORE_ROOT}/bitbucket-home
-
-    if [ -f ${BITBUCKET_BACKUP_ARCHIVE_NAME} ]; then
-        BITBUCKET_BACKUP_ARCHIVE_NAME=${BITBUCKET_BACKUP_ARCHIVE_NAME}
-    else
-        BITBUCKET_BACKUP_ARCHIVE_NAME=${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}
-    fi
-    gpg-zip --tar-args "-C ${BITBUCKET_RESTORE_ROOT}" --decrypt ${BITBUCKET_BACKUP_ARCHIVE_NAME}
-
-    info "Extracted ${BITBUCKET_BACKUP_ARCHIVE_NAME} into ${BITBUCKET_RESTORE_ROOT}"
 }
 
 function bitbucket_prepare_restore_archive {
@@ -66,7 +48,27 @@ function bitbucket_prepare_restore_archive {
     fi
 }
 
-function bitbucket_cleanup {
+function bitbucket_restore_archive {
+    # Create BITBUCKET_HOME
+    mkdir -p ${BITBUCKET_HOME}
+    chown ${BITBUCKET_UID}:${BITBUCKET_GID} ${BITBUCKET_HOME}
+
+    # Setup restore paths
+    BITBUCKET_RESTORE_ROOT=$(mktemp -d /tmp/bitbucket.diy-restore.XXXXXX)
+    BITBUCKET_RESTORE_DB=${BITBUCKET_RESTORE_ROOT}/bitbucket-db
+    BITBUCKET_RESTORE_HOME=${BITBUCKET_RESTORE_ROOT}/bitbucket-home
+
+    if [ -f ${BITBUCKET_BACKUP_ARCHIVE_NAME} ]; then
+        BITBUCKET_BACKUP_ARCHIVE_NAME=${BITBUCKET_BACKUP_ARCHIVE_NAME}
+    else
+        BITBUCKET_BACKUP_ARCHIVE_NAME=${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}
+    fi
+    gpg-zip --tar-args "-C ${BITBUCKET_RESTORE_ROOT}" --decrypt ${BITBUCKET_BACKUP_ARCHIVE_NAME}
+
+    info "Extracted ${BITBUCKET_BACKUP_ARCHIVE_NAME} into ${BITBUCKET_RESTORE_ROOT}"
+}
+
+function bitbucket_cleanup_archive {
     # Cleanup of old backups is not currently implemented
     no_op
 }

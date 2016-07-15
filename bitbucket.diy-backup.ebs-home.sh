@@ -3,7 +3,7 @@
 SCRIPT_DIR=$(dirname $0)
 source ${SCRIPT_DIR}/bitbucket.diy-backup.ec2-common.sh
 
-function bitbucket_prepare_home {
+function bitbucket_prepare_backup_home {
     # Validate that all the configuration parameters have been provided to avoid bailing out and leaving Bitbucket locked
     if [ -z "${HOME_DIRECTORY_MOUNT_POINT}" ]; then
         error "The home directory mount point must be set as HOME_DIRECTORY_MOUNT_POINT in ${BACKUP_VARS_FILE}"
@@ -105,6 +105,13 @@ function bitbucket_restore_home {
     cleanup_locks ${BITBUCKET_HOME}
 
     info "Performed restore of home directory snapshot"
+}
+
+function bitbucket_cleanup_home {
+    for snapshot_id in $(list_old_ebs_snapshot_ids); do
+        info "Deleting old EBS snapshot ${snapshot_id}"
+        delete_ebs_snapshot "${snapshot_id}"
+    done
 }
 
 function freeze_home_directory {

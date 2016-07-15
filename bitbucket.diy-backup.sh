@@ -38,8 +38,8 @@ fi
 ##########################################################
 
 # Prepare the database and the filesystem for taking a backup
-bitbucket_prepare_db
-bitbucket_prepare_home
+bitbucket_prepare_backup_db
+bitbucket_prepare_backup_home
 
 # If necessary, lock Bitbucket, start an external backup and wait for instance readiness
 bitbucket_lock
@@ -60,6 +60,10 @@ bitbucket_unlock
 success "Successfully completed the backup of your ${PRODUCT} instance"
 
 if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then
+    bitbucket_prepare_backup_archive
     bitbucket_backup_archive
-    bitbucket_cleanup
+    bitbucket_cleanup_archive
 fi
+
+bitbucket_cleanup_home
+bitbucket_cleanup_db

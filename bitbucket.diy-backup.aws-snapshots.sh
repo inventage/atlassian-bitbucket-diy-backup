@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 # Functions implementing archiving of backups and copy to offsite location for AWS snapshots.
 # AWS snapshots reside in AWS and are not archived in this implementation.
 #
@@ -9,6 +8,10 @@
 #
 # Additionally, you can also set the variables BACKUP_DEST_AWS_ACCOUNT_ID and BACKUP_DEST_AWS_ROLE to share every
 # snapshot with another AWS account.
+
+function bitbucket_prepare_backup_archive {
+    no_op
+}
 
 function bitbucket_backup_archive {
     # AWS snapshots reside in AWS and do not need to be archived.
@@ -44,41 +47,20 @@ function bitbucket_backup_archive {
     fi
 }
 
+function bitbucket_prepare_restore_archive {
+    # Probably not necessary to prepare to do nothing
+    no_op
+}
+
 function bitbucket_restore_archive {
     # AWS snapshots reside in AWS and do not need any un-archiving.
     no_op
 }
 
-function bitbucket_cleanup {
-    bitbucket_cleanup_ebs_snapshots
-    bitbucket_cleanup_rds_snapshots
-}
-
-function bitbucket_cleanup_ebs_snapshots {
-    for snapshot_id in $(list_old_ebs_snapshot_ids); do
-        info "Deleting old EBS snapshot ${snapshot_id}"
-        delete_ebs_snapshot "${snapshot_id}"
-    done
-
-    if [ -n "${BACKUP_DEST_REGION}" ]; then
-        cleanup_old_offsite_ebs_snapshots
-    fi
-}
-
-function bitbucket_cleanup_rds_snapshots {
-    if [ ! "${KEEP_BACKUPS}" -gt 0 ]; then
-        info "Skipping cleanup of RDS snapshots"
-        return
-    fi
-
-    # Delete old snapshots in source AWS account
-    for snapshot_id in $(list_old_rds_snapshot_ids ${AWS_REGION}); do
-        info "Deleting old RDS snapshot ${snapshot_id}"
-        aws rds delete-db-snapshot --db-snapshot-identifier "${snapshot_id}" > /dev/null
-    done
-
+function bitbucket_cleanup_archive {
     if [ -n "${BACKUP_DEST_REGION}" ]; then
         cleanup_old_offsite_rds_snapshots
+        cleanup_old_offsite_ebs_snapshots
     fi
 }
 
@@ -207,8 +189,4 @@ function copy_and_share_ebs_snapshot {
         aws ec2 create-tags --region ${BACKUP_DEST_REGION} --resources "${dest_snapshot_id}" \
             --tags Key=Name,Value="${SNAPSHOT_TAG_VALUE}"
     info "Tagged EBS snapshot ${dest_snapshot_id} with {Name: ${SNAPSHOT_TAG_VALUE}}"
-}
-
-function bitbucket_prepare_restore_archive {
-    no_op
 }

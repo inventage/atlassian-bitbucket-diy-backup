@@ -6,7 +6,7 @@
 SCRIPT_DIR=$(dirname $0)
 source ${SCRIPT_DIR}/bitbucket.diy-backup.ec2-common.sh
 
-function bitbucket_prepare_db {
+function bitbucket_prepare_backup_db {
     no_op
 }
 
@@ -24,4 +24,9 @@ function bitbucket_restore_db {
     # All of PostgreSQL's data has already been restored with the home directory volume.  All we need to do is start
     # the service back up again.
     sudo service postgresql93 start
+}
+
+function bitbucket_cleanup_db {
+    # Database exists within the home snapshot
+    no_op
 }
