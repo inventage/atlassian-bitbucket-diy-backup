@@ -5,10 +5,6 @@ check_command "tar"
 SCRIPT_DIR=$(dirname $0)
 source ${SCRIPT_DIR}/bitbucket.diy-backup.utils.sh
 
-function prepare_archive_backup {
-    no_op
-}
-
 function archive_backup {
     mkdir -p ${BITBUCKET_BACKUP_ARCHIVE_ROOT}
     BITBUCKET_BACKUP_ARCHIVE_NAME=`perl -we 'use Time::Piece; my $sydTime = localtime; print "bitbucket-", $sydTime->strftime("%Y%m%d-%H%M%S-"), substr($sydTime->epoch, -3), ".tar.gz"'`

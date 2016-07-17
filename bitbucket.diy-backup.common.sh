@@ -11,7 +11,7 @@ BITBUCKET_HTTP_AUTH="-u ${BITBUCKET_BACKUP_USER}:${BITBUCKET_BACKUP_PASS}"
 PRODUCT=Bitbucket
 
 
-function lock_application {
+function lock_bitbucket {
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
     fi
@@ -80,7 +80,7 @@ function backup_wait {
         local drained_state=$(echo ${progress_response} | jq -r '.task.state' | tr -d '\r')
 
         if [ "${drained_state}" != "RUNNING" ]; then
-            unlock_application
+            unlock_bitbucket
             bail "Unable to start Bitbucket backup"
         fi
     done
@@ -100,7 +100,7 @@ function update_backup_progress {
         "${BITBUCKET_URL}/mvc/admin/backups/progress/client?token=${BITBUCKET_LOCK_TOKEN}&percentage=${backup_progress}"
 }
 
-function unlock_application {
+function unlock_bitbucket {
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
     fi

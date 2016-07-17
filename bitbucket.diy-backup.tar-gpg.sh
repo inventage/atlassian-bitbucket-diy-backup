@@ -6,10 +6,6 @@ check_command "gpg-zip"
 SCRIPT_DIR=$(dirname $0)
 source ${SCRIPT_DIR}/bitbucket.diy-backup.utils.sh
 
-function prepare_archive_backup {
-    no_op
-}
-
 function archive_backup {
     if [[ -z ${BITBUCKET_BACKUP_GPG_RECIPIENT} ]]; then
         bail "In order to encrypt the backup you must set the 'BITBUCKET_BACKUP_GPG_RECIPIENT' configuration variable. Exiting..."

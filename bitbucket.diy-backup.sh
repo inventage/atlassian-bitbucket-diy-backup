@@ -45,7 +45,7 @@ prepare_backup_db
 prepare_backup_home
 
 # If necessary, lock Bitbucket, start an external backup and wait for instance readiness
-lock_application
+lock_bitbucket
 backup_start
 backup_wait
 
@@ -58,12 +58,11 @@ wait $(jobs -p)
 
 # If necessary, report 100% progress back to the application, and unlock Bitbucket
 update_backup_progress 100
-unlock_application
+unlock_bitbucket
 
 success "Successfully completed the backup of your '${PRODUCT}' instance"
 
 if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then
-    prepare_archive_backup
     archive_backup
     cleanup_old_archives
 fi

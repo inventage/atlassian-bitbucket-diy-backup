@@ -9,10 +9,6 @@
 # Additionally, you can also set the variables BACKUP_DEST_AWS_ACCOUNT_ID and BACKUP_DEST_AWS_ROLE to share every
 # snapshot with another AWS account.
 
-function prepare_archive_backup {
-    no_op
-}
-
 function archive_backup {
     # AWS snapshots reside in AWS and do not need to be archived.
 
@@ -46,9 +42,9 @@ function archive_backup {
 }
 
 function prepare_restore_archive {
-    local SNAPSHOT_TAG="${1}"
+    local snapshot_tag="${1}"
 
-    if [ -z ${SNAPSHOT_TAG} ]; then
+    if [ -z ${snapshot_tag} ]; then
         info "Usage: $0 <snapshot-tag>"
 
         list_available_ebs_snapshot_tags
@@ -59,11 +55,11 @@ function prepare_restore_archive {
     BACKUP_HOME_DIRECTORY_VOLUME_ID="$(find_attached_ebs_volume "${HOME_DIRECTORY_DEVICE_NAME}")"
 
     RESTORE_HOME_DIRECTORY_SNAPSHOT_ID=
-    validate_ebs_snapshot "${SNAPSHOT_TAG}" RESTORE_HOME_DIRECTORY_SNAPSHOT_ID
+    validate_ebs_snapshot "${snapshot_tag}" RESTORE_HOME_DIRECTORY_SNAPSHOT_ID
 
-    validate_rds_snapshot "${SNAPSHOT_TAG}"
+    validate_rds_snapshot "${snapshot_tag}"
 
-    RESTORE_RDS_SNAPSHOT_ID="${SNAPSHOT_TAG}"
+    RESTORE_RDS_SNAPSHOT_ID="${snapshot_tag}"
 }
 
 function restore_archive {
