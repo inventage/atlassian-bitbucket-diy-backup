@@ -2,14 +2,15 @@
 
 check_command "rsync"
 
+SCRIPT_DIR=$(dirname $0)
+source ${SCRIPT_DIR}/bitbucket.diy-backup.utils.sh
+
 function prepare_backup_home {
     perform_rsync
-    info "Prepared backup of ${BITBUCKET_HOME} to ${BITBUCKET_BACKUP_HOME}"
 }
 
 function backup_home {
     perform_rsync
-    info "Performed backup of ${BITBUCKET_HOME} to ${BITBUCKET_BACKUP_HOME}"
 }
 
 function prepare_restore_home {
@@ -22,8 +23,7 @@ function restore_home {
         rsync_quiet=
     fi
 
-    rsync -av ${rsync_quiet} ${BITBUCKET_RESTORE_HOME}/ ${BITBUCKET_HOME}/
-    info "Performed restore of ${BITBUCKET_RESTORE_HOME} to ${BITBUCKET_HOME}"
+    run rsync -av ${rsync_quiet} ${BITBUCKET_RESTORE_HOME}/ ${BITBUCKET_HOME}/
 }
 
 function perform_rsync {

@@ -26,26 +26,29 @@ function hc_announce {
     fi
 
     if [ -z "$1" ]; then
-        echo "ERROR: HipChat notification message is missing." > /dev/stderr
+        print "ERROR: HipChat notification message is missing."
         return 1
     fi
 
-    local COLOR="gray"
+    local hc_color="gray"
     if [ -n "$2" ]; then
-        COLOR=$2
+        hc_color=$2
     fi
-    local NOTIFY="false"
-    if [ "1" == "$3" ]; then
-        NOTIFY="true"
+    local hc_notify="false"
+    if [ "1" = "$3" ]; then
+        hc_notify="true"
     fi
 
-    local MESSAGE=`echo "$1" | sed -e 's|"|\\\"|g'`
-    curl -s -S -X POST -H "Content-Type: application/json" -d "{\"message\":\"${MESSAGE}\",\"color\":\"${COLOR}\",\"notify\":${NOTIFY}}" "${HIPCHAT_URL}/v2/room/${HIPCHAT_ROOM}/notification?auth_token=${HIPCHAT_TOKEN}"
+    local hc_message=$(echo "$1" | sed -e 's|"|\\\"|g')
+    local hipchat_payload="{\"message\":\"${hc_message}\",\"color\":\"${hc_color}\",\"notify\":\"${hc_notify}\"}"
+    local hipchat_url="${HIPCHAT_URL}/v2/room/${HIPCHAT_ROOM}/notification?auth_token=${HIPCHAT_TOKEN}"
+    ! curl -s -S -X POST -H "Content-Type: application/json" -d "${hipchat_payload}" "${hipchat_url}"
+    true
 }
 
 function info {
     if [ "${BITBUCKET_VERBOSE_BACKUP}" = "TRUE" ]; then
-        echo "[${BITBUCKET_URL}]  INFO: $*" > /dev/stderr
+        echo "[${BITBUCKET_URL}]  INFO: $*"
         hc_announce "[${BITBUCKET_URL}]  INFO: $*" "gray"
     fi
 }
@@ -56,8 +59,24 @@ function print {
     fi
 }
 
+function run {
+    local cmdline=
+    for arg in "$@"; do
+        case "${arg}" in
+            *\ * | *\"*)
+                cmdline="${cmdline} '${arg}'"
+                ;;
+            *)
+                cmdline="${cmdline} ${arg}"
+                ;;
+        esac
+    done
+    info "Running${cmdline}" >/dev/stderr
+    "$@"
+}
+
 function success {
-    echo "[${BITBUCKET_URL}]  SUCC: $*" > /dev/stderr
+    print "[${BITBUCKET_URL}]  SUCC: $*"
     hc_announce "[${BITBUCKET_URL}]  SUCC: $*" "green"
 }
 

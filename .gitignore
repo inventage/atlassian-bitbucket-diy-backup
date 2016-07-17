@@ -1,3 +1,4 @@
 .idea
 bitbucket.diy-backup.vars.sh
 bitbucket.diy-aws-backup.vars.sh
+*.iml

@@ -3,6 +3,9 @@
 check_command "tar"
 check_command "gpg-zip"
 
+SCRIPT_DIR=$(dirname $0)
+source ${SCRIPT_DIR}/bitbucket.diy-backup.utils.sh
+
 function prepare_archive_backup {
     no_op
 }
@@ -13,16 +16,12 @@ function archive_backup {
     fi
     mkdir -p ${BITBUCKET_BACKUP_ARCHIVE_ROOT}
     BITBUCKET_BACKUP_ARCHIVE_NAME=`perl -we 'use Time::Piece; my $sydTime = localtime; print "bitbucket-", $sydTime->strftime("%Y%m%d-%H%M%S-"), substr($sydTime->epoch, -3), ".tar.gz.gpg"'`
-
-    info "Archiving ${BITBUCKET_BACKUP_ROOT} into ${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}"
-    info "Encrypting for ${BITBUCKET_BACKUP_GPG_RECIPIENT}"
     (
         # in a subshell to avoid changing working dir on the caller
         cd ${BITBUCKET_BACKUP_ROOT}
-        gpg-zip --encrypt --recipient ${BITBUCKET_BACKUP_GPG_RECIPIENT} \
+        run gpg-zip --encrypt --recipient ${BITBUCKET_BACKUP_GPG_RECIPIENT} \
             --output ${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME} .
     )
-    info "Archived ${BITBUCKET_BACKUP_ROOT} into ${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}"
 }
 
 function prepare_restore_archive {
@@ -65,9 +64,7 @@ function restore_archive {
     else
         BITBUCKET_BACKUP_ARCHIVE_NAME=${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}
     fi
-    gpg-zip --tar-args "-C ${BITBUCKET_RESTORE_ROOT}" --decrypt ${BITBUCKET_BACKUP_ARCHIVE_NAME}
-
-    info "Extracted ${BITBUCKET_BACKUP_ARCHIVE_NAME} into ${BITBUCKET_RESTORE_ROOT}"
+    run gpg-zip --tar-args "-C ${BITBUCKET_RESTORE_ROOT}" --decrypt ${BITBUCKET_BACKUP_ARCHIVE_NAME}
 }
 
 function cleanup_old_archives {

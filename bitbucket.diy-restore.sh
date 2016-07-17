@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 SCRIPT_DIR=$(dirname $0)
 
 # Contains util functions (bail, info, print)
@@ -15,14 +17,14 @@ fi
 if [[ -f ${BACKUP_VARS_FILE} ]]; then
     source ${BACKUP_VARS_FILE}
 else
-    error "${BACKUP_VARS_FILE} not found"
-    bail "You should create it using ${SCRIPT_DIR}/bitbucket.diy-backup.vars.sh.example as a template."
+    error "'${BACKUP_VARS_FILE}' not found"
+    bail "You should create it using '${SCRIPT_DIR}/bitbucket.diy-backup.vars.sh.example' as a template."
 fi
 
 # Ensure we know which user:group things should be owned as
 if [[ -z ${BITBUCKET_UID} || -z ${BITBUCKET_GID} ]]; then
-    error "Both BITBUCKET_UID and BITBUCKET_GID must be set in bitbucket.diy-backup.vars.sh"
-    bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
+    error "Both BITBUCKET_UID and BITBUCKET_GID must be set in 'bitbucket.diy-backup.vars.sh'"
+    bail "See 'bitbucket.diy-backup.vars.sh.example' for the defaults."
 fi
 
 # The following scripts contain functions which are dependent on the configuration of this bitbucket instance.

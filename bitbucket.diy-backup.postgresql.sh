@@ -4,6 +4,10 @@ check_command "pg_dump"
 check_command "psql"
 check_command "pg_restore"
 
+# Contains util functions (bail, info, print)
+SCRIPT_DIR=$(dirname $0)
+source ${SCRIPT_DIR}/bitbucket.diy-backup.utils.sh
+
 # Make use of PostgreSQL 9.3+ options if available
 psql_version="$(psql --version | awk '{print $3}')"
 psql_majorminor="$(printf "%d%03d" $(echo "$psql_version" | tr "." "\n" | head -n 2))"
@@ -37,25 +41,15 @@ function prepare_backup_db {
 }
 
 function backup_db {
-    rm -r ${BITBUCKET_BACKUP_DB}
-    pg_dump ${PG_USER} ${PG_HOST} --port=${POSTGRES_PORT} ${PG_PARALLEL} -Fd ${BITBUCKET_DB} ${PG_SNAPSHOT_OPT} -f ${BITBUCKET_BACKUP_DB}
-    if [ $? != 0 ]; then
-        bail "Unable to backup ${BITBUCKET_DB} to ${BITBUCKET_BACKUP_DB}"
-    fi
-    info "Performed backup of DB ${BITBUCKET_DB} in ${BITBUCKET_BACKUP_DB}"
+    rm -r "${BITBUCKET_BACKUP_DB}"
+    run pg_dump "${PG_USER}" "${PG_HOST}" --port=${POSTGRES_PORT} ${PG_PARALLEL} -Fd "${BITBUCKET_DB}" ${PG_SNAPSHOT_OPT} \
+        -f "${BITBUCKET_BACKUP_DB}"
 }
 
 function prepare_restore_db {
-    psql ${PG_USER} ${PG_HOST} --port=${POSTGRES_PORT} -d ${BITBUCKET_DB} -c '' > /dev/null 2>&1
-    if [ $? = 0 ]; then
-        bail "Cannot restore over existing database ${BITBUCKET_DB}. Try dropdb ${BITBUCKET_DB} first."
-    fi
+    run psql "${PG_USER}" "${PG_HOST}" --port=${POSTGRES_PORT} -d "${BITBUCKET_DB}" -c ''
 }
 
 function restore_db {
-    pg_restore ${PG_USER} ${PG_HOST} --port=${POSTGRES_PORT} -d postgres -C -Fd ${PG_PARALLEL} ${BITBUCKET_RESTORE_DB}
-    if [ $? != 0 ]; then
-        bail "Unable to restore ${BITBUCKET_RESTORE_DB} to ${BITBUCKET_DB}"
-    fi
-    info "Performed restore of ${BITBUCKET_RESTORE_DB} to DB ${BITBUCKET_DB}"
+    run pg_restore "${PG_USER}" "${PG_HOST}" --port=${POSTGRES_PORT} -d postgres -C -Fd ${PG_PARALLEL} "${BITBUCKET_RESTORE_DB}"
 }
