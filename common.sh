@@ -144,9 +144,8 @@ function remove_cleanup_routine() {
 }
 
 function run_cleanup() {
-    info "Cleaning up..."
-    for cleanup in ${cleanup_queue[@]}
-    do
+    info "Running cleanup jobs..."
+    for cleanup in ${cleanup_queue[@]}; do
         ${cleanup}
     done
 }
