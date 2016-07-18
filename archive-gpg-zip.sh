@@ -16,7 +16,7 @@ function prepare_restore_archive {
     BITBUCKET_BACKUP_ARCHIVE_NAME=$1
 
     if [ -z "${BITBUCKET_BACKUP_ARCHIVE_NAME}" ]; then
-        echo "Usage: $0 <backup-file-name>.tar.gz.gpg" > /dev/stderr
+        print "Usage: $0 <backup-file-name>.tar.gz.gpg"
         if [ ! -d "${BITBUCKET_BACKUP_ARCHIVE_ROOT}" ]; then
             error "'${BITBUCKET_BACKUP_ARCHIVE_ROOT}' does not exist!"
         else
@@ -35,8 +35,8 @@ function prepare_restore_archive {
     if [ -e "${BITBUCKET_HOME}" ]; then
         bail "Cannot restore over existing contents of '${BITBUCKET_HOME}'. Please rename or delete this first."
     fi
-    run mkdir -p "${BITBUCKET_HOME}"
-    run chown "${BITBUCKET_UID}":"${BITBUCKET_GID}" "${BITBUCKET_HOME}"
+    mkdir -p "${BITBUCKET_HOME}"
+    chown "${BITBUCKET_UID}":"${BITBUCKET_GID}" "${BITBUCKET_HOME}"
 
     # Setup restore paths
     BITBUCKET_RESTORE_ROOT=$(mktemp -d /tmp/bitbucket.diy-restore.XXXXXX)
@@ -57,6 +57,6 @@ function bitbucket_cleanup {
 }
 
 function print_available_backups {
-    echo "Available backups:" > /dev/stderr
+    print "Available backups:"
     ls "${BITBUCKET_BACKUP_ARCHIVE_ROOT}"
 }

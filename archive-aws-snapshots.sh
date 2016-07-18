@@ -20,10 +20,10 @@ function archive_backup {
 
         if [ -n "${BACKUP_DEST_AWS_ACCOUNT_ID}" -a -n "${BACKUP_DEST_AWS_ROLE}" ]; then
             # Copy to BACKUP_DEST_REGION & share with BACKUP_DEST_AWS_ACCOUNT_ID
-            copy_and_share_ebs_snapshot ${backup_ebs_snapshot_id} ${AWS_REGION}
+            copy_and_share_ebs_snapshot "${backup_ebs_snapshot_id}" "${AWS_REGION}"
         else
             # Copy EBS snapshot to BACKUP_DEST_REGION
-            copy_ebs_snapshot ${backup_ebs_snapshot_id} ${AWS_REGION}
+            copy_ebs_snapshot "${backup_ebs_snapshot_id}" "${AWS_REGION}"
         fi
     fi
 

@@ -15,7 +15,7 @@ function prepare_restore_archive {
     BITBUCKET_BACKUP_ARCHIVE_NAME=$1
 
     if [ -z "${BITBUCKET_BACKUP_ARCHIVE_NAME}" ]; then
-        echo "Usage: $0 <backup-file-name>.tar.gz" > /dev/stderr
+        print "Usage: $0 <backup-file-name>.tar.gz"
         if [ ! -d "${BITBUCKET_BACKUP_ARCHIVE_ROOT}" ]; then
             error "'${BITBUCKET_BACKUP_ARCHIVE_ROOT}' does not exist!"
         else
@@ -53,6 +53,6 @@ function cleanup_old_archives {
 }
 
 function available_backups {
-	echo "Available backups:" > /dev/stderr
+	print "Available backups:"
 	ls "${BITBUCKET_BACKUP_ARCHIVE_ROOT}"
 }
