@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Options to pass to every "curl" command
+CURL_OPTIONS="-L -s -f"
+
 # Name used to identify the Bitbucket instance being backed up. This appears in archive names and AWS snapshot tags.
 # It should not contain spaces and must be under 100 characters long.
 INSTANCE_NAME=bitbucket
@@ -156,9 +159,6 @@ fi
 
 # Used by the scripts for verbose logging. If not true only errors will be shown.
 BITBUCKET_VERBOSE_BACKUP=TRUE
-
-# Options to pass to every "curl" command
-CURL_OPTIONS="-L -s -f"
 
 # HipChat options
 HIPCHAT_URL=https://api.hipchat.com
