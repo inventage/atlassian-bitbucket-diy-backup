@@ -10,11 +10,8 @@ BITBUCKET_HTTP_AUTH="-u ${BITBUCKET_BACKUP_USER}:${BITBUCKET_BACKUP_PASS}"
 # The name of the product
 PRODUCT=Bitbucket
 
-function no_op {
-    echo > /dev/null
-}
 
-function bitbucket_lock {
+function lock_bitbucket {
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
     fi
@@ -38,7 +35,7 @@ function bitbucket_lock {
     info "    curl -u ... -X DELETE -H 'Content-type:application/json' '${BITBUCKET_URL}/mvc/maintenance/lock?token=${BITBUCKET_LOCK_TOKEN}'"
 }
 
-function bitbucket_backup_start {
+function backup_start {
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
     fi
@@ -60,7 +57,7 @@ function bitbucket_backup_start {
     info "    curl -u ... -X DELETE -H 'Content-type:application/json' '${BITBUCKET_URL}/mvc/admin/backups/${BITBUCKET_BACKUP_TOKEN}'"
 }
 
-function bitbucket_backup_wait {
+function backup_wait {
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
     fi
@@ -83,7 +80,7 @@ function bitbucket_backup_wait {
         local drained_state=$(echo ${progress_response} | jq -r '.task.state' | tr -d '\r')
 
         if [ "${drained_state}" != "RUNNING" ]; then
-            bitbucket_unlock
+            unlock_bitbucket
             bail "Unable to start Bitbucket backup"
         fi
     done
@@ -92,7 +89,7 @@ function bitbucket_backup_wait {
     print "scm state '${scm_state}'"
 }
 
-function bitbucket_backup_progress {
+function update_backup_progress {
     local backup_progress=$1
 
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
@@ -103,7 +100,7 @@ function bitbucket_backup_progress {
         "${BITBUCKET_URL}/mvc/admin/backups/progress/client?token=${BITBUCKET_LOCK_TOKEN}&percentage=${backup_progress}"
 }
 
-function bitbucket_unlock {
+function unlock_bitbucket {
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
     fi
@@ -142,7 +139,7 @@ function remove_cleanup_routine() {
 }
 
 function run_cleanup() {
-    info "Cleaning up..."
+    info "Running cleanup jobs..."
     for cleanup in ${cleanup_queue[@]}
     do
         ${cleanup}

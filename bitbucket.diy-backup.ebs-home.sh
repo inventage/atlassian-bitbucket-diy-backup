@@ -2,8 +2,9 @@
 
 SCRIPT_DIR=$(dirname $0)
 source ${SCRIPT_DIR}/bitbucket.diy-backup.ec2-common.sh
+source ${SCRIPT_DIR}/bitbucket.diy-backup.common.sh
 
-function bitbucket_prepare_home {
+function prepare_backup_home {
     # Validate that all the configuration parameters have been provided to avoid bailing out and leaving Bitbucket locked
     if [ -z "${HOME_DIRECTORY_MOUNT_POINT}" ]; then
         error "The home directory mount point must be set as HOME_DIRECTORY_MOUNT_POINT in ${BACKUP_VARS_FILE}"
@@ -23,7 +24,7 @@ function bitbucket_prepare_home {
     fi
 }
 
-function bitbucket_backup_home {
+function backup_home {
     # Freeze the home directory filesystem to ensure consistency
     freeze_home_directory
 
@@ -33,56 +34,49 @@ function bitbucket_backup_home {
     unfreeze_home_directory
 }
 
-function bitbucket_prepare_home_restore {
-    local snapshot_tag="${1}"
-
+function prepare_restore_home {
     if [ -z "${BITBUCKET_HOME}" ]; then
         error "The ${PRODUCT} home directory must be set as BITBUCKET_HOME in ${BACKUP_VARS_FILE}"
-        bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
+        bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
     fi
 
     if [ -z "${BITBUCKET_UID}" ]; then
         error "The ${PRODUCT} home directory owner account must be set as BITBUCKET_UID in ${BACKUP_VARS_FILE}"
-        bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
+        bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
     fi
 
     if [ -z "${AWS_AVAILABILITY_ZONE}" ]; then
         error "The availability zone for new volumes must be set as AWS_AVAILABILITY_ZONE in ${BACKUP_VARS_FILE}"
-        bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
+        bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
     fi
 
     if [ -z "${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}" ]; then
         error "The type of volume to create when restoring the home directory must be set as RESTORE_HOME_DIRECTORY_VOLUME_TYPE in ${BACKUP_VARS_FILE}"
-        bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
+        bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
     elif [ "io1" = "${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}" -a -z "${RESTORE_HOME_DIRECTORY_IOPS}" ]; then
         error "The provisioned iops must be set as RESTORE_HOME_DIRECTORY_IOPS in ${BACKUP_VARS_FILE} when choosing 'io1' volume type for the home directory EBS volume"
-        bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
+        bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
     fi
 
     if [ -z "${HOME_DIRECTORY_DEVICE_NAME}" ]; then
         error "The home directory volume device name must be set as HOME_DIRECTORY_DEVICE_NAME in ${BACKUP_VARS_FILE}"
-        bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
+        bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
     fi
 
     if [ -z "${HOME_DIRECTORY_MOUNT_POINT}" ]; then
         error "The home directory mount point must be set as HOME_DIRECTORY_MOUNT_POINT in ${BACKUP_VARS_FILE}"
-        bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
+        bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
     fi
-
-    BACKUP_HOME_DIRECTORY_VOLUME_ID="$(find_attached_ebs_volume "${HOME_DIRECTORY_DEVICE_NAME}")"
-
-    RESTORE_HOME_DIRECTORY_SNAPSHOT_ID=
-    validate_ebs_snapshot "${snapshot_tag}" RESTORE_HOME_DIRECTORY_SNAPSHOT_ID
 }
 
-function bitbucket_restore_home {
+function restore_home {
     unmount_device
 
     if [ -n "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" ]; then
         detach_volume
     fi
 
-    info "Restoring home directory from snapshot ${RESTORE_HOME_DIRECTORY_SNAPSHOT_ID} into a ${RESTORE_HOME_DIRECTORY_VOLUME_TYPE} volume"
+    info "Restoring home directory from snapshot '${RESTORE_HOME_DIRECTORY_SNAPSHOT_ID}' into a '${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}' volume"
 
     create_and_attach_volume "${RESTORE_HOME_DIRECTORY_SNAPSHOT_ID}" "${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}" \
             "${RESTORE_HOME_DIRECTORY_IOPS}" "${HOME_DIRECTORY_DEVICE_NAME}" "${HOME_DIRECTORY_MOUNT_POINT}"

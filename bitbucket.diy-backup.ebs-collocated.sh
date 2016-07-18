@@ -6,21 +6,21 @@
 SCRIPT_DIR=$(dirname $0)
 source ${SCRIPT_DIR}/bitbucket.diy-backup.utils.sh
 
-function bitbucket_prepare_db {
+function prepare_backup_db {
     no_op
 }
 
-function bitbucket_backup_db {
+function backup_db {
     no_op
 }
 
-function bitbucket_prepare_db_restore {
+function prepare_restore_db {
     # When PostgreSQL is running as a service with its data on the same volume as the home directory, all its data will
     # restored implicitly when the home volume is restored.  All we need to do is stop the service beforehand.
     run sudo service postgresql93 stop
 }
 
-function bitbucket_restore_db {
+function restore_db {
     # All of PostgreSQL's data has already been restored with the home directory volume.  All we need to do is start
     # the service back up again.
     run sudo service postgresql93 start

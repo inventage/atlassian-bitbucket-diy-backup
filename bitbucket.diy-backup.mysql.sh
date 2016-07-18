@@ -13,24 +13,20 @@ if [[ -n ${MYSQL_HOST} ]]; then
     MYSQL_HOST_CMD="-h ${MYSQL_HOST}"
 fi
 
-function bitbucket_prepare_db {
+function prepare_backup_db {
     info "Prepared backup of DB ${BITBUCKET_DB} in ${BITBUCKET_BACKUP_DB}"
 }
 
-function bitbucket_backup_db {
+function backup_db {
     rm -r "${BITBUCKET_BACKUP_DB}"
     run mysqldump "${MYSQL_HOST_CMD}" "${MYSQL_BACKUP_OPTIONS}" -u "${MYSQL_USERNAME}" -p"${MYSQL_PASSWORD}" \
         --databases "${BITBUCKET_DB}" > ${BITBUCKET_BACKUP_DB}
 }
 
-function bitbucket_bail_if_db_exists {
+function prepare_restore_db {
     run mysqlshow "${MYSQL_HOST_CMD}" -u "${MYSQL_USERNAME}" -p"${MYSQL_PASSWORD}" "${BITBUCKET_DB}"
 }
 
-function bitbucket_restore_db {
+function restore_db {
     run mysql "${MYSQL_HOST_CMD}" -u "${MYSQL_USERNAME}" -p"${MYSQL_PASSWORD}" < ${BITBUCKET_RESTORE_DB}
-}
-
-function bitbucket_cleanup_db_backups {
-    no_op
 }

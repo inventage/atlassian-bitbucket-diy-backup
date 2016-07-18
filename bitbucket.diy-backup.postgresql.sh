@@ -36,24 +36,20 @@ if [[ -z ${POSTGRES_PORT} ]]; then
     POSTGRES_PORT=5432
 fi
 
-function bitbucket_prepare_db {
-    info "Prepared backup of DB ${BITBUCKET_DB} in ${BITBUCKET_BACKUP_DB}"
+function prepare_backup_db {
+    no_op
 }
 
-function bitbucket_backup_db {
+function backup_db {
     rm -r "${BITBUCKET_BACKUP_DB}"
     run pg_dump "${PG_USER}" "${PG_HOST}" --port=${POSTGRES_PORT} ${PG_PARALLEL} -Fd "${BITBUCKET_DB}" ${PG_SNAPSHOT_OPT} \
         -f "${BITBUCKET_BACKUP_DB}"
 }
 
-function bitbucket_bail_if_db_exists {
+function prepare_restore_db {
     run psql "${PG_USER}" "${PG_HOST}" --port=${POSTGRES_PORT} -d "${BITBUCKET_DB}" -c ''
 }
 
-function bitbucket_restore_db {
+function restore_db {
     run pg_restore "${PG_USER}" "${PG_HOST}" --port=${POSTGRES_PORT} -d postgres -C -Fd ${PG_PARALLEL} "${BITBUCKET_RESTORE_DB}"
-}
-
-function bitbucket_cleanup_db_backups {
-    no_op
 }

@@ -9,7 +9,7 @@
 # Additionally, you can also set the variables BACKUP_DEST_AWS_ACCOUNT_ID and BACKUP_DEST_AWS_ROLE to share every
 # snapshot with another AWS account.
 
-function bitbucket_backup_archive {
+function archive_backup {
     # AWS snapshots reside in AWS and do not need to be archived.
 
     # Optionally copy/share the EBS snapshot to another region and/or account.
@@ -41,41 +41,53 @@ function bitbucket_backup_archive {
     fi
 }
 
-function bitbucket_restore_archive {
+function prepare_restore_archive {
+    local snapshot_tag="${1}"
+
+    if [ -z ${snapshot_tag} ]; then
+        info "Usage: $0 <snapshot-tag>"
+
+        list_available_ebs_snapshot_tags
+
+        exit 99
+    fi
+
+    BACKUP_HOME_DIRECTORY_VOLUME_ID="$(find_attached_ebs_volume "${HOME_DIRECTORY_DEVICE_NAME}")"
+
+    RESTORE_HOME_DIRECTORY_SNAPSHOT_ID=
+    validate_ebs_snapshot "${snapshot_tag}" RESTORE_HOME_DIRECTORY_SNAPSHOT_ID
+
+    validate_rds_snapshot "${snapshot_tag}"
+
+    RESTORE_RDS_SNAPSHOT_ID="${snapshot_tag}"
+}
+
+function restore_archive {
     # AWS snapshots reside in AWS and do not need any un-archiving.
     no_op
 }
 
-function bitbucket_cleanup {
-    bitbucket_cleanup_ebs_snapshots
-    bitbucket_cleanup_rds_snapshots
-}
+function cleanup_old_archives {
+    if [ "${KEEP_BACKUPS}" -gt 0 ]; then
+        if [ "${BACKUP_DATABASE_TYPE}" = "rds" ]; then
+            for snapshot_id in $(list_old_rds_snapshot_ids ${AWS_REGION}); do
+                run aws rds delete-db-snapshot --db-snapshot-identifier "${snapshot_id}" > /dev/null
+            done
+        fi
+        if [ "${BACKUP_HOME_TYPE}" = "ebs-home" ]; then
+            for snapshot_id in $(list_old_ebs_snapshot_ids); do
+                delete_ebs_snapshot "${snapshot_id}"
+            done
+        fi
 
-function bitbucket_cleanup_ebs_snapshots {
-    for snapshot_id in $(list_old_ebs_snapshot_ids); do
-        info "Deleting old EBS snapshot '${snapshot_id}'"
-        delete_ebs_snapshot "${snapshot_id}"
-    done
-
-    if [ -n "${BACKUP_DEST_REGION}" ]; then
-        cleanup_old_offsite_ebs_snapshots
-    fi
-}
-
-function bitbucket_cleanup_rds_snapshots {
-    if [ ! "${KEEP_BACKUPS}" -gt 0 ]; then
-        info "Skipping cleanup of RDS snapshots"
-        return
-    fi
-
-    # Delete old snapshots in source AWS account
-    for snapshot_id in $(list_old_rds_snapshot_ids ${AWS_REGION}); do
-        info "Deleting old RDS snapshot '${snapshot_id}'"
-        run aws rds delete-db-snapshot --db-snapshot-identifier "${snapshot_id}" > /dev/null
-    done
-
-    if [ -n "${BACKUP_DEST_REGION}" ]; then
-        cleanup_old_offsite_rds_snapshots
+        if [ -n "${BACKUP_DEST_REGION}" ]; then
+            if [ "${BACKUP_DATABASE_TYPE}" = "rds" ]; then
+                cleanup_old_offsite_rds_snapshots
+            fi
+            if [ "${BACKUP_HOME_TYPE}" = "ebs-home" ]; then
+                cleanup_old_offsite_ebs_snapshots
+            fi
+        fi
     fi
 }
 

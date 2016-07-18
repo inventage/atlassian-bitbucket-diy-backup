@@ -85,6 +85,7 @@ function create_volume {
     fi
 
     run aws ec2 wait volume-available --volume-ids "${volume_id}" > /dev/null
+    echo "${volume_id}"
 }
 
 function attach_volume {
@@ -152,8 +153,7 @@ function create_and_attach_volume {
     local device_name="$4"
     local mount_point="$5"
 
-    local volume_id=
-    create_volume "${snapshot_id}" "${volume_type}" "${provisioned_iops}"
+    local volume_id="$(create_volume "${snapshot_id}" "${volume_type}" "${provisioned_iops}")"
     attach_volume "${volume_id}" "${device_name}"
 }
 
@@ -184,7 +184,7 @@ function snapshot_rds_instance {
 
     local aws_tags="[{\"Key\":\"${SNAPSHOT_TAG_KEY}\",\"Value\":\"${SNAPSHOT_TAG_VALUE}\"}${comma}${AWS_ADDITIONAL_TAGS}]"
 
-    # We use SNAPSHOT_TAG as the snapshot identifier because it's unique and because it will allow us to relate an EBS snapshot to an RDS snapshot by tag
+    # We use SNAPSHOT_TAG_VALUE as the snapshot identifier because it is unique and allows pairing of an EBS snapshot to an RDS snapshot by tag
     run aws rds create-db-snapshot --db-instance-identifier "${instance_id}" \
         --db-snapshot-identifier "${SNAPSHOT_TAG_VALUE}" --tags "${aws_tags}" > /dev/null
 
@@ -271,11 +271,10 @@ function validate_rds_snapshot {
 function list_available_ebs_snapshot_tags {
     # Print a list of all snapshots tag values that start with the tag prefix
     print "Available snapshot tags:"
-    local snapshot_description=$(run aws ec2 describe-snapshots --filters Name=tag-key,Values="Name" \
-        Name=tag-value,Values="${SNAPSHOT_TAG_PREFIX}*")
 
-    local available_ebs_snapshot_tags=$(echo "${snapshot_description}"| jq -r ".Snapshots[].Tags[] | \
-        select(.Key = \"Name\") | .Value" | sort -r)
+    local available_ebs_snapshot_tags=$(run aws ec2 describe-snapshots --filters Name=tag-key,Values="Name" \
+        Name=tag-value,Values="${SNAPSHOT_TAG_PREFIX}*" | jq -r ".Snapshots[].Tags[] | select(.Key == \"Name\") \
+        | .Value" | sort -r)
     if [ -z "${available_ebs_snapshot_tags}" -o "${available_ebs_snapshot_tags}" = "null" ]; then
         bail "Unable to retrieve list of available EBS snapshot tags. \
             Could not find 'Snapshots' with 'Tags' with 'Value' in response '${snapshot_description}'"
