@@ -71,7 +71,7 @@ function cleanup_old_archives {
     if [ "${KEEP_BACKUPS}" -gt 0 ]; then
         if [ "${BACKUP_DATABASE_TYPE}" = "rds" ]; then
             for snapshot_id in $(list_old_rds_snapshot_ids ${AWS_REGION}); do
-                aws rds delete-db-snapshot --db-snapshot-identifier "${snapshot_id}" > /dev/null
+                run aws rds delete-db-snapshot --db-snapshot-identifier "${snapshot_id}" > /dev/null
             done
         fi
         if [ "${BACKUP_HOME_TYPE}" = "ebs-home" ]; then

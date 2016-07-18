@@ -34,8 +34,8 @@ function prepare_restore_archive {
     if [ -e ${BITBUCKET_HOME} ]; then
         bail "Cannot restore over existing contents of ${BITBUCKET_HOME}. Please rename or delete this first."
     fi
-    mkdir -p ${BITBUCKET_HOME}
-    chown ${BITBUCKET_UID}:${BITBUCKET_GID} ${BITBUCKET_HOME}
+    run mkdir -p ${BITBUCKET_HOME}
+    run chown ${BITBUCKET_UID}:${BITBUCKET_GID} ${BITBUCKET_HOME}
 
     # Setup restore paths
     BITBUCKET_RESTORE_ROOT=$(mktemp -d /tmp/bitbucket.diy-restore.XXXXXX)

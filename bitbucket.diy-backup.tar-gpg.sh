@@ -47,8 +47,8 @@ function prepare_restore_archive {
 
 function restore_archive {
     # Create BITBUCKET_HOME
-    mkdir -p ${BITBUCKET_HOME}
-    chown ${BITBUCKET_UID}:${BITBUCKET_GID} ${BITBUCKET_HOME}
+    run mkdir -p ${BITBUCKET_HOME}
+    run chown ${BITBUCKET_UID}:${BITBUCKET_GID} ${BITBUCKET_HOME}
 
     # Setup restore paths
     BITBUCKET_RESTORE_ROOT=$(mktemp -d /tmp/bitbucket.diy-restore.XXXXXX)
