@@ -4,7 +4,7 @@ check_command "tar"
 check_command "gpg-zip"
 
 SCRIPT_DIR=$(dirname $0)
-source ${SCRIPT_DIR}/bitbucket.diy-backup.utils.sh
+source ${SCRIPT_DIR}/utils.sh
 
 function archive_backup {
     if [[ -z ${BITBUCKET_BACKUP_GPG_RECIPIENT} ]]; then

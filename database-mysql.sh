@@ -6,7 +6,7 @@ check_command "mysql"
 
 # Contains util functions (bail, info, print)
 SCRIPT_DIR=$(dirname $0)
-source ${SCRIPT_DIR}/bitbucket.diy-backup.utils.sh
+source ${SCRIPT_DIR}/utils.sh
 
 # Use -h option if MYSQL_HOST is set
 if [[ -n ${MYSQL_HOST} ]]; then

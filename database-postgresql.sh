@@ -6,7 +6,7 @@ check_command "pg_restore"
 
 # Contains util functions (bail, info, print)
 SCRIPT_DIR=$(dirname $0)
-source ${SCRIPT_DIR}/bitbucket.diy-backup.utils.sh
+source ${SCRIPT_DIR}/utils.sh
 
 # Make use of PostgreSQL 9.3+ options if available
 psql_version="$(psql --version | awk '{print $3}')"

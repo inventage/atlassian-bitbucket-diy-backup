@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SCRIPT_DIR=$(dirname $0)
-source ${SCRIPT_DIR}/bitbucket.diy-backup.ec2-common.sh
+source ${SCRIPT_DIR}/aws-common.sh
 
 function prepare_backup_home {
     # Validate that all the configuration parameters have been provided to avoid bailing out and leaving Bitbucket locked
