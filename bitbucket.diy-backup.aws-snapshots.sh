@@ -69,17 +69,20 @@ function restore_archive {
 
 function cleanup_old_archives {
     if [ "${KEEP_BACKUPS}" -gt 0 ]; then
+        # Cleanup RDS snapshots
         if [ "${BACKUP_DATABASE_TYPE}" = "rds" ]; then
             for snapshot_id in $(list_old_rds_snapshot_ids ${AWS_REGION}); do
                 run aws rds delete-db-snapshot --db-snapshot-identifier "${snapshot_id}" > /dev/null
             done
         fi
+        # Cleanup EBS snapshots
         if [ "${BACKUP_HOME_TYPE}" = "ebs-home" ]; then
             for ebs_snapshot_id in $(list_old_ebs_snapshot_ids ${AWS_REGION}); do
                 run aws ec2 delete-snapshot --snapshot-id "${ebs_snapshot_id}" > /dev/null
             done
         fi
 
+        # If necessary, cleanup off-site snapshots
         if [ -n "${BACKUP_DEST_REGION}" ]; then
             if [ "${BACKUP_DATABASE_TYPE}" = "rds" ]; then
                 cleanup_old_offsite_rds_snapshots
