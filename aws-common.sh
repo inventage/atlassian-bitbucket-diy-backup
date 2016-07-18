@@ -25,7 +25,7 @@ else
 fi
 
 if [ -z "${INSTANCE_NAME}" ]; then
-    error "The '${PRODUCT}' instance name must be set as INSTANCE_NAME in '${BACKUP_VARS_FILE}'"
+    error "The ${PRODUCT} instance name must be set as INSTANCE_NAME in '${BACKUP_VARS_FILE}'"
 
     bail "See 'bitbucket.diy-aws-backup.vars.sh.example' for the defaults."
 elif [ ! "${INSTANCE_NAME}" = ${INSTANCE_NAME%[[:space:]]*} ]; then
@@ -45,7 +45,7 @@ SNAPSHOT_TAG_KEY="Name"
 # This is used to identify RDS + EBS snapshots.
 # Note that this prefix is used to delete old backups and if set improperly will delete incorrect snapshots on cleanup.
 SNAPSHOT_TAG_PREFIX="${INSTANCE_NAME}-"
-SNAPSHOT_TIME=`date +"%Y%m%d-%H%M%S-%3N"`
+SNAPSHOT_TIME=$(date +"%Y%m%d-%H%M%S-%3N")
 SNAPSHOT_TAG_VALUE="${SNAPSHOT_TAG_PREFIX}${SNAPSHOT_TIME}"
 
 function snapshot_ebs_volume {
@@ -55,8 +55,8 @@ function snapshot_ebs_volume {
 
     local ebs_snapshot_id=$(echo "${create_snapshot_response}" | jq -r '.SnapshotId')
     if [ -z "${ebs_snapshot_id}" -o "${ebs_snapshot_id}" = "null" ]; then
-        bail "Unable to create EBS snapshot of volume '${volume_id}'. \
-            Could not find 'SnapshotId' in response '${create_snapshot_response}'"
+        error "Could not find 'SnapshotId' in response '${create_snapshot_response}'"
+        bail "Unable to create EBS snapshot of volume '${volume_id}'"
     fi
 
     run aws ec2 create-tags --resources "${ebs_snapshot_id}" --tags Key="${SNAPSHOT_TAG_KEY}",Value="${SNAPSHOT_TAG_VALUE}" > /dev/null
@@ -80,8 +80,8 @@ function create_volume {
 
     local volume_id=$(echo "${create_volume_response}" | jq -r '.VolumeId')
     if [ -z "${volume_id}" -o "${volume_id}" = "null" ]; then
-        bail "Error getting volume id from volume creation response. \
-            Could not find 'VolumeId' in response '${create_volume_response}'"
+        error "Could not find 'VolumeId' in response '${create_volume_response}'"
+        bail "Error getting volume id from volume creation response"
     fi
 
     run aws ec2 wait volume-available --volume-ids "${volume_id}" > /dev/null
@@ -112,7 +112,7 @@ function wait_attached_volume {
 
     # 60 Minutes
     local max_wait_time=3600
-    local end_time=$((SECONDS+${max_wait_time}))
+    local end_time=$((SECONDS+max_wait_time))
 
     local attachment_state='attaching'
     while [ $SECONDS -lt ${end_time} ]; do
@@ -125,7 +125,6 @@ function wait_attached_volume {
         if [ -z "${attachment_state}" -o "${attachment_state}" = "null" ]; then
             error "Could not find 'Volume' with 'Attachment' with 'State' in response '${volume_description}'"
             bail "Unable to get volume state for volume '${volume_id}'"
-
         fi
         case "${attachment_state}" in
             "attaching")
@@ -240,7 +239,7 @@ function validate_rds_instance_id {
 
     local db_instance_status=$(echo "${instance_description}" | jq -r '.DBInstances[0].DBInstanceStatus')
     case "${db_instance_status}" in
-        -z | "null")
+        "" | "null")
             error "Could not find a 'DBInstance' with 'DBInstanceStatus' in response '${instance_description}'"
             bail "Please make sure you have selected an existing RDS instance"
             ;;
@@ -276,8 +275,8 @@ function list_available_ebs_snapshot_tags {
         Name=tag-value,Values="${SNAPSHOT_TAG_PREFIX}*" | jq -r ".Snapshots[].Tags[] | select(.Key == \"Name\") \
         | .Value" | sort -r)
     if [ -z "${available_ebs_snapshot_tags}" -o "${available_ebs_snapshot_tags}" = "null" ]; then
-        bail "Unable to retrieve list of available EBS snapshot tags. \
-            Could not find 'Snapshots' with 'Tags' with 'Value' in response '${snapshot_description}'"
+        error "Could not find 'Snapshots' with 'Tags' with 'Value' in response '${snapshot_description}'"
+        bail "Unable to retrieve list of available EBS snapshot tags"
     fi
 
     echo "${available_ebs_snapshot_tags}"
@@ -301,12 +300,13 @@ function list_old_ebs_snapshot_ids {
 
 function get_aws_account_id {
     # Returns the ID of the AWS account that this instance is running in.
-    local instance_info=$(run curl http://169.254.169.254/latest/dynamic/instance-identity/document)
+    local instance_info=$(run curl ${CURL_OPTIONS} http://169.254.169.254/latest/dynamic/instance-identity/document)
 
     local account_id=$(echo "${instance_info}" | jq -r '.accountId')
     if [ -z "${account_id}" ]; then
-        bail "Unable to determine account id. Could not find 'accountId' in response '${instance_info}'"
+        error "Could not find 'accountId' in response '${instance_info}'"
+        bail "Unable to determine account id"
     fi
 
-    echo ${account_id}
+    echo "${account_id}"
 }

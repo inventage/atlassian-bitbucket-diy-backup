@@ -1,8 +1,8 @@
 #!/bin/bash
 
-SCRIPT_DIR=$(dirname $0)
-source ${SCRIPT_DIR}/bitbucket.diy-backup.ec2-common.sh
-source ${SCRIPT_DIR}/bitbucket.diy-backup.common.sh
+SCRIPT_DIR=$(dirname "$0")
+source "${SCRIPT_DIR}/aws-common.sh"
+source "${SCRIPT_DIR}/common.sh"
 
 function prepare_backup_home {
     # Validate that all the configuration parameters have been provided to avoid bailing out and leaving Bitbucket locked
@@ -77,17 +77,17 @@ function restore_home {
     fi
 
     info "Restoring home directory from snapshot '${RESTORE_HOME_DIRECTORY_SNAPSHOT_ID}' into a '${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}' volume"
-
+    
     create_and_attach_volume "${RESTORE_HOME_DIRECTORY_SNAPSHOT_ID}" "${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}" \
             "${RESTORE_HOME_DIRECTORY_IOPS}" "${HOME_DIRECTORY_DEVICE_NAME}" "${HOME_DIRECTORY_MOUNT_POINT}"
 
     remount_device
 
-    cleanup_locks ${BITBUCKET_HOME}
+    cleanup_locks "${BITBUCKET_HOME}"
 }
 
 function freeze_home_directory {
-    freeze_mount_point ${HOME_DIRECTORY_MOUNT_POINT}
+    freeze_mount_point "${HOME_DIRECTORY_MOUNT_POINT}"
 
     # Add a clean up routine to ensure we always unfreeze the home directory filesystem
     add_cleanup_routine unfreeze_home_directory
@@ -96,5 +96,5 @@ function freeze_home_directory {
 function unfreeze_home_directory {
     remove_cleanup_routine unfreeze_home_directory
 
-    unfreeze_mount_point ${HOME_DIRECTORY_MOUNT_POINT}
+    unfreeze_mount_point "${HOME_DIRECTORY_MOUNT_POINT}"
 }

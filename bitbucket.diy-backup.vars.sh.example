@@ -1,94 +1,145 @@
 #!/bin/bash
 
-##
-# It is recommended to `chmod 600 bitbucket.diy-backup.vars.sh` after copying the template.
-##
-
-# === Common Variables ===
-
+# Options to pass to every "curl" command
 CURL_OPTIONS="-L -s -f"
 
-# The base url used to lock/access this bitbucket instance. It cannot end on a '/'. This value can be retrieved from the admin page your Bitbucket instance
+# Name used to identify the Bitbucket instance being backed up. This appears in archive names and AWS snapshot tags.
+# It should not contain spaces and must be under 100 characters long.
+INSTANCE_NAME=bitbucket
+
+# The base URL of the Bitbucket instance to be backed up. It cannot end on a '/'.
 BITBUCKET_URL=http://localhost:7990
 
-# Which filesystem backup script to use (ex: rsync, ebs-home)
-# ebs-home means the Bitbucket home (and the database if selected ebs-collocated) will be backed up by taking a snapshot of the EBS volume
-BACKUP_HOME_TYPE=rsync
-
-# Which database backup script to use (ex: mssql, postgresql, mysql, ebs-collocated, rds)
-# ebs-collocated means the database data directory is located in the volume as the bitbucket home (i.e.: the snapshot / restore of the home directory will cover it)
-# rds means your Bitbucket instance is using an RDS instance and we need to produce a snapshot of it on backup
-BACKUP_DATABASE_TYPE=postgresql
-
-# What to use to archive the database and home directory backups and (optionally) copy them to offsite locations
-# (ex: tar, tar-gpg).
-BACKUP_ARCHIVE_TYPE=tar
-
-# Used by the scripts for verbose logging. If not true only errors will be shown.
-BITBUCKET_VERBOSE_BACKUP=TRUE
-
-# The username and password to a user with the necessary permissions required make non-AWS backups.
-BITBUCKET_BACKUP_USER=
-BITBUCKET_BACKUP_PASS=
-
-# If set to true, this variable will backup the filesystem and database without locking Bitbucket in maintenance mode.
-# The resulting backups may contain inconsistencies, so you must run Bitbucket Server 4.8 or higher and check recently
-# modified repositories and pull requests after restoring. Bitbucket Data Center with the disaster.recovery=true option
-# can actively scan for such inconsistencies and resolve them automatically.
-# For more information, see https://confluence.atlassian.com/display/BitbucketServer/Using+Bitbucket+Zero+Downtime+Backup
-# Make sure you read and understand this document before uncommenting.
-#BACKUP_ZERO_DOWNTIME=true
-
-# HipChat options
-HIPCHAT_URL=https://api.hipchat.com
-# Note: The Hipchat room name must be URL encoded. i.e. My Hipchat Room should be My%20Hipchat%20Room
-HIPCHAT_ROOM=
-HIPCHAT_TOKEN=
-
-# === Non-AWS Variables ===
-
-# The name of the database used by this instance.
-BITBUCKET_DB=bitbucket
-# The path to bitbucket home folder (with trailing /)
+# The path to the Bitbucket home directory (with trailing /)
 BITBUCKET_HOME=/var/atlassian/application-data/bitbucket/
 
-# OS level user and group information (typically: 'atlbitbucket' for both)
+# Owner and group of ${BITBUCKET_HOME}:
 BITBUCKET_UID=atlbitbucket
 BITBUCKET_GID=atlbitbucket
 
-# The path to working folder for the backup
-BITBUCKET_BACKUP_ROOT=
-BITBUCKET_BACKUP_DB=${BITBUCKET_BACKUP_ROOT}/bitbucket-db/
-BITBUCKET_BACKUP_HOME=${BITBUCKET_BACKUP_ROOT}/bitbucket-home/
+# Strategy for backing up the Bitbucket home directory:
+#  - amazon-ebs           - Amazon EBS snapshots of the volume containing the home directory
+#  - rsync                - "rsync" of the home directory contents to a temporary location. NOTE: This can NOT be used
+#                           with BACKUP_ZERO_DOWNTIME=true.
+BACKUP_HOME_TYPE=rsync
 
-# The path to where the backup archives are stored
-BITBUCKET_BACKUP_ARCHIVE_ROOT=
+# Strategy for backing up the database:
+#  - amazon-rds           - Amazon RDS snapshots
+#  - mysql                - MySQL using "mysqldump" to backup and "mysql" to restore
+#  - postgresql           - PostgreSQL using "pg_dump" to backup and "pg_restore" to restore
+#  - postgresql93-fslevel - PostgreSQL 9.3 with data directory located in the file system volume as home directory (so
+#                           that it will be included implicitly in the home volume snapshot)
+BACKUP_DATABASE_TYPE=postgresql
 
-# List of repo IDs which should be excluded from the backup
-# It should be space separated: (2 5 88)
-BITBUCKET_BACKUP_EXCLUDE_REPOS=()
+# Strategy for archiving backups and/or copying them to an offsite location:
+#  - aws-snapshots        - AWS EBS and/or RDS snapshots, with optional copy to another region
+#  - gpg-zip              - "gpg-zip" archive
+#  - tar                  - Unix "tar" archive
+BACKUP_ARCHIVE_TYPE=tar
 
-# PostgreSQL options
-POSTGRES_HOST=
-POSTGRES_USERNAME=
-POSTGRES_PASSWORD=
-POSTGRES_PORT=5432
+# If BACKUP_ZERO_DOWNTIME is set to true, the home directory and database will be backed up WITHOUT locking Bitbucket
+# in maintenance mode. NOTE: This can NOT be used with Bitbucket Server versions older than 4.8. For more information,
+# see https://confluence.atlassian.com/display/BitbucketServer/Using+Bitbucket+Zero+Downtime+Backup.
+# Make sure you read and understand this document before uncommenting this variable.
+#BACKUP_ZERO_DOWNTIME=true
 
-# MySQL options
-MYSQL_HOST=
-MYSQL_USERNAME=
-MYSQL_PASSWORD=
-MYSQL_BACKUP_OPTIONS=
+if [ "${BACKUP_ZERO_DOWNTIME}" != "true" ]; then
+    # The username and password to a user with the necessary permissions required to lock Bitbucket in maintenance
+    # mode.
+    BITBUCKET_BACKUP_USER=
+    BITBUCKET_BACKUP_PASS=
+fi
 
-# Options for the tar-gpg archive type
-BITBUCKET_BACKUP_GPG_RECIPIENT=
+# Sub-options for each home directory backup strategy
+case ${BACKUP_HOME_TYPE} in
+    amazon-ebs)
+        # The mount point for the home directory volume
+        HOME_DIRECTORY_MOUNT_POINT=/media/atl
+        # The device name to which the home directory volume is attached, as it appears in your Amazon console
+        HOME_DIRECTORY_DEVICE_NAME=/dev/xvdf
+
+        # The type of volume to create when restoring the home directory
+        RESTORE_HOME_DIRECTORY_VOLUME_TYPE=gp2
+        # Required if RESTORE_HOME_DIRECTORY_VOLUME_TYPE has been set to 'io1'. Ignored otherwise.
+        # The IOPS that should be provisioned for the new volume. Note: Maximum IOPS to volume size ratio is 30
+        RESTORE_HOME_DIRECTORY_IOPS=1000
+        ;;
+    rsync)
+        # Optional list of repo IDs which should be excluded from the backup. For example: (2 5 88)
+        BITBUCKET_BACKUP_EXCLUDE_REPOS=()
+        ;;
+esac
+
+# Sub-options for each database backup strategy
+case ${BACKUP_DATABASE_TYPE} in
+    amazon-rds)
+        # RDS instance ID of the database to backup
+        BACKUP_RDS_INSTANCE_ID=
+
+        # The RDS instance ID for the database to create on restore, must be unique.
+        RESTORE_RDS_INSTANCE_ID=
+        # The instance class to use when restoring the database
+        RESTORE_RDS_INSTANCE_CLASS=db.r3.large
+        # The subnet in which the database will be restored
+        RESTORE_RDS_SUBNET_GROUP_NAME=
+        # The security group to assign to the restored instance
+        RESTORE_RDS_SECURITY_GROUP=
+        ;;
+    mysql)
+        BITBUCKET_DB=bitbucket
+        MYSQL_HOST=
+        MYSQL_USERNAME=
+        MYSQL_PASSWORD=
+        MYSQL_BACKUP_OPTIONS=
+        ;;
+    mssql)
+        BITBUCKET_DB=bitbucket
+        ;;
+    postgresql)
+        BITBUCKET_DB=bitbucket
+        POSTGRES_HOST=
+        POSTGRES_USERNAME=
+        export PGPASSWORD=
+        POSTGRES_PORT=5432
+
+        # Make use of PostgreSQL 9.3+ options if available
+        psql_version="$(psql --version | awk '{print $3}')"
+        psql_majorminor="$(printf "%d%03d" $(echo "${psql_version}" | tr "." "\n" | head -n 2))"
+        if [[ ${psql_majorminor} -ge 9003 ]]; then
+            PG_PARALLEL="-j 5"
+            PG_SNAPSHOT_OPT="--no-synchronized-snapshots"
+        fi
+        ;;
+esac
+
+case ${BACKUP_ARCHIVE_TYPE} in
+    aws-snapshots)
+        # The AWS Account ID, used when copying EBS + RDS snapshots across region.
+        BACKUP_DEST_AWS_ACCOUNT_ID=
+        # The AWS Role ARN to assume when tagging the EBS + RDS snapshots.
+        BACKUP_DEST_AWS_ROLE=
+
+        # This variable is only required if you wish to copy the EBS and RDS snapshots to another region.
+        # If set, this variable will copy the EBS & RDS snapshot to the specified region.
+        BACKUP_DEST_REGION=
+        ;;
+    *)
+        # The path to working folder for the backup
+        BITBUCKET_BACKUP_ROOT=
+        BITBUCKET_BACKUP_DB=${BITBUCKET_BACKUP_ROOT}/bitbucket-db/
+        BITBUCKET_BACKUP_HOME=${BITBUCKET_BACKUP_ROOT}/bitbucket-home/
+
+        # The path to where the backup archives are stored
+        BITBUCKET_BACKUP_ARCHIVE_ROOT=
+
+        # Options for the tar-gpg archive type
+        BITBUCKET_BACKUP_GPG_RECIPIENT=
+        ;;
+esac
 
 # === AWS Variables ===
 
-# Used in AWS backup & restore to tag snapshots. It cannot contain spaces and it must be under 100 characters long
-INSTANCE_NAME=bitbucket
-
-if [ "ebs-home" = "${BACKUP_HOME_TYPE}" -o "rds" = "${BACKUP_DATABASE_TYPE}" ]; then
+if [ "amazon-ebs" = "${BACKUP_HOME_TYPE}" -o "amazon-rds" = "${BACKUP_DATABASE_TYPE}" ]; then
 
     AWS_INFO=$(curl ${CURL_OPTIONS} http://169.254.169.254/latest/dynamic/instance-identity/document)
 
@@ -97,52 +148,23 @@ if [ "ebs-home" = "${BACKUP_HOME_TYPE}" -o "rds" = "${BACKUP_DATABASE_TYPE}" ]; 
 
     # The region for the resources Bitbucket is using (volumes, instances, snapshots, etc)
     AWS_REGION=$(echo "${AWS_INFO}" | jq -r .region)
-fi
 
-if [ "ebs-home" = "${BACKUP_HOME_TYPE}" ]; then
     # The EC2 instance ID
     AWS_EC2_INSTANCE_ID=$(echo "${AWS_INFO}" | jq -r .instanceId)
+
+    # Additional AWS tags for EBS and RDS snapshot, tags needs to be in JSON format without enclosing square brackets:
+    # Example: AWS_ADDITIONAL_TAGS='{"Key":"Value"}, {"Key":"Value"}'
+    AWS_ADDITIONAL_TAGS=
 fi
 
-# Additional AWS tags for EBS and RDS snapshot, tags needs to be in JSON format without enclosing square brackets:
-# Example: AWS_ADDITIONAL_TAGS='{"Key":"Value"}, {"Key":"Value"}'
-AWS_ADDITIONAL_TAGS=
+# Used by the scripts for verbose logging. If not true only errors will be shown.
+BITBUCKET_VERBOSE_BACKUP=TRUE
 
-# The number of backups to keep.  After backups are taken, all old snapshots except for the most recent ${KEEP_BACKUPS}
-# are deleted.  Set to 0 to disable cleanup of old snapshots.
+# HipChat options
+HIPCHAT_URL=https://api.hipchat.com
+HIPCHAT_ROOM=
+HIPCHAT_TOKEN=
+
+# The number of backups to retain. After backups are taken, all old snapshots except for the most recent
+# ${KEEP_BACKUPS} are deleted.  Set to 0 to disable cleanup of old snapshots.
 KEEP_BACKUPS=0
-
-# The mount point for the home directory volume
-HOME_DIRECTORY_MOUNT_POINT=/media/atl
-# The device name to which the home directory volume is attached as it appears in your Amazon console
-# Do NOT use the 'mount' command to retrieve this value as the linux device-driver might have assigned a different value
-HOME_DIRECTORY_DEVICE_NAME=/dev/xvdf
-
-# The type of volume to create when restoring the home directory
-RESTORE_HOME_DIRECTORY_VOLUME_TYPE=gp2
-# Required if RESTORE_HOME_DIRECTORY_VOLUME_TYPE has been set to 'io1'. Ignored otherwise.
-# The IOPS that should be provisioned for the new volume. Note: Maximum IOPS to volume size ratio is 30
-RESTORE_HOME_DIRECTORY_IOPS=1000
-
-# The AWS Account ID, used when copying EBS + RDS snapshots across region
-BACKUP_DEST_AWS_ACCOUNT_ID=
-# The AWS Role ARN to assume when tagging the EBS + RDS snapshots
-BACKUP_DEST_AWS_ROLE=
-
-# This variable is only required if you wish to copy the EBS and RDS snapshots to another region
-# If set, this variable will copy the EBS & RDS snapshot to the specified region
-BACKUP_DEST_REGION=
-
-# === AWS RDS Variables ===
-
-# The RDS instance ID for the database to backup
-BACKUP_RDS_INSTANCE_ID=
-
-# The RDS instance ID for the database to create on restore, must be unique.
-RESTORE_RDS_INSTANCE_ID=
-# The instance class to use when restoring the database
-RESTORE_RDS_INSTANCE_CLASS=db.r3.large
-# The subnet in which the database will be restored
-RESTORE_RDS_SUBNET_GROUP_NAME=
-# The security group to assign to the restored instance
-RESTORE_RDS_SECURITY_GROUP=

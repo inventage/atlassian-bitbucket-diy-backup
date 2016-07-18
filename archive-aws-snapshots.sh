@@ -20,10 +20,10 @@ function archive_backup {
 
         if [ -n "${BACKUP_DEST_AWS_ACCOUNT_ID}" -a -n "${BACKUP_DEST_AWS_ROLE}" ]; then
             # Copy to BACKUP_DEST_REGION & share with BACKUP_DEST_AWS_ACCOUNT_ID
-            copy_and_share_ebs_snapshot ${backup_ebs_snapshot_id} ${AWS_REGION}
+            copy_and_share_ebs_snapshot "${backup_ebs_snapshot_id}" "${AWS_REGION}"
         else
             # Copy EBS snapshot to BACKUP_DEST_REGION
-            copy_ebs_snapshot ${backup_ebs_snapshot_id} ${AWS_REGION}
+            copy_ebs_snapshot "${backup_ebs_snapshot_id}" "${AWS_REGION}"
         fi
     fi
 
@@ -44,7 +44,7 @@ function archive_backup {
 function prepare_restore_archive {
     local snapshot_tag="${1}"
 
-    if [ -z ${snapshot_tag} ]; then
+    if [ -z "${snapshot_tag}" ]; then
         info "Usage: $0 <snapshot-tag>"
 
         list_available_ebs_snapshot_tags
@@ -70,14 +70,14 @@ function restore_archive {
 function cleanup_old_archives {
     if [ "${KEEP_BACKUPS}" -gt 0 ]; then
         # Cleanup RDS snapshots
-        if [ "${BACKUP_DATABASE_TYPE}" = "rds" ]; then
-            for snapshot_id in $(list_old_rds_snapshot_ids ${AWS_REGION}); do
+        if [ "${BACKUP_DATABASE_TYPE}" = "amazon-rds" ]; then
+            for snapshot_id in $(list_old_rds_snapshot_ids "${AWS_REGION}"); do
                 run aws rds delete-db-snapshot --db-snapshot-identifier "${snapshot_id}" > /dev/null
             done
         fi
         # Cleanup EBS snapshots
-        if [ "${BACKUP_HOME_TYPE}" = "ebs-home" ]; then
-            for ebs_snapshot_id in $(list_old_ebs_snapshot_ids ${AWS_REGION}); do
+        if [ "${BACKUP_HOME_TYPE}" = "amazon-ebs" ]; then
+            for snapshot_id in $(list_old_ebs_snapshot_ids "${AWS_REGION}"); do
                 run aws ec2 delete-snapshot --snapshot-id "${ebs_snapshot_id}" > /dev/null
             done
         fi
@@ -86,10 +86,10 @@ function cleanup_old_archives {
         if [ -n "${BACKUP_DEST_REGION}" ]; then
             if [ -n "${BACKUP_DEST_AWS_ACCOUNT_ID}" -a -n "${BACKUP_DEST_AWS_ROLE}" ]; then
                 # Cleanup snapshots in BACKUP_DEST_AWS_ACCOUNT_ID
-                if [ "${BACKUP_DATABASE_TYPE}" = "rds" ]; then
+                if [ "${BACKUP_DATABASE_TYPE}" = "amazon-rds" ]; then
                     cleanup_old_offsite_rds_snapshots_in_backup_account
                 fi
-                if [ "${BACKUP_HOME_TYPE}" = "ebs-home" ]; then
+                if [ "${BACKUP_HOME_TYPE}" = "amazon-ebs" ]; then
                     cleanup_old_offsite_ebs_snapshots_in_backup_account
                 fi
             else
@@ -192,9 +192,9 @@ function copy_and_share_ebs_snapshot {
     info "Assuming AWS role '${BACKUP_DEST_AWS_ROLE}' to tag copied snapshot"
     local credentials=$(run aws sts assume-role --role-arn "${BACKUP_DEST_AWS_ROLE}" \
         --role-session-name "BitbucketServerDIYBackup")
-    local access_key_id=$(echo ${credentials} | jq -r .Credentials.AccessKeyId)
-    local secret_access_key=$(echo ${credentials} | jq -r .Credentials.SecretAccessKey)
-    local session_token=$(echo ${credentials} | jq -r .Credentials.SessionToken)
+    local access_key_id=$(echo "${credentials}" | jq -r .Credentials.AccessKeyId)
+    local secret_access_key=$(echo "${credentials}" | jq -r .Credentials.SecretAccessKey)
+    local session_token=$(echo "${credentials}" | jq -r .Credentials.SessionToken)
 
     # Add tag to copied snapshot, used to find EBS & RDS snapshot pairs for restoration
     AWS_ACCESS_KEY_ID="${access_key_id}" AWS_SECRET_ACCESS_KEY="${secret_access_key}" \
