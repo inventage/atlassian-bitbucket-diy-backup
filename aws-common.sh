@@ -25,7 +25,7 @@ else
 fi
 
 if [ -z "${INSTANCE_NAME}" ]; then
-    error "The '${PRODUCT}' instance name must be set as INSTANCE_NAME in '${BACKUP_VARS_FILE}'"
+    error "The ${PRODUCT} instance name must be set as INSTANCE_NAME in '${BACKUP_VARS_FILE}'"
 
     bail "See 'bitbucket.diy-aws-backup.vars.sh.example' for the defaults."
 elif [ ! "${INSTANCE_NAME}" = ${INSTANCE_NAME%[[:space:]]*} ]; then
@@ -125,7 +125,6 @@ function wait_attached_volume {
         if [ -z "${attachment_state}" -o "${attachment_state}" = "null" ]; then
             error "Could not find 'Volume' with 'Attachment' with 'State' in response '${volume_description}'"
             bail "Unable to get volume state for volume '${volume_id}'"
-
         fi
         case "${attachment_state}" in
             "attaching")
@@ -240,7 +239,7 @@ function validate_rds_instance_id {
 
     local db_instance_status=$(echo "${instance_description}" | jq -r '.DBInstances[0].DBInstanceStatus')
     case "${db_instance_status}" in
-        -z | "null")
+        "" | "null")
             error "Could not find a 'DBInstance' with 'DBInstanceStatus' in response '${instance_description}'"
             bail "Please make sure you have selected an existing RDS instance"
             ;;
@@ -314,7 +313,7 @@ function delete_ebs_snapshot {
 
 function get_aws_account_id {
     # Returns the ID of the AWS account that this instance is running in.
-    local instance_info=$(run curl http://169.254.169.254/latest/dynamic/instance-identity/document)
+    local instance_info=$(run curl ${CURL_OPTIONS} http://169.254.169.254/latest/dynamic/instance-identity/document)
 
     local account_id=$(echo "${instance_info}" | jq -r '.accountId')
     if [ -z "${account_id}" ]; then

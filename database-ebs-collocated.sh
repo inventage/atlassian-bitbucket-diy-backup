@@ -1,10 +1,11 @@
 #!/bin/bash
 
 # This script is meant to be used when the database data directory is collocated in the same volume
-# as the home directory. In that scenario 'bitbucket.diy-backup.ebs-home.sh' should be enough to backup / restore a Bitbucket instance.
+# as the home directory. In that scenario 'BACKUP_HOME_TYPE=ebs-home' should also be set, and these functions are
+# enough to backup and restore the complete state of a Bitbucket instance.
 
 SCRIPT_DIR=$(dirname $0)
-source ${SCRIPT_DIR}/bitbucket.diy-backup.utils.sh
+source ${SCRIPT_DIR}/utils.sh
 
 function prepare_backup_db {
     no_op
