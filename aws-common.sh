@@ -270,10 +270,10 @@ function validate_rds_snapshot {
 function list_available_ebs_snapshot_tags {
     # Print a list of all snapshots tag values that start with the tag prefix
     print "Available snapshot tags:"
+
     local available_ebs_snapshot_tags=$(run aws ec2 describe-snapshots --filters Name=tag-key,Values="Name" \
         Name=tag-value,Values="${SNAPSHOT_TAG_PREFIX}*" | jq -r ".Snapshots[].Tags[] | select(.Key == \"Name\") \
         | .Value" | sort -r)
-
     if [ -z "${available_ebs_snapshot_tags}" -o "${available_ebs_snapshot_tags}" = "null" ]; then
         bail "Unable to retrieve list of available EBS snapshot tags. \
             Could not find 'Snapshots' with 'Tags' with 'Value' in response '${snapshot_description}'"
