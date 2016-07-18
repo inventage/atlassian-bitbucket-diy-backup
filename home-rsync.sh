@@ -37,7 +37,7 @@ function perform_rsync {
     fi
 
     mkdir -p ${BITBUCKET_BACKUP_HOME}
-    rsync -avh ${rsync_quiet} --delete --delete-excluded --exclude=/caches/ --exclude=/shared/data/db.* \
+    run rsync -avh ${rsync_quiet} --delete --delete-excluded --exclude=/caches/ --exclude=/shared/data/db.* \
         --exclude=/shared/search/data/ --exclude=/export/ --exclude=/log/ --exclude=/plugins/.*/ --exclude=/tmp \
         --exclude=/.lock --exclude=/shared/.lock ${rsync_exclude_repos} ${BITBUCKET_HOME} ${BITBUCKET_BACKUP_HOME}
     if [ $? != 0 ]; then
