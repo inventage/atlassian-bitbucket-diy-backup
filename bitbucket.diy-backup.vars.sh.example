@@ -112,7 +112,7 @@ case ${BACKUP_DATABASE_TYPE} in
         ;;
 esac
 
-case ${BITBUCKET_ARCHIVE_TYPE} in
+case ${BACKUP_ARCHIVE_TYPE} in
     aws-snapshots)
         # The AWS Account ID, used when copying EBS + RDS snapshots across region.
         BACKUP_DEST_AWS_ACCOUNT_ID=
