@@ -46,32 +46,36 @@ function hc_announce {
     true
 }
 
-function info {
+function debug {
     if [ "${BITBUCKET_VERBOSE_BACKUP}" = "TRUE" ]; then
-        echo "[${BITBUCKET_URL}]  INFO: $*" > /dev/stderr
-        hc_announce "[${BITBUCKET_URL}]  INFO: $*" "gray"
+        echo "[${BITBUCKET_URL}] DEBUG: $*" > /dev/stderr
     fi
+}
+
+function info {
+    echo "[${BITBUCKET_URL}]  INFO: $*" > /dev/stderr
+    hc_announce "[${BITBUCKET_URL}]  INFO: $*" "gray"
 }
 
 function print {
-    if [ "${BITBUCKET_VERBOSE_BACKUP}" = "TRUE" ]; then
-        echo "$@" > /dev/stderr
-    fi
+    echo "$@" > /dev/stderr
 }
 
 function run {
-    local cmdline=
-    for arg in "$@"; do
-        case "${arg}" in
-            *\ * | *\"*)
-                cmdline="${cmdline} '${arg}'"
-                ;;
-            *)
-                cmdline="${cmdline} ${arg}"
-                ;;
-        esac
-    done
-    info "Running${cmdline}" >/dev/stderr
+    if [ "${BITBUCKET_VERBOSE_BACKUP}" = "TRUE" ]; then
+        local cmdline=
+        for arg in "$@"; do
+            case "${arg}" in
+                *\ * | *\"*)
+                    cmdline="${cmdline} '${arg}'"
+                    ;;
+                *)
+                    cmdline="${cmdline} ${arg}"
+                    ;;
+            esac
+        done
+        debug "Running${cmdline}" >/dev/stderr
+    fi
     "$@"
 }
 

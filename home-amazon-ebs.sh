@@ -2,7 +2,6 @@
 
 SCRIPT_DIR=$(dirname $0)
 source ${SCRIPT_DIR}/aws-common.sh
-source ${SCRIPT_DIR}/common.sh
 
 function prepare_backup_home {
     # Validate that all the configuration parameters have been provided to avoid bailing out and leaving Bitbucket locked
@@ -76,7 +75,7 @@ function restore_home {
         detach_volume
     fi
 
-    info "Restoring home directory from snapshot '${RESTORE_HOME_DIRECTORY_SNAPSHOT_ID}' into a '${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}' volume"
+    info "Restoring home directory from snapshot ${RESTORE_HOME_DIRECTORY_SNAPSHOT_ID} into a ${RESTORE_HOME_DIRECTORY_VOLUME_TYPE} volume"
 
     create_and_attach_volume "${RESTORE_HOME_DIRECTORY_SNAPSHOT_ID}" "${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}" \
             "${RESTORE_HOME_DIRECTORY_IOPS}" "${HOME_DIRECTORY_DEVICE_NAME}" "${HOME_DIRECTORY_MOUNT_POINT}"

@@ -111,6 +111,11 @@ function unlock_bitbucket {
         -H "Content-type: application/json" "${BITBUCKET_URL}/mvc/maintenance/lock?token=${BITBUCKET_LOCK_TOKEN}"
 }
 
+function bitbucket_version {
+    run curl ${CURL_OPTIONS} "${BITBUCKET_URL}/rest/api/1.0/application-properties" | jq -r '.version' | \
+        sed -e 's/\./ /' -e 's/\..*//'
+}
+
 function freeze_mount_point {
     run sudo fsfreeze -f "${1}"
 }
@@ -139,7 +144,7 @@ function remove_cleanup_routine() {
 }
 
 function run_cleanup() {
-    info "Running cleanup jobs..."
+    info "Cleaning up..."
     for cleanup in ${cleanup_queue[@]}
     do
         ${cleanup}

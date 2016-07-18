@@ -17,6 +17,20 @@ else
     bail "You should create it using '${SCRIPT_DIR}/bitbucket.diy-backup.vars.sh.example' as a template"
 fi
 
+if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
+    if [ "${BACKUP_HOME_TYPE}" = "rsync" ]; then
+        error "BACKUP_HOME_TYPE=rsync cannot be used with BACKUP_ZERO_DOWNTIME=true"
+        bail "Please update ${BACKUP_VARS_FILE}"
+    fi
+    version=($(bitbucket_version))
+    if [ ${version[0]} -lt 4 -o ${version[0]} -eq 4 -a ${version[1]} -lt 8 ]; then
+        error "Bitbucket version ${version[0]}.${version[1]} does not support BACKUP_ZERO_DOWNTIME=true"
+        error "You need a minimum of Bitbucket 4.8 to restore a backup taken with BACKUP_ZERO_DOWNTIME=true"
+        error "See https://confluence.atlassian.com/display/BitbucketServer/Using+Bitbucket+Zero+Downtime+Backup."
+        bail "Please update ${BACKUP_VARS_FILE}"
+    fi
+fi
+
 if [ -e "${SCRIPT_DIR}/home-${BACKUP_HOME_TYPE}.sh" ]; then
     source "${SCRIPT_DIR}/home-${BACKUP_HOME_TYPE}.sh"
 else
@@ -46,7 +60,7 @@ lock_bitbucket
 backup_start
 backup_wait
 
-# Back up the database and filesystem in parallel, reporting progress
+# Back up the database and filesystem in parallel, reporting progress if necessary.
 (backup_db && update_backup_progress 50) &
 (backup_home && update_backup_progress 50) &
 

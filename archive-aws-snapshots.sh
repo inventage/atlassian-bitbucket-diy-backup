@@ -69,22 +69,22 @@ function restore_archive {
 
 function cleanup_old_archives {
     if [ "${KEEP_BACKUPS}" -gt 0 ]; then
-        if [ "${BACKUP_DATABASE_TYPE}" = "rds" ]; then
+        if [ "${BACKUP_DATABASE_TYPE}" = "amazon-rds" ]; then
             for snapshot_id in $(list_old_rds_snapshot_ids ${AWS_REGION}); do
-                run aws rds delete-db-snapshot --db-snapshot-identifier "${snapshot_id}" > /dev/null
+                aws rds delete-db-snapshot --db-snapshot-identifier "${snapshot_id}" > /dev/null
             done
         fi
-        if [ "${BACKUP_HOME_TYPE}" = "ebs-home" ]; then
+        if [ "${BACKUP_HOME_TYPE}" = "amazon-ebs" ]; then
             for snapshot_id in $(list_old_ebs_snapshot_ids); do
                 delete_ebs_snapshot "${snapshot_id}"
             done
         fi
 
         if [ -n "${BACKUP_DEST_REGION}" ]; then
-            if [ "${BACKUP_DATABASE_TYPE}" = "rds" ]; then
+            if [ "${BACKUP_DATABASE_TYPE}" = "amazon-rds" ]; then
                 cleanup_old_offsite_rds_snapshots
             fi
-            if [ "${BACKUP_HOME_TYPE}" = "ebs-home" ]; then
+            if [ "${BACKUP_HOME_TYPE}" = "amazon-ebs" ]; then
                 cleanup_old_offsite_ebs_snapshots
             fi
         fi
