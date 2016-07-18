@@ -23,7 +23,7 @@ if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         bail "Please update ${BACKUP_VARS_FILE}"
     fi
     version=($(bitbucket_version))
-    if [ "${#version[@]}" != "2" ]; then
+    if [ "${#version[@]}" -lt 2 ]; then
         error "Unable to determine the version of Bitbucket at '${BITBUCKET_URL}'"
         error "You need a minimum of Bitbucket 4.8 to restore a backup taken with BACKUP_ZERO_DOWNTIME=true"
         error "See https://confluence.atlassian.com/display/BitbucketServer/Using+Bitbucket+Zero+Downtime+Backup."
