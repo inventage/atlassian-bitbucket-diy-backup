@@ -55,8 +55,8 @@ function snapshot_ebs_volume {
 
     local ebs_snapshot_id=$(echo "${create_snapshot_response}" | jq -r '.SnapshotId')
     if [ -z "${ebs_snapshot_id}" -o "${ebs_snapshot_id}" = "null" ]; then
-        bail "Unable to create EBS snapshot of volume '${volume_id}'. \
-            Could not find 'SnapshotId' in response '${create_snapshot_response}'"
+        error "Could not find 'SnapshotId' in response '${create_snapshot_response}'"
+        bail "Unable to create EBS snapshot of volume '${volume_id}'"
     fi
 
     run aws ec2 create-tags --resources "${ebs_snapshot_id}" --tags Key="${SNAPSHOT_TAG_KEY}",Value="${SNAPSHOT_TAG_VALUE}" > /dev/null
@@ -80,8 +80,8 @@ function create_volume {
 
     local volume_id=$(echo "${create_volume_response}" | jq -r '.VolumeId')
     if [ -z "${volume_id}" -o "${volume_id}" = "null" ]; then
-        bail "Error getting volume id from volume creation response. \
-            Could not find 'VolumeId' in response '${create_volume_response}'"
+        error "Could not find 'VolumeId' in response '${create_volume_response}'"
+        bail "Error getting volume id from volume creation response"
     fi
 
     run aws ec2 wait volume-available --volume-ids "${volume_id}" > /dev/null
@@ -275,8 +275,8 @@ function list_available_ebs_snapshot_tags {
         Name=tag-value,Values="${SNAPSHOT_TAG_PREFIX}*" | jq -r ".Snapshots[].Tags[] | select(.Key == \"Name\") \
         | .Value" | sort -r)
     if [ -z "${available_ebs_snapshot_tags}" -o "${available_ebs_snapshot_tags}" = "null" ]; then
-        bail "Unable to retrieve list of available EBS snapshot tags. \
-            Could not find 'Snapshots' with 'Tags' with 'Value' in response '${snapshot_description}'"
+        error "Could not find 'Snapshots' with 'Tags' with 'Value' in response '${snapshot_description}'"
+        bail "Unable to retrieve list of available EBS snapshot tags"
     fi
 
     echo "${available_ebs_snapshot_tags}"
@@ -317,7 +317,8 @@ function get_aws_account_id {
 
     local account_id=$(echo "${instance_info}" | jq -r '.accountId')
     if [ -z "${account_id}" ]; then
-        bail "Unable to determine account id. Could not find 'accountId' in response '${instance_info}'"
+        error "Could not find 'accountId' in response '${instance_info}'"
+        bail "Unable to determine account id"
     fi
 
     echo ${account_id}
