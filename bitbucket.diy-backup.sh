@@ -3,14 +3,14 @@
 # Ensure the script terminates whenever a required operation encounters an error
 set -e
 
-SCRIPT_DIR=$(dirname $0)
-source ${SCRIPT_DIR}/utils.sh
-source ${SCRIPT_DIR}/common.sh
+SCRIPT_DIR=$(dirname "$0")
+source "${SCRIPT_DIR}/utils.sh"
+source "${SCRIPT_DIR}/common.sh"
 
 BACKUP_VARS_FILE=${BACKUP_VARS_FILE:-"${SCRIPT_DIR}"/bitbucket.diy-backup.vars.sh}
 
-if [ -f ${BACKUP_VARS_FILE} ]; then
-    source ${BACKUP_VARS_FILE}
+if [ -f "${BACKUP_VARS_FILE}" ]; then
+    source "${BACKUP_VARS_FILE}"
     info "Using vars file: '${BACKUP_VARS_FILE}'"
 else
     error "'${BACKUP_VARS_FILE}' not found"

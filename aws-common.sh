@@ -45,7 +45,7 @@ SNAPSHOT_TAG_KEY="Name"
 # This is used to identify RDS + EBS snapshots.
 # Note that this prefix is used to delete old backups and if set improperly will delete incorrect snapshots on cleanup.
 SNAPSHOT_TAG_PREFIX="${INSTANCE_NAME}-"
-SNAPSHOT_TIME=`date +"%Y%m%d-%H%M%S-%3N"`
+SNAPSHOT_TIME=$(date +"%Y%m%d-%H%M%S-%3N")
 SNAPSHOT_TAG_VALUE="${SNAPSHOT_TAG_PREFIX}${SNAPSHOT_TIME}"
 
 function snapshot_ebs_volume {
@@ -112,7 +112,7 @@ function wait_attached_volume {
 
     # 60 Minutes
     local max_wait_time=3600
-    local end_time=$((SECONDS+${max_wait_time}))
+    local end_time=$((SECONDS+max_wait_time))
 
     local attachment_state='attaching'
     while [ $SECONDS -lt ${end_time} ]; do
@@ -321,5 +321,5 @@ function get_aws_account_id {
         bail "Unable to determine account id"
     fi
 
-    echo ${account_id}
+    echo "${account_id}"
 }

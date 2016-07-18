@@ -23,7 +23,7 @@ function lock_bitbucket {
             returned '${lock_response}'"
     fi
 
-    BITBUCKET_LOCK_TOKEN=$(echo ${lock_response} | jq -r ".unlockToken" | tr -d '\r')
+    BITBUCKET_LOCK_TOKEN=$(echo "${lock_response}" | jq -r ".unlockToken" | tr -d '\r')
     if [ -z "${BITBUCKET_LOCK_TOKEN}" ]; then
         bail "Unable to get Bitbucket unlock token from maintenance mode response. \
             Could not find 'unlockToken' in response '${lock_response}'"
@@ -48,7 +48,7 @@ function backup_start {
             returned '${backup_response}'"
     fi
 
-    BITBUCKET_BACKUP_TOKEN=$(echo ${backup_response} | jq -r ".cancelToken" | tr -d '\r')
+    BITBUCKET_BACKUP_TOKEN=$(echo "${backup_response}" | jq -r ".cancelToken" | tr -d '\r')
     if [ -z "${BITBUCKET_BACKUP_TOKEN}" ]; then
         bail "Unable to enter backup mode. Could not find 'cancelToken' in response '${backup_response}'"
     fi
@@ -75,9 +75,9 @@ function backup_wait {
                 GET to '${BITBUCKET_URL}/mvc/maintenance' did not return any content"
         fi
 
-        db_state=$(echo ${progress_response} | jq -r '.["db-state"]' | tr -d '\r')
-        scm_state=$(echo ${progress_response} | jq -r '.["scm-state"]' | tr -d '\r')
-        local drained_state=$(echo ${progress_response} | jq -r '.task.state' | tr -d '\r')
+        db_state=$(echo "${progress_response}" | jq -r '.["db-state"]' | tr -d '\r')
+        scm_state=$(echo "${progress_response}" | jq -r '.["scm-state"]' | tr -d '\r')
+        local drained_state=$(echo "${progress_response}" | jq -r '.task.state' | tr -d '\r')
 
         if [ "${drained_state}" != "RUNNING" ]; then
             unlock_bitbucket
@@ -161,8 +161,8 @@ function cleanup_locks {
     shopt -s globstar
 
     # Remove lock files in the repositories
-    run sudo -u ${BITBUCKET_UID} rm -f ${home_directory}/shared/data/repositories/*/{HEAD,config,index,gc,packed-refs,stash-packed-refs}.{pid,lock}
-    run sudo -u ${BITBUCKET_UID} rm -f ${home_directory}/shared/data/repositories/*/refs/**/*.lock
-    run sudo -u ${BITBUCKET_UID} rm -f ${home_directory}/shared/data/repositories/*/stash-refs/**/*.lock
-    run sudo -u ${BITBUCKET_UID} rm -f ${home_directory}/shared/data/repositories/*/logs/**/*.lock
+    run sudo -u "${BITBUCKET_UID}" rm -f "${home_directory}/shared/data/repositories/*/{HEAD,config,index,gc,packed-refs,stash-packed-refs}.{pid,lock}"
+    run sudo -u "${BITBUCKET_UID}" rm -f "${home_directory}/shared/data/repositories/*/refs/**/*.lock"
+    run sudo -u "${BITBUCKET_UID}" rm -f "${home_directory}/shared/data/repositories/*/stash-refs/**/*.lock"
+    run sudo -u "${BITBUCKET_UID}" rm -f "${home_directory}/shared/data/repositories/*/logs/**/*.lock"
 }

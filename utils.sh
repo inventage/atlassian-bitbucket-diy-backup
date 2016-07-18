@@ -3,12 +3,12 @@
 # Contains util functions (bail, info, print)
 
 function bail {
-    error $*
+    error "$*"
     exit 99
 }
 
 function check_command {
-    type -P $1 &> /dev/null || bail "Unable to find $1, please install it and run this script again"
+    type -P "$1" &> /dev/null || bail "Unable to find $1, please install it and run this script again"
 }
 
 function error {
