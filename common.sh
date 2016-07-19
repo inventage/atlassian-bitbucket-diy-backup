@@ -135,17 +135,20 @@ function unmount_device {
 }
 
 function add_cleanup_routine() {
-    cleanup_queue=($1 ${cleanup_queue[@]})
+    local var="cleanup_queue_${BASH_SUBSHELL}"
+    eval ${var}=\"$1 ${!var}\"
     trap run_cleanup EXIT INT ABRT PIPE
 }
 
 function remove_cleanup_routine() {
-    cleanup_queue=("${cleanup_queue[@]/$1}")
+    local var="cleanup_queue_${BASH_SUBSHELL}"
+    eval ${var}=\"${!var}/$1}\"
 }
 
 function run_cleanup() {
     info "Running cleanup jobs..."
-    for cleanup in ${cleanup_queue[@]}; do
+    local var="cleanup_queue_${BASH_SUBSHELL}"
+    for cleanup in ${!var}; do
         ${cleanup}
     done
 }
