@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# -------------------------------------------------------------------------------------
+# An archive strategy for encrypting files using GNU GPG's gpg-zip command
+# -------------------------------------------------------------------------------------
+
 check_command "gpg-zip"
 
 SCRIPT_DIR=$(dirname "$0")

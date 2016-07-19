@@ -1,19 +1,15 @@
 #!/bin/bash
 
-# Functions implementing backup and restore for Amazon RDS
-#
-# Exports the following functions
-#     prepare_backup_db     - for making a backup of the DB if differential backups a possible. Can be empty
-#     backup_db             - for making a backup of the bitbucket DB
-#     prepare_restore_db
-#     restore_db
+# -------------------------------------------------------------------------------------
+# A backup and restore strategy for Amazon RDS database
+# -------------------------------------------------------------------------------------
 
 SCRIPT_DIR=$(dirname "$0")
 source "${SCRIPT_DIR}/aws-common.sh"
 source "${SCRIPT_DIR}/utils.sh"
 
+# Validate that the BACKUP_RDS_INSTANCE_ID variable has been set to a valid Amazon RDS instance
 function prepare_backup_db {
-    # Validate that all the configuration parameters have been provided to avoid bailing out and leaving Bitbucket locked
     if [ -z "${BACKUP_RDS_INSTANCE_ID}" ]; then
         error "The RDS instance id must be set in '${BACKUP_VARS_FILE}'"
         bail "See 'bitbucket.diy-aws-backup.vars.sh.example' for the defaults."
@@ -22,6 +18,7 @@ function prepare_backup_db {
     validate_rds_instance_id "${BACKUP_RDS_INSTANCE_ID}"
 }
 
+# Backup the Bitbucket database
 function backup_db {
     info "Performing backup of RDS instance '${BACKUP_RDS_INSTANCE_ID}'"
     snapshot_rds_instance "${BACKUP_RDS_INSTANCE_ID}"
