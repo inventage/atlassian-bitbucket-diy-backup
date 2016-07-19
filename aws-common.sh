@@ -205,6 +205,9 @@ function restore_rds_instance {
         optional_args="${optional_args} --db-subnet-group-name ${RESTORE_RDS_SUBNET_GROUP_NAME}"
     fi
 
+    info "Waiting for RDS snapshot '${snapshot_id}' to become available before restoring"
+    run aws rds wait db-snapshot-completed --db-snapshot-identifier "${snapshot_id}" > /dev/null
+
     run aws rds restore-db-instance-from-db-snapshot --db-instance-identifier "${instance_id}" \
         --db-snapshot-identifier "${snapshot_id}" ${optional_args} > /dev/null
 
@@ -212,7 +215,8 @@ function restore_rds_instance {
     run aws rds wait db-instance-available --db-instance-identifier "${instance_id}"  > /dev/null
 
     if [ -n "${RESTORE_RDS_SECURITY_GROUP}" ]; then
-        # When restoring a DB instance outside of a VPC this command will need to be modified to use --db-security-groups instead of --vpc-security-group-ids
+        # When restoring a DB instance outside of a VPC this command will need
+        # to be modified to use --db-security-groups instead of --vpc-security-group-ids
         # For more information see http://docs.aws.amazon.com/cli/latest/reference/rds/modify-db-instance.html
         run aws rds modify-db-instance --apply-immediately --db-instance-identifier "${instance_id}" \
             --vpc-security-group-ids "${RESTORE_RDS_SECURITY_GROUP}" > /dev/null
@@ -246,8 +250,8 @@ function validate_rds_instance_id {
         "available")
             ;;
         *)
-            error "The instance '${instance_id}' status is '${db_instance_status}', expected 'available'"
-            bail "The instance must be 'available' before the backup can be started."
+            error "The RDS instance '${instance_id}' status is '${db_instance_status}', expected 'available'"
+            bail "The RDS instance must be 'available' before the backup can be started."
             ;;
     esac
 }
@@ -285,30 +289,17 @@ function list_available_ebs_snapshot_tags {
 # List all RDS DB snapshots older than the most recent ${KEEP_BACKUPS}
 function list_old_rds_snapshot_ids {
     local region=$1
-    if [ "${KEEP_BACKUPS}" -gt 0 ]; then
-        run aws rds describe-db-snapshots --region "${region}" --snapshot-type manual | \
-            jq -r ".DBSnapshots | map(select(.DBSnapshotIdentifier | \
-            startswith(\"${SNAPSHOT_TAG_PREFIX}\"))) | sort_by(.SnapshotCreateTime) | reverse | .[${KEEP_BACKUPS}:] | \
-            map(.DBSnapshotIdentifier)[]"
-    fi
-}
-
-function delete_rds_snapshot {
-    local rds_snapshot_id="$1"
-    run aws rds delete-db-snapshot --db-snapshot-identifier "${rds_snapshot_id}" > /dev/null
+    run aws rds describe-db-snapshots --region "${region}" --snapshot-type manual | \
+        jq -r ".DBSnapshots | map(select(.DBSnapshotIdentifier | \
+        startswith(\"${SNAPSHOT_TAG_PREFIX}\"))) | sort_by(.SnapshotCreateTime) | reverse | .[${KEEP_BACKUPS}:] | \
+        map(.DBSnapshotIdentifier)[]"
 }
 
 # List all EBS snapshots older than the most recent ${KEEP_BACKUPS}
 function list_old_ebs_snapshot_ids {
-    if [ "${KEEP_BACKUPS}" -gt 0 ]; then
-        run aws ec2 describe-snapshots --filters "Name=tag:Name,Values=${SNAPSHOT_TAG_PREFIX}*" | \
-            jq -r ".Snapshots | sort_by(.StartTime) | reverse | .[${KEEP_BACKUPS}:] | map(.SnapshotId)[]"
-    fi
-}
-
-function delete_ebs_snapshot {
-    local ebs_snapshot_id="$1"
-    run aws ec2 delete-snapshot --snapshot-id "${ebs_snapshot_id}" > /dev/null
+    local region=$1
+    run aws ec2 describe-snapshots --region "${region}" --filters "Name=tag:Name,Values=${SNAPSHOT_TAG_PREFIX}*" | \
+        jq -r ".Snapshots | sort_by(.StartTime) | reverse | .[${KEEP_BACKUPS}:] | map(.SnapshotId)[]"
 }
 
 function get_aws_account_id {
