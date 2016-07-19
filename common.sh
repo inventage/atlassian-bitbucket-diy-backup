@@ -142,7 +142,7 @@ function add_cleanup_routine() {
 
 function remove_cleanup_routine() {
     local var="cleanup_queue_${BASH_SUBSHELL}"
-    eval ${var}=\"${!var}/$1}\"
+    eval ${var}=\"${!var/$1}\"
 }
 
 function run_cleanup() {
