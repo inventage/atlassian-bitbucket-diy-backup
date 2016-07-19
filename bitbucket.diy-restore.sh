@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# -------------------------------------------------------------------------------------
+# The DIY restore script.
+#
+# This script is invoked to perform a restore of a Bitbucket Server,
+# or Bitbucket Data Center instance. It requires a properly configured
+# bitbucket.diy-backup.vars.sh file, which can be copied from
+# bitbucket.diy-backup.vars.sh.example and customized.
+# -------------------------------------------------------------------------------------
+
+# Ensure the script terminates whenever a required operation encounters an error
 set -e
 
 SCRIPT_DIR=$(dirname "$0")

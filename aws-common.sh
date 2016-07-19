@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# -------------------------------------------------------------------------------------
+# Utilities used for AWS backup and restore
+# -------------------------------------------------------------------------------------
+
 check_command "aws"
 check_command "jq"
 
@@ -38,6 +42,7 @@ elif [ ${#INSTANCE_NAME} -ge 100 ]; then
     bail "See 'bitbucket.diy-aws-backup.vars.sh.example' for the defaults."
 fi
 
+# Exported so that calls to the aws command line tool can use them
 export AWS_DEFAULT_REGION=${AWS_REGION}
 export AWS_DEFAULT_OUTPUT=json
 
@@ -48,6 +53,11 @@ SNAPSHOT_TAG_PREFIX="${INSTANCE_NAME}-"
 SNAPSHOT_TIME=$(date +"%Y%m%d-%H%M%S-%3N")
 SNAPSHOT_TAG_VALUE="${SNAPSHOT_TAG_PREFIX}${SNAPSHOT_TIME}"
 
+# Create a snapshot of an EBS volume
+#
+# volume_id = The volume to snapshot
+# description = The description of the snapshot
+#
 function snapshot_ebs_volume {
     local volume_id="$1"
     local description="$2"
@@ -65,6 +75,12 @@ function snapshot_ebs_volume {
     fi
 }
 
+# Creates a EBS volume from a snapshot
+#
+# snapshot_id = The snapshot id to use
+# volume_type = The type of volume to create (i.e. gp2, io1)
+# provisioned_iops = The IOPS to be provisioned
+#
 function create_volume {
     local snapshot_id="$1"
     local volume_type="$2"
@@ -88,6 +104,11 @@ function create_volume {
     echo "${volume_id}"
 }
 
+# Attach an existing EBS volume to the requested device name
+#
+# volume_id = The volume id to attach
+# device_name = The device name
+#
 function attach_volume {
     local volume_id="$1"
     local device_name="$2"
@@ -96,15 +117,21 @@ function attach_volume {
     wait_attached_volume "${volume_id}"
 }
 
+# Detach the currently attached EBS volume
 function detach_volume {
     run aws ec2 detach-volume --volume-id "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" > /dev/null
 }
 
+# Re-attach the previously attached EBS volume.
 function reattach_old_volume {
     remove_cleanup_routine reattach_old_volume
     attach_volume "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" "${HOME_DIRECTORY_DEVICE_NAME}"
 }
 
+# Wait for an EBS volume to attach
+#
+# volume_id = The volume id
+#
 function wait_attached_volume {
     local volume_id="$1"
 
@@ -145,6 +172,14 @@ function wait_attached_volume {
     fi
 }
 
+# Create a new EBS volume from a snapshot and attach it
+#
+# snapshot_id = The snapshot id to use
+# volume_type = The type of volume to create (i.e. gp2, io1)
+# provisioned_iops = The no of IOPS required
+# device_name = The destination device name
+# mount_point = The destination mount point
+#
 function create_and_attach_volume {
     local snapshot_id="$1"
     local volume_type="$2"
@@ -156,6 +191,10 @@ function create_and_attach_volume {
     attach_volume "${volume_id}" "${device_name}"
 }
 
+# Validate the existence of a EBS snapshot
+#
+# snapshot_tag = The tag to search for
+#
 function validate_ebs_snapshot {
     local snapshot_tag="$1"
     local  __RETURN=$2
@@ -174,6 +213,10 @@ function validate_ebs_snapshot {
     fi
 }
 
+# Create a snapshot of a RDS instance
+#
+# instance_id = The RDS instance to snapshot
+#
 function snapshot_rds_instance {
     local instance_id="$1"
     local comma=
@@ -192,6 +235,11 @@ function snapshot_rds_instance {
     run aws rds wait db-instance-available --db-instance-identifier "${instance_id}"
 }
 
+# Response a RDS instance from a snapshot
+#
+# instance_id = The instance to be restored
+# snapshot_id = The snapshot to be restored
+#
 function restore_rds_instance {
     local instance_id="$1"
     local snapshot_id="$2"
@@ -223,6 +271,10 @@ function restore_rds_instance {
     fi
 }
 
+# Output the id of the currently attached EBS Volume
+#
+# device_name = The device name
+#
 function find_attached_ebs_volume {
     local device_name="${1}"
     local volume_description=$(run aws ec2 describe-volumes --filter Name=attachment.instance-id,Values="${AWS_EC2_INSTANCE_ID}" \
@@ -237,6 +289,10 @@ function find_attached_ebs_volume {
     echo "${ebs_volume}"
 }
 
+# Verify the existence of a RDS instance
+#
+# instance_id = The id of the RDS instance
+#
 function validate_rds_instance_id {
     local instance_id="$1"
     local instance_description=$(run aws rds describe-db-instances --db-instance-identifier "${instance_id}")
@@ -256,6 +312,10 @@ function validate_rds_instance_id {
     esac
 }
 
+# Verify the existence of a RDS snapshot
+#
+# snapshot_tag = The tag to search for
+#
 function validate_rds_snapshot {
     local snapshot_tag="$1"
     local db_snapshot_description=$(run aws rds describe-db-snapshots --db-snapshot-identifier "${snapshot_tag}")
@@ -271,6 +331,7 @@ function validate_rds_snapshot {
     fi
 }
 
+# List available EBS snapshot tags
 function list_available_ebs_snapshot_tags {
     # Print a list of all snapshots tag values that start with the tag prefix
     print "Available snapshot tags:"
@@ -287,6 +348,9 @@ function list_available_ebs_snapshot_tags {
 }
 
 # List all RDS DB snapshots older than the most recent ${KEEP_BACKUPS}
+#
+# region = The AWS region to search
+#
 function list_old_rds_snapshot_ids {
     local region=$1
     run aws rds describe-db-snapshots --region "${region}" --snapshot-type manual | \
@@ -302,6 +366,7 @@ function list_old_ebs_snapshot_ids {
         jq -r ".Snapshots | sort_by(.StartTime) | reverse | .[${KEEP_BACKUPS}:] | map(.SnapshotId)[]"
 }
 
+# Retrieves and parsed the instance identity document and outputs the account id
 function get_aws_account_id {
     # Returns the ID of the AWS account that this instance is running in.
     local instance_info=$(run curl ${CURL_OPTIONS} http://169.254.169.254/latest/dynamic/instance-identity/document)

@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# -------------------------------------------------------------------------------------
 # Functions implementing archiving of backups and copy to offsite location for AWS snapshots.
 # AWS snapshots reside in AWS and are not archived in this implementation.
 #
@@ -8,6 +9,7 @@
 #
 # Additionally, you can also set the variables BACKUP_DEST_AWS_ACCOUNT_ID and BACKUP_DEST_AWS_ROLE to share every
 # snapshot with another AWS account.
+# -------------------------------------------------------------------------------------
 
 function archive_backup {
     # AWS snapshots reside in AWS and do not need to be archived.

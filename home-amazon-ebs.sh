@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# -------------------------------------------------------------------------------------
+# A backup and restore strategy for Amazon EBS Volumes
+# -------------------------------------------------------------------------------------
+
 SCRIPT_DIR=$(dirname "$0")
 source "${SCRIPT_DIR}/aws-common.sh"
 source "${SCRIPT_DIR}/common.sh"

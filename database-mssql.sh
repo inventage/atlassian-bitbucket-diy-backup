@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# -------------------------------------------------------------------------------------
+# A backup and restore strategy for Microsoft SQL Server
+# -------------------------------------------------------------------------------------
+
 SCRIPT_DIR=$(dirname "$0")
 source "${SCRIPT_DIR}/utils.sh"
 

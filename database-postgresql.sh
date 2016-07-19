@@ -1,6 +1,8 @@
 #!/bin/bash
 
-# Strategy for backing up and restoring a PostgreSQL database with "pg_dump" and "pg_restore" commands.
+# -------------------------------------------------------------------------------------
+# A backup and restore strategy for PostgreSQL with "pg_dump" and "pg_restore" commands.
+# -------------------------------------------------------------------------------------
 
 check_command "pg_dump"
 check_command "psql"

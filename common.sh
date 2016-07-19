@@ -1,6 +1,9 @@
 #!/bin/bash
 
-# Contains common functionality related to Bitbucket (e.g.: lock/unlock instance, clean up lock files in repositories, etc)
+# -------------------------------------------------------------------------------------
+# Common functionality related to Bitbucket (e.g.: lock/unlock instance,
+# clean up lock files in repositories, etc)
+# -------------------------------------------------------------------------------------
 
 check_command "curl"
 check_command "jq"
@@ -10,7 +13,7 @@ BITBUCKET_HTTP_AUTH="-u ${BITBUCKET_BACKUP_USER}:${BITBUCKET_BACKUP_PASS}"
 # The name of the product
 PRODUCT=Bitbucket
 
-
+# Lock a Bitbucket instance for maintenance
 function lock_bitbucket {
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
@@ -35,6 +38,7 @@ function lock_bitbucket {
     info "    curl -u ... -X DELETE -H 'Content-type:application/json' '${BITBUCKET_URL}/mvc/maintenance/lock?token=${BITBUCKET_LOCK_TOKEN}'"
 }
 
+# Instruct Bitbucket to begin a backup
 function backup_start {
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
@@ -57,6 +61,7 @@ function backup_start {
     info "    curl -u ... -X DELETE -H 'Content-type:application/json' '${BITBUCKET_URL}/mvc/admin/backups/${BITBUCKET_BACKUP_TOKEN}'"
 }
 
+# Wait for database and SCM to drain to ensure a consistent backup
 function backup_wait {
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
@@ -89,6 +94,10 @@ function backup_wait {
     print "scm state '${scm_state}'"
 }
 
+# Instructs Bitbucket to update the progress of a backup
+#
+# backup_progress = The percentage completion
+#
 function update_backup_progress {
     local backup_progress=$1
 
@@ -100,6 +109,7 @@ function update_backup_progress {
         "${BITBUCKET_URL}/mvc/admin/backups/progress/client?token=${BITBUCKET_LOCK_TOKEN}&percentage=${backup_progress}"
 }
 
+# Unlock a previously locked Bitbucket instance
 function unlock_bitbucket {
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
@@ -111,40 +121,59 @@ function unlock_bitbucket {
         -H "Content-type: application/json" "${BITBUCKET_URL}/mvc/maintenance/lock?token=${BITBUCKET_LOCK_TOKEN}"
 }
 
+# Get the version of Bitbucket running on the Bitbucket instance
 function bitbucket_version {
     run curl ${CURL_OPTIONS} "${BITBUCKET_URL}/rest/api/1.0/application-properties" | jq -r '.version' | \
         sed -e 's/\./ /' -e 's/\..*//'
 }
 
+# Freeze the filesystem mounted under the provided directory.
+# Note that this function requires password-less SUDO access.
+#
+# $1 = mount point
+#
 function freeze_mount_point {
     run sudo fsfreeze -f "${1}"
 }
 
+# Unfreeze the filesystem mounted under the provided mount point.
+# Note that this function requires password-less SUDO access.
+#
+# $1 = mount point
+#
 function unfreeze_mount_point {
     run sudo fsfreeze -u "${1}"
 }
 
+# Remounts the previously mounted home directory
 function remount_device {
     remove_cleanup_routine remount_device
     run sudo mount "${HOME_DIRECTORY_DEVICE_NAME}" "${HOME_DIRECTORY_MOUNT_POINT}"
 }
 
+# Unmounts the currently mounted home directory
 function unmount_device {
     run sudo umount "${HOME_DIRECTORY_MOUNT_POINT}"
     add_cleanup_routine remount_device
 }
 
+# Add a argument-less callback to the list of cleanup routines.
+#
+# $1 = a argument-less function
+#
 function add_cleanup_routine() {
     local var="cleanup_queue_${BASH_SUBSHELL}"
     eval ${var}=\"$1 ${!var}\"
     trap run_cleanup EXIT INT ABRT PIPE
 }
 
+# Removes a previously registered cleanup callback.
 function remove_cleanup_routine() {
     local var="cleanup_queue_${BASH_SUBSHELL}"
     eval ${var}=\"${!var/$1}\"
 }
 
+# Execute the callbacks previously registered via "add_cleanup_routine"
 function run_cleanup() {
     info "Running cleanup jobs..."
     local var="cleanup_queue_${BASH_SUBSHELL}"
@@ -153,7 +182,10 @@ function run_cleanup() {
     done
 }
 
-# This removes config.lock, index.lock, gc.pid, and refs/heads/*.lock
+# Remove files like config.lock, index.lock, gc.pid, and refs/heads/*.lock from the provided directory
+#
+# $1 = the home directory to clean
+#
 function cleanup_locks {
     local home_directory="$1"
 

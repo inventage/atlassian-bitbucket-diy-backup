@@ -1,10 +1,13 @@
 #!/bin/bash
 
+# -------------------------------------------------------------------------------------
+# A backup and restore strategy for MySQL
+# -------------------------------------------------------------------------------------
+
 check_command "mysqldump"
 check_command "mysqlshow"
 check_command "mysql"
 
-# Contains util functions (bail, info, print)
 SCRIPT_DIR=$(dirname "$0")
 source "${SCRIPT_DIR}/utils.sh"
 
