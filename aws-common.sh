@@ -205,6 +205,9 @@ function restore_rds_instance {
         optional_args="${optional_args} --db-subnet-group-name ${RESTORE_RDS_SUBNET_GROUP_NAME}"
     fi
 
+    info "Waiting for RDS snapshot '${snapshot_id}' to become available before restoring"
+    run aws rds wait db-snapshot-completed --db-snapshot-identifier "${snapshot_id}" > /dev/null
+
     run aws rds restore-db-instance-from-db-snapshot --db-instance-identifier "${instance_id}" \
         --db-snapshot-identifier "${snapshot_id}" ${optional_args} > /dev/null
 
@@ -212,7 +215,8 @@ function restore_rds_instance {
     run aws rds wait db-instance-available --db-instance-identifier "${instance_id}"  > /dev/null
 
     if [ -n "${RESTORE_RDS_SECURITY_GROUP}" ]; then
-        # When restoring a DB instance outside of a VPC this command will need to be modified to use --db-security-groups instead of --vpc-security-group-ids
+        # When restoring a DB instance outside of a VPC this command will need
+        # to be modified to use --db-security-groups instead of --vpc-security-group-ids
         # For more information see http://docs.aws.amazon.com/cli/latest/reference/rds/modify-db-instance.html
         run aws rds modify-db-instance --apply-immediately --db-instance-identifier "${instance_id}" \
             --vpc-security-group-ids "${RESTORE_RDS_SECURITY_GROUP}" > /dev/null

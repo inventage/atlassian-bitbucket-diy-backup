@@ -69,6 +69,7 @@ function restore_archive {
 
 function cleanup_old_archives {
     if [ "${KEEP_BACKUPS}" -gt 0 ]; then
+        info "Cleaning up any old backups and retaining only the most recent ${KEEP_BACKUPS}"
         # Cleanup RDS snapshots
         if [ "${BACKUP_DATABASE_TYPE}" = "amazon-rds" ]; then
             for snapshot_id in $(list_old_rds_snapshot_ids "${AWS_REGION}"); do
@@ -117,10 +118,10 @@ function copy_ebs_snapshot {
     run aws ec2 wait snapshot-completed --region "${source_region}" --snapshot-ids "${source_ebs_snapshot_id}"
 
     # Copy snapshot to BACKUP_DEST_REGION
-    local dest_snapshot_id=$(aws ec2 copy-snapshot --region "${BACKUP_DEST_REGION}" --source-region "${source_region}" \
+    local dest_snapshot_id=$(run aws ec2 copy-snapshot --region "${BACKUP_DEST_REGION}" --source-region "${source_region}" \
          --source-snapshot-id "${source_ebs_snapshot_id}" | jq -r '.SnapshotId')
-    info "Copied EBS snapshot '${source_ebs_snapshot_id}' from '${source_region}' to '${BACKUP_DEST_REGION}'. \
-        Snapshot copy ID: '${dest_snapshot_id}'"
+    info "Copied EBS snapshot '${source_ebs_snapshot_id}' from '${source_region}' to '${BACKUP_DEST_REGION}'." \
+        "Snapshot copy ID: '${dest_snapshot_id}'"
 
     info "Waiting for EBS snapshot '${dest_snapshot_id}' to become available in '${BACKUP_DEST_REGION}' before tagging"
     run aws ec2 wait snapshot-completed --region "${BACKUP_DEST_REGION}" --snapshot-ids "${dest_snapshot_id}"
@@ -135,8 +136,8 @@ function copy_rds_snapshot {
     local source_rds_snapshot_id="$1"
     local source_aws_account_id=$(get_aws_account_id)
 
-    info "Waiting for RDS snapshot '${source_rds_snapshot_id}' to become available before copying to another region. \
-        This could take some time."
+    info "Waiting for RDS snapshot '${source_rds_snapshot_id}' to become available before copying to another region." \
+        "This could take some time."
     run aws rds wait db-snapshot-completed --db-snapshot-identifier "${source_rds_snapshot_id}"
 
     # Copy RDS snapshot to BACKUP_DEST_REGION
@@ -169,7 +170,8 @@ function copy_and_share_ebs_snapshot {
     local source_ebs_snapshot_id="$1"
     local source_region="$2"
 
-    info "Waiting for EBS snapshot '${source_ebs_snapshot_id}' to become available in '${source_region}' before copying to '${BACKUP_DEST_REGION}'"
+    info "Waiting for EBS snapshot '${source_ebs_snapshot_id}' to become available in '${source_region}'" \
+        "before copying to '${BACKUP_DEST_REGION}'"
     run aws ec2 wait snapshot-completed --region "${source_region}" --snapshot-ids "${source_ebs_snapshot_id}"
 
     # Copy snapshot to BACKUP_DEST_REGION
@@ -178,7 +180,8 @@ function copy_and_share_ebs_snapshot {
     info "Copied EBS snapshot '${source_ebs_snapshot_id}' from '${source_region}' to '${BACKUP_DEST_REGION}'. \
         Snapshot copy ID: '${dest_snapshot_id}'"
 
-    info "Waiting for EBS snapshot '${dest_snapshot_id}' to become available in '${BACKUP_DEST_REGION}' before modifying permissions"
+    info "Waiting for EBS snapshot '${dest_snapshot_id}' to become available in '${BACKUP_DEST_REGION}' " \
+        "before modifying permissions"
     run aws ec2 wait snapshot-completed --region "${BACKUP_DEST_REGION}" --snapshot-ids "${dest_snapshot_id}"
 
     # Give BACKUP_DEST_AWS_ACCOUNT_ID permissions on the copied snapshot
