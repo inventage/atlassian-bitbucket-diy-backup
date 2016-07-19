@@ -1,16 +1,15 @@
 #!/bin/bash
 
 # -------------------------------------------------------------------------------------
-# A backup and restore strategy for Amazon RDS
+# A backup and restore strategy for Amazon RDS database
 # -------------------------------------------------------------------------------------
 
 SCRIPT_DIR=$(dirname "$0")
 source "${SCRIPT_DIR}/aws-common.sh"
 source "${SCRIPT_DIR}/utils.sh"
 
-# Ensure that the Bitbucket database supports differential backups
+# Validate that the BACKUP_RDS_INSTANCE_ID variable has been set to a valid Amazon RDS instance
 function prepare_backup_db {
-    # Validate that all the configuration parameters have been provided to avoid bailing out and leaving Bitbucket locked
     if [ -z "${BACKUP_RDS_INSTANCE_ID}" ]; then
         error "The RDS instance id must be set in '${BACKUP_VARS_FILE}'"
         bail "See 'bitbucket.diy-aws-backup.vars.sh.example' for the defaults."

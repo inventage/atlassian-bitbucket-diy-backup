@@ -42,7 +42,7 @@ elif [ ${#INSTANCE_NAME} -ge 100 ]; then
     bail "See 'bitbucket.diy-aws-backup.vars.sh.example' for the defaults."
 fi
 
-# Exported so that calls to the aws command line tool can use them
+# Exported so that calls to the AWS command line tool can use them
 export AWS_DEFAULT_REGION=${AWS_REGION}
 export AWS_DEFAULT_OUTPUT=json
 
@@ -75,7 +75,7 @@ function snapshot_ebs_volume {
     fi
 }
 
-# Creates a EBS volume from a snapshot
+# Create a EBS volume from a snapshot
 #
 # snapshot_id = The snapshot id to use
 # volume_type = The type of volume to create (i.e. gp2, io1)
@@ -273,7 +273,7 @@ function restore_rds_instance {
 
 # Output the id of the currently attached EBS Volume
 #
-# device_name = The device name
+# device_name = The device name where the EBS volume is attached
 #
 function find_attached_ebs_volume {
     local device_name="${1}"
@@ -366,9 +366,8 @@ function list_old_ebs_snapshot_ids {
         jq -r ".Snapshots | sort_by(.StartTime) | reverse | .[${KEEP_BACKUPS}:] | map(.SnapshotId)[]"
 }
 
-# Retrieves and parsed the instance identity document and outputs the account id
+# Return the ID of the AWS account that this instance is running in
 function get_aws_account_id {
-    # Returns the ID of the AWS account that this instance is running in.
     local instance_info=$(run curl ${CURL_OPTIONS} http://169.254.169.254/latest/dynamic/instance-identity/document)
 
     local account_id=$(echo "${instance_info}" | jq -r '.accountId')

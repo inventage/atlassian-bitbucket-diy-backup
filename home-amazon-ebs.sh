@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # -------------------------------------------------------------------------------------
-# A backup and restore strategy for Amazon EBS Volumes
+# A backup and restore strategy for Amazon EBS
 # -------------------------------------------------------------------------------------
 
 SCRIPT_DIR=$(dirname "$0")

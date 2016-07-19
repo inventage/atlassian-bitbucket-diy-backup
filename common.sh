@@ -94,7 +94,7 @@ function backup_wait {
     print "scm state '${scm_state}'"
 }
 
-# Instructs Bitbucket to update the progress of a backup
+# Instruct Bitbucket to update the progress of a backup
 #
 # backup_progress = The percentage completion
 #
@@ -145,13 +145,13 @@ function unfreeze_mount_point {
     run sudo fsfreeze -u "${1}"
 }
 
-# Remounts the previously mounted home directory
+# Remount the previously mounted home directory
 function remount_device {
     remove_cleanup_routine remount_device
     run sudo mount "${HOME_DIRECTORY_DEVICE_NAME}" "${HOME_DIRECTORY_MOUNT_POINT}"
 }
 
-# Unmounts the currently mounted home directory
+# Unmount the currently mounted home directory
 function unmount_device {
     run sudo umount "${HOME_DIRECTORY_MOUNT_POINT}"
     add_cleanup_routine remount_device
@@ -161,20 +161,23 @@ function unmount_device {
 #
 # $1 = a argument-less function
 #
-function add_cleanup_routine() {
+function add_cleanup_routine {
     local var="cleanup_queue_${BASH_SUBSHELL}"
     eval ${var}=\"$1 ${!var}\"
     trap run_cleanup EXIT INT ABRT PIPE
 }
 
-# Removes a previously registered cleanup callback.
-function remove_cleanup_routine() {
+# Remove a previously registered cleanup callback.
+#
+# $1 = a argument-less function
+#
+function remove_cleanup_routine {
     local var="cleanup_queue_${BASH_SUBSHELL}"
     eval ${var}=\"${!var/$1}\"
 }
 
 # Execute the callbacks previously registered via "add_cleanup_routine"
-function run_cleanup() {
+function run_cleanup {
     info "Running cleanup jobs..."
     local var="cleanup_queue_${BASH_SUBSHELL}"
     for cleanup in ${!var}; do
