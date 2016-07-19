@@ -78,7 +78,7 @@ function cleanup_old_archives {
         fi
         # Cleanup EBS snapshots
         if [ "${BACKUP_HOME_TYPE}" = "amazon-ebs" ]; then
-            for snapshot_id in $(list_old_ebs_snapshot_ids "${AWS_REGION}"); do
+            for ebs_snapshot_id in $(list_old_ebs_snapshot_ids "${AWS_REGION}"); do
                 run aws ec2 delete-snapshot --snapshot-id "${ebs_snapshot_id}" > /dev/null
             done
         fi
@@ -275,7 +275,6 @@ function cleanup_old_offsite_rds_snapshots_in_backup_account {
 
     # Delete old RDS snapshots from BACKUP_DEST_AWS_ACCOUNT_ID in region BACKUP_DEST_REGION
     for rds_snapshot_id in ${old_backup_account_rds_snapshots}; do
-        info "Deleting old cross-account RDS snapshot '${ebs_snapshot_id}'"
         AWS_ACCESS_KEY_ID="${aws_access_key_id}" AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}" \
             AWS_SESSION_TOKEN="${aws_session_token}" run aws rds delete-db-snapshot --region "${BACKUP_DEST_REGION}" \
             --db-snapshot-identifier "${rds_snapshot_id}" > /dev/null
