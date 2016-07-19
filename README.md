@@ -61,6 +61,6 @@ to `bitbucket.diy-backup.vars.sh.example` for a complete description of all the 
 variables and their meanings.
 
 ### Further reading ###
-* [Zero Downtime Backup](https://confluence.atlassian.com/display/BitbucketServer/Using+Bitbucket+Data+Center+Zero+Downtime+Backup)
+* [Zero Downtime Backup](https://confluence.atlassian.com/display/BitbucketServer/Using+Bitbucket+Zero+Downtime+Backup)
 * [Using Bitbucket Server DIY Backup](https://confluence.atlassian.com/display/BitbucketServer/Using+Bitbucket+Server+DIY+Backup)
 * [Using Bitbucket Server DIY Backup in AWS](https://confluence.atlassian.com/display/BitbucketServer/Using+Bitbucket+Server+DIY+Backup+in+AWS)
