@@ -74,7 +74,7 @@ lock_bitbucket
 backup_start
 backup_wait
 
-info "Backing up"
+info "Backing up the database and filesystem in parallel"
 (backup_db && update_backup_progress 50) &
 (backup_home && update_backup_progress 50) &
 

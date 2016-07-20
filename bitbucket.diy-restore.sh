@@ -67,7 +67,7 @@ if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then
     restore_archive "${1}"
 fi
 
-info "Restoring"
+info "Restoring home directory and database"
 
 # Restore the filesystem
 restore_home
