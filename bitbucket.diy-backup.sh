@@ -20,7 +20,6 @@ BACKUP_VARS_FILE=${BACKUP_VARS_FILE:-"${SCRIPT_DIR}"/bitbucket.diy-backup.vars.s
 
 if [ -f "${BACKUP_VARS_FILE}" ]; then
     source "${BACKUP_VARS_FILE}"
-    info "Using vars file: '${BACKUP_VARS_FILE}'"
 else
     error "'${BACKUP_VARS_FILE}' not found"
     bail "You should create it using '${SCRIPT_DIR}/bitbucket.diy-backup.vars.sh.example' as a template"
@@ -65,15 +64,18 @@ fi
 
 ##########################################################
 
+info "Preparing Bitbucket for backup"
 # Prepare the database and the filesystem for taking a backup
 prepare_backup_db
 prepare_backup_home
 
+info "Locking Bitbucket"
 # If necessary, lock Bitbucket, start an external backup and wait for instance readiness
 lock_bitbucket
 backup_start
 backup_wait
 
+info "Backing up database and home directory"
 # Back up the database and filesystem in parallel, reporting progress if necessary.
 (backup_db && update_backup_progress 50) &
 (backup_home && update_backup_progress 50) &
@@ -81,6 +83,7 @@ backup_wait
 # Wait until home and database backups are complete
 wait $(jobs -p)
 
+info "Unlocking Bitbucket"
 # If necessary, report 100% progress back to the application, and unlock Bitbucket
 update_backup_progress 100
 unlock_bitbucket
@@ -88,6 +91,7 @@ unlock_bitbucket
 success "Successfully completed the backup of your ${PRODUCT} instance"
 
 if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then
+    info "Archiving backups and cleaning up"
     archive_backup
     cleanup_old_archives
 fi

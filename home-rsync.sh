@@ -23,7 +23,7 @@ function prepare_restore_home {
 
 function restore_home {
     local rsync_quiet=-q
-    if [ "${BITBUCKET_VERBOSE_BACKUP}" = "TRUE" ]; then
+    if [ "${BITBUCKET_VERBOSE_BACKUP}" = "true" ]; then
         rsync_quiet=
     fi
 
@@ -36,7 +36,7 @@ function perform_rsync {
     done
 
     local rsync_quiet=-q
-    if [ "${BITBUCKET_VERBOSE_BACKUP}" = "TRUE" ]; then
+    if [ "${BITBUCKET_VERBOSE_BACKUP}" = true ]; then
         rsync_quiet=
     fi
 

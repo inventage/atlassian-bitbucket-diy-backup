@@ -8,8 +8,6 @@
 check_command "curl"
 check_command "jq"
 
-BITBUCKET_HTTP_AUTH="-u ${BITBUCKET_BACKUP_USER}:${BITBUCKET_BACKUP_PASS}"
-
 # The name of the product
 PRODUCT=Bitbucket
 
@@ -19,7 +17,7 @@ function lock_bitbucket {
         return
     fi
 
-    local lock_response=$(run curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X POST -H "Content-type: application/json" \
+    local lock_response=$(run curl ${CURL_OPTIONS} -u "${BITBUCKET_BACKUP_USER}:${BITBUCKET_BACKUP_PASS}" -X POST -H "Content-type: application/json" \
         "${BITBUCKET_URL}/mvc/maintenance/lock")
     if [ -z "${lock_response}" ]; then
         bail "Unable to lock Bitbucket for maintenance. POST to '${BITBUCKET_URL}/mvc/maintenance/lock' \
@@ -44,7 +42,7 @@ function backup_start {
         return
     fi
 
-    local backup_response=$(run curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X POST -H \
+    local backup_response=$(run curl ${CURL_OPTIONS} -u "${BITBUCKET_BACKUP_USER}:${BITBUCKET_BACKUP_PASS}" -X POST -H \
         "X-Atlassian-Maintenance-Token: ${BITBUCKET_LOCK_TOKEN}" -H "Accept: application/json" \
         -H "Content-type: application/json" "${BITBUCKET_URL}/mvc/admin/backups?external=true")
     if [ -z "${backup_response}" ]; then
@@ -72,7 +70,8 @@ function backup_wait {
 
     print "Waiting for Bitbucket to be in DRAINED state"
     while [ "${db_state}_${scm_state}" != "DRAINED_DRAINED" ]; do
-        local progress_response=$(run curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X GET \
+        # The following curl command is not executed with run to suppress the polling spam of messages
+        local progress_response=$(curl ${CURL_OPTIONS} -u "${BITBUCKET_BACKUP_USER}:${BITBUCKET_BACKUP_PASS}" -X GET \
             -H "X-Atlassian-Maintenance-Token: ${BITBUCKET_LOCK_TOKEN}" -H "Accept: application/json" \
             -H "Content-type: application/json" "${BITBUCKET_URL}/mvc/maintenance")
         if [ -z "${progress_response}" ]; then
@@ -105,7 +104,7 @@ function update_backup_progress {
         return
     fi
 
-    run curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X POST -H "Accept: application/json" -H "Content-type: application/json" \
+    run curl ${CURL_OPTIONS} -u "${BITBUCKET_BACKUP_USER}:${BITBUCKET_BACKUP_PASS}" -X POST -H "Accept: application/json" -H "Content-type: application/json" \
         "${BITBUCKET_URL}/mvc/admin/backups/progress/client?token=${BITBUCKET_LOCK_TOKEN}&percentage=${backup_progress}"
 }
 
@@ -117,7 +116,7 @@ function unlock_bitbucket {
 
     remove_cleanup_routine bitbucket_unlock
 
-    run curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X DELETE -H "Accept: application/json" \
+    run curl ${CURL_OPTIONS} -u "${BITBUCKET_BACKUP_USER}:${BITBUCKET_BACKUP_PASS}" -X DELETE -H "Accept: application/json" \
         -H "Content-type: application/json" "${BITBUCKET_URL}/mvc/maintenance/lock?token=${BITBUCKET_LOCK_TOKEN}"
 }
 

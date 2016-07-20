@@ -22,7 +22,17 @@ function backup_db {
 }
 
 function prepare_restore_db {
-    run psql -U "${POSTGRES_USERNAME}" -h "${POSTGRES_HOST}" --port=${POSTGRES_PORT} -d "${BITBUCKET_DB}" -c ''
+    local db_exists=$(! run psql -U "${POSTGRES_USERNAME}" -h "${POSTGRES_HOST}" --port=${POSTGRES_PORT} -lqt | cut -d \| -f 1 | grep -w "${BITBUCKET_DB}")
+    if [ "${db_exists}x" != "x" ]; then
+        local table_count=$(psql -U "${POSTGRES_USERNAME}" -h "${POSTGRES_HOST}" --port=${POSTGRES_PORT} -d "${BITBUCKET_DB}" -tqc \\dt | grep -v "^$" | wc -l)
+        if [ "${table_count}" -gt 0 ]; then
+            error "Database '${BITBUCKET_DB}' already exists and contains ${table_count} tables"
+        else
+            error "Database '${BITBUCKET_DB}' already exists"
+        fi
+        bail "Cannot restore over existing database '${BITBUCKET_DB}', please ensure it does not exist before restoring"
+    fi
+    true
 }
 
 function restore_db {

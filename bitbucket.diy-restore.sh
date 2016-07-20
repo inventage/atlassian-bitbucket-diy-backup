@@ -15,19 +15,19 @@ set -e
 SCRIPT_DIR=$(dirname "$0")
 
 source "${SCRIPT_DIR}/utils.sh"
+source "${SCRIPT_DIR}/common.sh"
 
 BACKUP_VARS_FILE=${BACKUP_VARS_FILE:-"${SCRIPT_DIR}"/bitbucket.diy-backup.vars.sh}
 
 if [ -f "${BACKUP_VARS_FILE}" ]; then
     source "${BACKUP_VARS_FILE}"
-    info "Using vars file: '${BACKUP_VARS_FILE}'"
 else
     error "'${BACKUP_VARS_FILE}' not found"
     bail "You should create it using '${SCRIPT_DIR}/bitbucket.diy-backup.vars.sh.example' as a template"
 fi
 
 # Ensure we know which user:group things should be owned as
-if [[ -z "${BITBUCKET_UID}" || -z "${BITBUCKET_GID}" ]]; then
+if [ -z "${BITBUCKET_UID}" -o -z "${BITBUCKET_GID}" ]; then
     error "Both BITBUCKET_UID and BITBUCKET_GID must be set in '${BACKUP_VARS_FILE}'"
     bail "See 'bitbucket.diy-backup.vars.sh.example' for the defaults."
 fi
@@ -57,12 +57,15 @@ if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then
     prepare_restore_archive "${1}"
 fi
 
+info "Preparing for home and database restore"
 prepare_restore_home
 prepare_restore_db "${1}"
 
 if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then
     restore_archive "${1}"
 fi
+
+info "Restoring home directory and database"
 
 # Restore the filesystem
 restore_home
