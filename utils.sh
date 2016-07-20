@@ -58,6 +58,11 @@ function run {
                     ;;
             esac
         done
+        case "${cmdline}" in
+            *curl*)
+                cmdline=$(echo "${cmdline}" | sed -e 's/-u .* /-u ******:****** /g')
+                ;;
+        esac
         debug "Running${cmdline}" >/dev/stderr
     fi
     "$@"

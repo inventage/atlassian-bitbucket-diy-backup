@@ -21,6 +21,7 @@ BACKUP_VARS_FILE=${BACKUP_VARS_FILE:-"${SCRIPT_DIR}"/bitbucket.diy-backup.vars.s
 
 if [ -f "${BACKUP_VARS_FILE}" ]; then
     source "${BACKUP_VARS_FILE}"
+    info "Using vars file: '${BACKUP_VARS_FILE}'"
 else
     error "'${BACKUP_VARS_FILE}' not found"
     bail "You should create it using '${SCRIPT_DIR}/bitbucket.diy-backup.vars.sh.example' as a template"
@@ -58,6 +59,7 @@ if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then
 fi
 
 info "Preparing for home and database restore"
+
 prepare_restore_home
 prepare_restore_db "${1}"
 

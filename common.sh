@@ -20,8 +20,7 @@ function lock_bitbucket {
     local lock_response=$(run curl ${CURL_OPTIONS} -u "${BITBUCKET_BACKUP_USER}:${BITBUCKET_BACKUP_PASS}" -X POST -H "Content-type: application/json" \
         "${BITBUCKET_URL}/mvc/maintenance/lock")
     if [ -z "${lock_response}" ]; then
-        bail "Unable to lock Bitbucket for maintenance. POST to '${BITBUCKET_URL}/mvc/maintenance/lock' \
-            returned '${lock_response}'"
+        bail "Unable to lock Bitbucket for maintenance. POST to '${BITBUCKET_URL}/mvc/maintenance/lock' returned '${lock_response}'"
     fi
 
     BITBUCKET_LOCK_TOKEN=$(echo "${lock_response}" | jq -r ".unlockToken" | tr -d '\r')
@@ -68,7 +67,8 @@ function backup_wait {
     local db_state="AVAILABLE"
     local scm_state="AVAILABLE"
 
-    print "Waiting for Bitbucket to be in DRAINED state"
+    info "Waiting for Bitbucket to become ready to be backed up"
+
     while [ "${db_state}_${scm_state}" != "DRAINED_DRAINED" ]; do
         # The following curl command is not executed with run to suppress the polling spam of messages
         local progress_response=$(curl ${CURL_OPTIONS} -u "${BITBUCKET_BACKUP_USER}:${BITBUCKET_BACKUP_PASS}" -X GET \
@@ -85,12 +85,9 @@ function backup_wait {
 
         if [ "${drained_state}" != "RUNNING" ]; then
             unlock_bitbucket
-            bail "Unable to start Bitbucket backup"
+            bail "Unable to start Bitbucket backup, because it could not enter DRAINED state"
         fi
     done
-
-    print "db state '${db_state}'"
-    print "scm state '${scm_state}'"
 }
 
 # Instruct Bitbucket to update the progress of a backup
