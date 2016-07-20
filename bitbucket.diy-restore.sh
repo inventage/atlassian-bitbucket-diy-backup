@@ -58,7 +58,7 @@ if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then
     prepare_restore_archive "${1}"
 fi
 
-info "Preparing for home and database restore"
+info "Preparing for restore"
 
 prepare_restore_home
 prepare_restore_db "${1}"
@@ -67,7 +67,7 @@ if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then
     restore_archive "${1}"
 fi
 
-info "Restoring home directory and database"
+info "Restoring"
 
 # Restore the filesystem
 restore_home
