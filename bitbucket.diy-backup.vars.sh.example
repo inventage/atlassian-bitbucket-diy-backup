@@ -158,7 +158,7 @@ if [ "amazon-ebs" = "${BACKUP_HOME_TYPE}" -o "amazon-rds" = "${BACKUP_DATABASE_T
 fi
 
 # Used by the scripts for verbose logging. If not true only errors will be shown.
-BITBUCKET_VERBOSE_BACKUP=TRUE
+BITBUCKET_VERBOSE_BACKUP=true
 
 # HipChat options
 HIPCHAT_URL=https://api.hipchat.com

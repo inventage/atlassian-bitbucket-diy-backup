@@ -17,7 +17,7 @@ function check_command {
 
 # Log an debug message to standard error
 function debug {
-    if [ "${BITBUCKET_VERBOSE_BACKUP}" = "TRUE" ]; then
+    if [ "${BITBUCKET_VERBOSE_BACKUP}" = true ]; then
         echo "[${BITBUCKET_URL}] DEBUG: $*" > /dev/stderr
     fi
 }
@@ -46,7 +46,7 @@ function print {
 
 # Log then execute the provided command
 function run {
-    if [ "${BITBUCKET_VERBOSE_BACKUP}" = "TRUE" ]; then
+    if [ "${BITBUCKET_VERBOSE_BACKUP}" = "true" ]; then
         local cmdline=
         for arg in "$@"; do
             case "${arg}" in
@@ -58,6 +58,11 @@ function run {
                     ;;
             esac
         done
+        case "${cmdline}" in
+            *curl*)
+                cmdline=$(echo "${cmdline}" | sed -e 's/-u .* /-u ******:****** /g')
+                ;;
+        esac
         debug "Running${cmdline}" >/dev/stderr
     fi
     "$@"

@@ -65,7 +65,7 @@ fi
 
 ##########################################################
 
-# Prepare the database and the filesystem for taking a backup
+info "Preparing for backup"
 prepare_backup_db
 prepare_backup_home
 
@@ -74,7 +74,7 @@ lock_bitbucket
 backup_start
 backup_wait
 
-# Back up the database and filesystem in parallel, reporting progress if necessary.
+info "Backing up the database and filesystem in parallel"
 (backup_db && update_backup_progress 50) &
 (backup_home && update_backup_progress 50) &
 
@@ -88,6 +88,7 @@ unlock_bitbucket
 success "Successfully completed the backup of your ${PRODUCT} instance"
 
 if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then
+    info "Archiving backups and cleaning up old archives"
     archive_backup
     cleanup_old_archives
 fi

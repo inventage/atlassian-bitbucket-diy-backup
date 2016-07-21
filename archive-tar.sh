@@ -47,7 +47,7 @@ function prepare_restore_archive {
     BITBUCKET_RESTORE_HOME="${BITBUCKET_RESTORE_ROOT}/bitbucket-home"
 }
 
-function bitbucket_restore_archive {
+function restore_archive {
     run tar -xzf "${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}" -C "${BITBUCKET_RESTORE_ROOT}"
 }
 

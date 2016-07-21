@@ -1,0 +1,56 @@
+#!/bin/bash
+
+#------------------------------------------------------------------------------------------
+# Sample bitbucket.diy-backup.vars.sh pre-configured for PostgreSQL and RSync.
+#
+# This sample vars file serves as a starting point for customers running Bitbucket Server
+# with a PostgreSQL database and using RSync for filesystem backup.
+# Archiving of backups is done with Tar and Gzip
+#
+# For a detailed description of each variable consult the master bitbucket.diy-backup.vars.sh.example file.
+#------------------------------------------------------------------------------------------
+
+CURL_OPTIONS="-L -s -f"
+
+INSTANCE_NAME=bitbucket
+BITBUCKET_URL=http://localhost:7990
+
+BITBUCKET_HOME=/var/atlassian/application-data/bitbucket/
+BITBUCKET_UID=atlbitbucket
+BITBUCKET_GID=atlbitbucket
+
+BACKUP_HOME_TYPE=rsync
+BACKUP_DATABASE_TYPE=postgresql
+BACKUP_ARCHIVE_TYPE=tar
+
+# The admin user and password for the Bitbucket instance
+BITBUCKET_BACKUP_USER=admin
+BITBUCKET_BACKUP_PASS=admin
+
+BITBUCKET_BACKUP_EXCLUDE_REPOS=()
+
+# PostgreSQL configuration
+BITBUCKET_DB=bitbucket
+POSTGRES_HOST=localhost
+POSTGRES_USERNAME=bitbucket
+export PGPASSWORD=bitbucket
+POSTGRES_PORT=5432
+
+# Make use of PostgreSQL 9.3+ options if available
+psql_version="$(psql --version | awk '{print $3}')"
+psql_majorminor="$(printf "%d%03d" $(echo "${psql_version}" | tr "." "\n" | head -n 2))"
+if [[ ${psql_majorminor} -ge 9003 ]]; then
+    PG_PARALLEL="-j 5"
+    PG_SNAPSHOT_OPT="--no-synchronized-snapshots"
+fi
+
+# The path to working folder for the backup
+BITBUCKET_BACKUP_ROOT=/media/backup-root
+BITBUCKET_BACKUP_DB=${BITBUCKET_BACKUP_ROOT}/bitbucket-db/
+BITBUCKET_BACKUP_HOME=${BITBUCKET_BACKUP_ROOT}/bitbucket-home/
+
+# The path to where the backup archives are stored
+BITBUCKET_BACKUP_ARCHIVE_ROOT=/media/backup-archive
+
+# Used by the scripts for verbose logging. If not true only errors will be shown.
+BITBUCKET_VERBOSE_BACKUP=true
