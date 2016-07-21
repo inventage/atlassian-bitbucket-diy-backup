@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# Options to pass to every "curl" command
+CURL_OPTIONS="-L -s -f"
+
+INSTANCE_NAME=bitbucket
+BITBUCKET_URL=https://bitbucket.company.com
+
+BITBUCKET_HOME=/var/atlassian/application-data/bitbucket/
+BITBUCKET_UID=atlbitbucket
+BITBUCKET_GID=atlbitbucket
+
+BACKUP_HOME_TYPE=amazon-ebs
+BACKUP_DATABASE_TYPE=amazon-rds
+BACKUP_ARCHIVE_TYPE=aws-snapshots
+
+BACKUP_ZERO_DOWNTIME=true
+
+HOME_DIRECTORY_MOUNT_POINT=/media/atl
+HOME_DIRECTORY_DEVICE_NAME=/dev/xvdf
+
+RESTORE_HOME_DIRECTORY_VOLUME_TYPE=gp2
+RESTORE_HOME_DIRECTORY_IOPS=1000
+
+BACKUP_RDS_INSTANCE_ID=bitbucketprod01
+
+RESTORE_RDS_INSTANCE_ID=bitbucketprod01restored
+RESTORE_RDS_INSTANCE_CLASS=db.r3.large
+RESTORE_RDS_SUBNET_GROUP_NAME=bitbucketprodsubnet
+RESTORE_RDS_SECURITY_GROUP=bitbucketprodsecuritygroup
+
+BACKUP_DEST_AWS_ACCOUNT_ID=012345678910
+BACKUP_DEST_AWS_ROLE=arn:aws:iam::012345678910:role/Role-For-Tagging-Bitbucket-Snapshots
+BACKUP_DEST_REGION=ap-southeast-2
+
+AWS_INFO=$(curl ${CURL_OPTIONS} http://169.254.169.254/latest/dynamic/instance-identity/document)
+AWS_AVAILABILITY_ZONE=$(echo "${AWS_INFO}" | jq -r .availabilityZone)
+AWS_REGION=$(echo "${AWS_INFO}" | jq -r .region)
+AWS_EC2_INSTANCE_ID=$(echo "${AWS_INFO}" | jq -r .instanceId)
+AWS_ADDITIONAL_TAGS={}
+
+BITBUCKET_VERBOSE_BACKUP=true
+
+HIPCHAT_URL=https://api.hipchat.com
+HIPCHAT_ROOM=
+HIPCHAT_TOKEN=
+
+KEEP_BACKUPS=25
