@@ -8,8 +8,6 @@
 # For a detailed description of each variable consult the master bitbucket.diy-backup.vars.sh.example file.
 #------------------------------------------------------------------------------------------
 
-CURL_OPTIONS="-L -s -f"
-
 INSTANCE_NAME=bitbucket
 BITBUCKET_URL=http://localhost:7990
 
@@ -50,5 +48,5 @@ BITBUCKET_BACKUP_HOME=${BITBUCKET_BACKUP_ROOT}/bitbucket-home/
 # The path to where the backup archives are stored
 BITBUCKET_BACKUP_ARCHIVE_ROOT=/media/backup-archive
 
-# Used by the scripts for verbose logging. If not true only errors will be shown.
+CURL_OPTIONS="-L -s -f"
 BITBUCKET_VERBOSE_BACKUP=true

@@ -1,15 +1,11 @@
 #------------------------------------------------------------------------------------------
-# Sample bitbucket.diy-backup.vars.sh pre-configured for AWS EBS & postgres93-fslevel.
-#
-# This sample vars file serves as a starting point for customers running Bitbucket Server on AWS EBS
-# with a PostgreSQL database that exists on the filesystem.
-# Backups are not archived in this example.
+# Sample bitbucket.diy-backup.vars.sh pre-configured for Bitbucket Server running on a standalone AWS EC2 instance
+# with both its home directory and database (PostgreSQL 9.3) on a single EBS volume.  This allows both the home directory
+# and database to be backed up, with zero downtime, using a single EBS snapshot.
+# Backups are not archived in the example.
 #
 # For a detailed description of each variable consult the master bitbucket.diy-backup.vars.sh.example file.
 #------------------------------------------------------------------------------------------
-
-# Options to pass to every "curl" command
-CURL_OPTIONS="-L -s -f"
 
 INSTANCE_NAME=bitbucket
 BITBUCKET_URL=http://localhost:7990
@@ -27,6 +23,8 @@ HOME_DIRECTORY_MOUNT_POINT=/media/atl
 HOME_DIRECTORY_DEVICE_NAME=/dev/xvdf
 
 RESTORE_HOME_DIRECTORY_VOLUME_TYPE=gp2
+
+CURL_OPTIONS="-L -s -f"
 
 AWS_INFO=$(curl ${CURL_OPTIONS} http://169.254.169.254/latest/dynamic/instance-identity/document)
 AWS_AVAILABILITY_ZONE=$(echo "${AWS_INFO}" | jq -r .availabilityZone)
