@@ -16,6 +16,7 @@ BITBUCKET_GID=atlbitbucket
 
 BACKUP_HOME_TYPE=amazon-ebs
 BACKUP_DATABASE_TYPE=postgres93-fslevel
+BACKUP_ARCHIVE_TYPE=aws-snapshots
 
 BACKUP_ZERO_DOWNTIME=true
 
