@@ -6,9 +6,6 @@
 
 check_command "tar"
 
-SCRIPT_DIR=$(dirname "$0")
-source "${SCRIPT_DIR}/utils.sh"
-
 function archive_backup {
     mkdir -p "${BITBUCKET_BACKUP_ARCHIVE_ROOT}"
     BITBUCKET_BACKUP_ARCHIVE_NAME=$(date "+${INSTANCE_NAME}-%Y%m%d-%H%M%S.tar.gz")

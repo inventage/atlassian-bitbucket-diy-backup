@@ -8,9 +8,6 @@ check_command "mysqldump"
 check_command "mysqlshow"
 check_command "mysql"
 
-SCRIPT_DIR=$(dirname "$0")
-source "${SCRIPT_DIR}/utils.sh"
-
 # Use -h option if MYSQL_HOST is set
 if [[ -n ${MYSQL_HOST} ]]; then
     MYSQL_HOST_CMD="-h ${MYSQL_HOST}"

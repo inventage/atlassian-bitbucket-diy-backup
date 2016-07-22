@@ -5,7 +5,6 @@
 # -------------------------------------------------------------------------------------
 
 check_command "aws"
-check_command "jq"
 
 # Ensure the AWS region has been provided
 if [ -z "${AWS_REGION}" -o "${AWS_REGION}" = "null" ]; then

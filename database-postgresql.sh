@@ -8,9 +8,6 @@ check_command "pg_dump"
 check_command "psql"
 check_command "pg_restore"
 
-SCRIPT_DIR=$(dirname "$0")
-source "${SCRIPT_DIR}/utils.sh"
-
 function prepare_backup_db {
     no_op
 }
