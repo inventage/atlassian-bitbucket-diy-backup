@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Options to pass to every "curl" command
 CURL_OPTIONS="-L -s -f"
 

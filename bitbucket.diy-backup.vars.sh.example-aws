@@ -1,18 +1,25 @@
-#!/bin/bash
+#------------------------------------------------------------------------------------------
+# Sample bitbucket.diy-backup.vars.sh pre-configured for AWS EBS & postgres93-fslevel.
+#
+# This sample vars file serves as a starting point for customers running Bitbucket Server on AWS EBS
+# with a PostgreSQL database that exists on the filesystem.
+# Backups are not archived in this example.
+#
+# For a detailed description of each variable consult the master bitbucket.diy-backup.vars.sh.example file.
+#------------------------------------------------------------------------------------------
 
 # Options to pass to every "curl" command
 CURL_OPTIONS="-L -s -f"
 
 INSTANCE_NAME=bitbucket
-BITBUCKET_URL=https://bitbucket.company.com
+BITBUCKET_URL=http://localhost:7990
 
 BITBUCKET_HOME=/var/atlassian/application-data/bitbucket/
 BITBUCKET_UID=atlbitbucket
 BITBUCKET_GID=atlbitbucket
 
 BACKUP_HOME_TYPE=amazon-ebs
-BACKUP_DATABASE_TYPE=amazon-rds
-BACKUP_ARCHIVE_TYPE=aws-snapshots
+BACKUP_DATABASE_TYPE=postgres93-fslevel
 
 BACKUP_ZERO_DOWNTIME=true
 
@@ -20,18 +27,6 @@ HOME_DIRECTORY_MOUNT_POINT=/media/atl
 HOME_DIRECTORY_DEVICE_NAME=/dev/xvdf
 
 RESTORE_HOME_DIRECTORY_VOLUME_TYPE=gp2
-RESTORE_HOME_DIRECTORY_IOPS=1000
-
-BACKUP_RDS_INSTANCE_ID=bitbucketprod01
-
-RESTORE_RDS_INSTANCE_ID=bitbucketprod01restored
-RESTORE_RDS_INSTANCE_CLASS=db.r3.large
-RESTORE_RDS_SUBNET_GROUP_NAME=bitbucketprodsubnet
-RESTORE_RDS_SECURITY_GROUP=bitbucketprodsecuritygroup
-
-BACKUP_DEST_AWS_ACCOUNT_ID=012345678910
-BACKUP_DEST_AWS_ROLE=arn:aws:iam::012345678910:role/Role-For-Tagging-Bitbucket-Snapshots
-BACKUP_DEST_REGION=ap-southeast-2
 
 AWS_INFO=$(curl ${CURL_OPTIONS} http://169.254.169.254/latest/dynamic/instance-identity/document)
 AWS_AVAILABILITY_ZONE=$(echo "${AWS_INFO}" | jq -r .availabilityZone)
@@ -45,4 +40,4 @@ HIPCHAT_URL=https://api.hipchat.com
 HIPCHAT_ROOM=
 HIPCHAT_TOKEN=
 
-KEEP_BACKUPS=25
+KEEP_BACKUPS=5
