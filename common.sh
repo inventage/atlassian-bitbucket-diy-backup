@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # -------------------------------------------------------------------------------------
 # Common functionality related to Bitbucket (e.g.: lock/unlock instance,
 # clean up lock files in repositories, etc)

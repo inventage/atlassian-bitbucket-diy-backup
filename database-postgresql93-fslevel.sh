@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # -------------------------------------------------------------------------------------
 # A backup and restore strategy for PostgreSQL 9.3 whose data directory (i.e., ${PGDATA}) resides on the
 # same file system volume as Bitbucket's home directory. In this configuration the whole database is backed up and

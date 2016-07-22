@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # -------------------------------------------------------------------------------------
 # Functions implementing archiving of backups and copy to offsite location for AWS snapshots.
 # AWS snapshots reside in AWS and are not archived in this implementation.
