@@ -1,12 +1,9 @@
-#!/bin/bash
-
 # -------------------------------------------------------------------------------------
 # A backup and restore strategy for Amazon RDS database
 # -------------------------------------------------------------------------------------
 
 SCRIPT_DIR=$(dirname "$0")
 source "${SCRIPT_DIR}/aws-common.sh"
-source "${SCRIPT_DIR}/utils.sh"
 
 # Validate that the BACKUP_RDS_INSTANCE_ID variable has been set to a valid Amazon RDS instance
 function prepare_backup_db {

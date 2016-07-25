@@ -1,13 +1,8 @@
-#!/bin/bash
-
 # -------------------------------------------------------------------------------------
 # An archive strategy using Tar and Gzip
 # -------------------------------------------------------------------------------------
 
 check_command "tar"
-
-SCRIPT_DIR=$(dirname "$0")
-source "${SCRIPT_DIR}/utils.sh"
 
 function archive_backup {
     mkdir -p "${BITBUCKET_BACKUP_ARCHIVE_ROOT}"

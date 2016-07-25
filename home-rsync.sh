@@ -1,13 +1,8 @@
-#!/bin/bash
-
 # -------------------------------------------------------------------------------------
 # A backup and restore strategy using RSync
 # -------------------------------------------------------------------------------------
 
 check_command "rsync"
-
-SCRIPT_DIR=$(dirname "$0")
-source "${SCRIPT_DIR}/utils.sh"
 
 function prepare_backup_home {
     perform_rsync

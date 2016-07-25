@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # -------------------------------------------------------------------------------------
 # A backup and restore strategy for MySQL
 # -------------------------------------------------------------------------------------
@@ -7,9 +5,6 @@
 check_command "mysqldump"
 check_command "mysqlshow"
 check_command "mysql"
-
-SCRIPT_DIR=$(dirname "$0")
-source "${SCRIPT_DIR}/utils.sh"
 
 # Use -h option if MYSQL_HOST is set
 if [[ -n ${MYSQL_HOST} ]]; then

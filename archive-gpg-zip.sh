@@ -1,13 +1,8 @@
-#!/bin/bash
-
 # -------------------------------------------------------------------------------------
 # An archive strategy for encrypting files using GNU GPG's gpg-zip command
 # -------------------------------------------------------------------------------------
 
 check_command "gpg-zip"
-
-SCRIPT_DIR=$(dirname "$0")
-source "${SCRIPT_DIR}/utils.sh"
 
 function archive_backup {
     mkdir -p "${BITBUCKET_BACKUP_ARCHIVE_ROOT}"

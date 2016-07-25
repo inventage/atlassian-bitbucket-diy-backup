@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # -------------------------------------------------------------------------------------
 # Common functionality related to Bitbucket (e.g.: lock/unlock instance,
 # clean up lock files in repositories, etc)
@@ -10,6 +8,37 @@ check_command "jq"
 
 # The name of the product
 PRODUCT=Bitbucket
+
+BACKUP_VARS_FILE=${BACKUP_VARS_FILE:-"${SCRIPT_DIR}"/bitbucket.diy-backup.vars.sh}
+
+if [ -f "${BACKUP_VARS_FILE}" ]; then
+    source "${BACKUP_VARS_FILE}"
+    info "Using vars file: '${BACKUP_VARS_FILE}'"
+else
+    error "'${BACKUP_VARS_FILE}' not found"
+    bail "You should create it using '${SCRIPT_DIR}/bitbucket.diy-backup.vars.sh.example' as a template"
+fi
+
+if [ -e "${SCRIPT_DIR}/home-${BACKUP_HOME_TYPE}.sh" ]; then
+    source "${SCRIPT_DIR}/home-${BACKUP_HOME_TYPE}.sh"
+else
+    error "BACKUP_HOME_TYPE=${BACKUP_HOME_TYPE} is not implemented, '${SCRIPT_DIR}/home-${BACKUP_HOME_TYPE}.sh' does not exist"
+    bail "Please update BACKUP_HOME_TYPE in '${BACKUP_VARS_FILE}'"
+fi
+
+if [ -e "${SCRIPT_DIR}/database-${BACKUP_DATABASE_TYPE}.sh" ]; then
+    source "${SCRIPT_DIR}/database-${BACKUP_DATABASE_TYPE}.sh"
+else
+    error "BACKUP_DATABASE_TYPE=${BACKUP_DATABASE_TYPE} is not implemented, '${SCRIPT_DIR}/database-${BACKUP_DATABASE_TYPE}.sh' does not exist"
+    bail "Please update BACKUP_DATABASE_TYPE in '${BACKUP_VARS_FILE}'"
+fi
+
+if [ -e "${SCRIPT_DIR}/archive-${BACKUP_ARCHIVE_TYPE}.sh" ]; then
+    source "${SCRIPT_DIR}/archive-${BACKUP_ARCHIVE_TYPE}.sh"
+else
+    error "BACKUP_ARCHIVE_TYPE=${BACKUP_ARCHIVE_TYPE} is not implemented, '${SCRIPT_DIR}/database-${BACKUP_ARCHIVE_TYPE}.sh' does not exist"
+    bail "Please update BACKUP_ARCHIVE_TYPE in '${BACKUP_VARS_FILE}'"
+fi
 
 # Lock a Bitbucket instance for maintenance
 function lock_bitbucket {

@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # -------------------------------------------------------------------------------------
 # A backup and restore strategy for PostgreSQL 9.3 whose data directory (i.e., ${PGDATA}) resides on the
 # same file system volume as Bitbucket's home directory. In this configuration the whole database is backed up and
@@ -11,9 +9,6 @@
 #
 # Refer to https://www.postgresql.org/docs/9.3/static/backup-file.html for more information.
 # -------------------------------------------------------------------------------------
-
-SCRIPT_DIR=$(dirname "$0")
-source "${SCRIPT_DIR}/common.sh"
 
 function prepare_backup_db {
     # Since the whole database is backed up implicitly as part of the file system volume, this function doesn't need
