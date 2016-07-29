@@ -15,7 +15,7 @@ BITBUCKET_UID=atlbitbucket
 BITBUCKET_GID=atlbitbucket
 
 BACKUP_HOME_TYPE=amazon-ebs
-BACKUP_DATABASE_TYPE=postgres93-fslevel
+BACKUP_DATABASE_TYPE=postgresql93-fslevel
 BACKUP_ARCHIVE_TYPE=aws-snapshots
 
 BACKUP_ZERO_DOWNTIME=true
@@ -31,7 +31,7 @@ AWS_INFO=$(curl ${CURL_OPTIONS} http://169.254.169.254/latest/dynamic/instance-i
 AWS_AVAILABILITY_ZONE=$(echo "${AWS_INFO}" | jq -r .availabilityZone)
 AWS_REGION=$(echo "${AWS_INFO}" | jq -r .region)
 AWS_EC2_INSTANCE_ID=$(echo "${AWS_INFO}" | jq -r .instanceId)
-AWS_ADDITIONAL_TAGS={}
+AWS_ADDITIONAL_TAGS=
 
 BITBUCKET_VERBOSE_BACKUP=true
 
