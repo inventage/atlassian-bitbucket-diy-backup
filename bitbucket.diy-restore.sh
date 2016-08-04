@@ -47,11 +47,11 @@ if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then
     prepare_restore_archive "${1}"
 fi
 
-prepare_restore_home
+prepare_restore_home "${1}"
 prepare_restore_db "${1}"
 
 if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then
-    restore_archive "${1}"
+    restore_archive
 fi
 
 # Restore the filesystem

@@ -76,8 +76,6 @@ case ${BACKUP_DATABASE_TYPE} in
         # RDS instance ID of the database to backup
         BACKUP_RDS_INSTANCE_ID=
 
-        # The RDS instance ID for the database to create on restore, must be unique.
-        RESTORE_RDS_INSTANCE_ID=
         # The instance class to use when restoring the database
         RESTORE_RDS_INSTANCE_CLASS=db.r3.large
         # The subnet in which the database will be restored
@@ -168,3 +166,36 @@ HIPCHAT_TOKEN=
 # The number of backups to retain. After backups are taken, all old snapshots except for the most recent
 # ${KEEP_BACKUPS} are deleted.  Set to 0 to disable cleanup of old snapshots.
 KEEP_BACKUPS=0
+
+# The mount point for the home directory volume
+HOME_DIRECTORY_MOUNT_POINT=/media/atl
+# The device name to which the home directory volume is attached as it appears in your Amazon console
+# Do NOT use the 'mount' command to retrieve this value as the linux device-driver might have assigned a different value
+HOME_DIRECTORY_DEVICE_NAME=/dev/xvdf
+
+# The type of volume to create when restoring the home directory
+RESTORE_HOME_DIRECTORY_VOLUME_TYPE=gp2
+# Required if RESTORE_HOME_DIRECTORY_VOLUME_TYPE has been set to 'io1'. Ignored otherwise.
+# The IOPS that should be provisioned for the new volume. Note: Maximum IOPS to volume size ratio is 30
+RESTORE_HOME_DIRECTORY_IOPS=1000
+
+# The AWS Account ID, used when copying EBS + RDS snapshots across region
+BACKUP_DEST_AWS_ACCOUNT_ID=
+# The AWS Role ARN to assume when tagging the EBS + RDS snapshots
+BACKUP_DEST_AWS_ROLE=
+
+# This variable is only required if you wish to copy the EBS and RDS snapshots to another region
+# If set, this variable will copy the EBS & RDS snapshot to the specified region
+BACKUP_DEST_REGION=
+
+# === AWS RDS Variables ===
+
+# The RDS instance ID for the database to backup
+BACKUP_RDS_INSTANCE_ID=
+
+# The instance class to use when restoring the database
+RESTORE_RDS_INSTANCE_CLASS=db.r3.large
+# The subnet in which the database will be restored
+RESTORE_RDS_SUBNET_GROUP_NAME=
+# The security group to assign to the restored instance
+RESTORE_RDS_SECURITY_GROUP=

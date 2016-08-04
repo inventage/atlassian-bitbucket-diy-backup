@@ -51,15 +51,6 @@ function prepare_restore_archive {
 
         exit 99
     fi
-
-    BACKUP_HOME_DIRECTORY_VOLUME_ID="$(find_attached_ebs_volume "${HOME_DIRECTORY_DEVICE_NAME}")"
-
-    RESTORE_HOME_DIRECTORY_SNAPSHOT_ID=
-    validate_ebs_snapshot "${snapshot_tag}" RESTORE_HOME_DIRECTORY_SNAPSHOT_ID
-
-    validate_rds_snapshot "${snapshot_tag}"
-
-    RESTORE_RDS_SNAPSHOT_ID="${snapshot_tag}"
 }
 
 function restore_archive {

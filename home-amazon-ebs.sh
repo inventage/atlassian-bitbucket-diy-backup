@@ -35,6 +35,14 @@ function backup_home {
 }
 
 function prepare_restore_home {
+    local snapshot_tag="$1"
+
+    if [ -z "${snapshot_tag}" ]; then
+        # Get the list of available snapshot tags to assist with selecting a valid one
+        list_available_ebs_snapshot_tags
+        bail "Please select the tag for the snapshot that you wish to restore"
+    fi
+
     if [ -z "${BITBUCKET_HOME}" ]; then
         error "The ${PRODUCT} home directory must be set as BITBUCKET_HOME in ${BACKUP_VARS_FILE}"
         bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
@@ -67,6 +75,9 @@ function prepare_restore_home {
         error "The home directory mount point must be set as HOME_DIRECTORY_MOUNT_POINT in ${BACKUP_VARS_FILE}"
         bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
     fi
+
+    BACKUP_HOME_DIRECTORY_VOLUME_ID="$(find_attached_ebs_volume "${HOME_DIRECTORY_DEVICE_NAME}")"
+    RESTORE_EBS_SNAPSHOT_ID="$(retrieve_ebs_snapshot_id "${snapshot_tag}")"
 }
 
 function restore_home {
@@ -76,9 +87,9 @@ function restore_home {
         detach_volume
     fi
 
-    info "Restoring home directory from snapshot '${RESTORE_HOME_DIRECTORY_SNAPSHOT_ID}' into a '${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}' volume"
-    
-    create_and_attach_volume "${RESTORE_HOME_DIRECTORY_SNAPSHOT_ID}" "${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}" \
+    info "Restoring home directory from snapshot '${RESTORE_EBS_SNAPSHOT_ID}' into a '${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}' volume"
+
+    create_and_attach_volume "${RESTORE_EBS_SNAPSHOT_ID}" "${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}" \
             "${RESTORE_HOME_DIRECTORY_IOPS}" "${HOME_DIRECTORY_DEVICE_NAME}" "${HOME_DIRECTORY_MOUNT_POINT}"
 
     remount_device

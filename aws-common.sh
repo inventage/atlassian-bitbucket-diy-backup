@@ -119,7 +119,7 @@ function wait_attached_volume {
         # aws ec2 wait volume-in-use ${VOLUME_ID} is not enough.
         # A volume state can be 'in-use' while its attachment state is still 'attaching'
         # If the volume is not fully attach we cannot issue a mount command for it
-        local volume_description=$(run aws ec2 describe-volumes --volume-ids "${volume_id}")
+        local volume_description=$(aws ec2 describe-volumes --volume-ids "${volume_id}")
 
         attachment_state=$(echo "${volume_description}" | jq -r '.Volumes[0].Attachments[0].State')
         if [ -z "${attachment_state}" -o "${attachment_state}" = "null" ]; then
@@ -156,9 +156,8 @@ function create_and_attach_volume {
     attach_volume "${volume_id}" "${device_name}"
 }
 
-function validate_ebs_snapshot {
+function retrieve_ebs_snapshot_id {
     local snapshot_tag="$1"
-    local  __RETURN=$2
 
     local snapshot_description=$(run aws ec2 describe-snapshots --filters Name=tag-key,Values="Name" \
         Name=tag-value,Values="${snapshot_tag}")
@@ -169,9 +168,8 @@ function validate_ebs_snapshot {
         # Get the list of available snapshot tags to assist with selecting a valid one
         list_available_ebs_snapshot_tags
         bail "Please select an available tag"
-    else
-        eval ${__RETURN}="${snapshot_id}"
     fi
+    echo "${snapshot_id}"
 }
 
 function snapshot_rds_instance {
@@ -190,33 +188,6 @@ function snapshot_rds_instance {
     # Wait until the database has completed the backup
     info "Waiting for instance '${instance_id}' to complete backup. This could take some time"
     run aws rds wait db-instance-available --db-instance-identifier "${instance_id}"
-}
-
-function restore_rds_instance {
-    local instance_id="$1"
-    local snapshot_id="$2"
-
-    local optional_args=
-    if [ -n "${RESTORE_RDS_INSTANCE_CLASS}" ]; then
-        optional_args="--db-instance-class ${RESTORE_RDS_INSTANCE_CLASS}"
-    fi
-
-    if [ -n "${RESTORE_RDS_SUBNET_GROUP_NAME}" ]; then
-        optional_args="${optional_args} --db-subnet-group-name ${RESTORE_RDS_SUBNET_GROUP_NAME}"
-    fi
-
-    run aws rds restore-db-instance-from-db-snapshot --db-instance-identifier "${instance_id}" \
-        --db-snapshot-identifier "${snapshot_id}" ${optional_args} > /dev/null
-
-    info "Waiting until the RDS instance is available. This could take some time"
-    run aws rds wait db-instance-available --db-instance-identifier "${instance_id}"  > /dev/null
-
-    if [ -n "${RESTORE_RDS_SECURITY_GROUP}" ]; then
-        # When restoring a DB instance outside of a VPC this command will need to be modified to use --db-security-groups instead of --vpc-security-group-ids
-        # For more information see http://docs.aws.amazon.com/cli/latest/reference/rds/modify-db-instance.html
-        run aws rds modify-db-instance --apply-immediately --db-instance-identifier "${instance_id}" \
-            --vpc-security-group-ids "${RESTORE_RDS_SECURITY_GROUP}" > /dev/null
-    fi
 }
 
 function find_attached_ebs_volume {
@@ -252,7 +223,7 @@ function validate_rds_instance_id {
     esac
 }
 
-function validate_rds_snapshot {
+function retrieve_rds_snapshot_id {
     local snapshot_tag="$1"
     local db_snapshot_description=$(run aws rds describe-db-snapshots --db-snapshot-identifier "${snapshot_tag}")
 
@@ -262,24 +233,20 @@ function validate_rds_snapshot {
         # To assist the with locating snapshot tags list the available EBS snapshot tags, and then bail
         list_available_ebs_snapshot_tags
         bail "Please select a tag with an associated RDS snapshot."
-    else
-        info "Found RDS snapshot '${rds_snapshot_id}' for tag '${snapshot_tag}'"
     fi
+
+    echo "${rds_snapshot_id}"
 }
 
 function list_available_ebs_snapshot_tags {
-    # Print a list of all snapshots tag values that start with the tag prefix
-    print "Available snapshot tags:"
-
-    local available_ebs_snapshot_tags=$(run aws ec2 describe-snapshots --filters Name=tag-key,Values="Name" \
-        Name=tag-value,Values="${SNAPSHOT_TAG_PREFIX}*" | jq -r ".Snapshots[].Tags[] | select(.Key == \"Name\") \
-        | .Value" | sort -r)
+    local available_ebs_snapshot_tags=$(run aws ec2 describe-snapshots --region "${AWS_DEFAULT_REGION}" --filters Name=tag-key,Values="Name" Name=tag-value,Values="${SNAPSHOT_TAG_PREFIX}*" | jq -r ".Snapshots[].Tags[] | select(.Key == \"Name\") | .Value" | sort -r)
     if [ -z "${available_ebs_snapshot_tags}" -o "${available_ebs_snapshot_tags}" = "null" ]; then
         error "Could not find 'Snapshots' with 'Tags' with 'Value' in response '${snapshot_description}'"
         bail "Unable to retrieve list of available EBS snapshot tags"
     fi
-
-    echo "${available_ebs_snapshot_tags}"
+    # Print a list of all snapshots tag values that start with the tag prefix
+    print "Available snapshot tags, ordered by most recent:"
+    print "${available_ebs_snapshot_tags}"
 }
 
 # List all RDS DB snapshots older than the most recent ${KEEP_BACKUPS}
