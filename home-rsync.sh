@@ -1,9 +1,8 @@
-#!/bin/bash
+# -------------------------------------------------------------------------------------
+# A backup and restore strategy using RSync
+# -------------------------------------------------------------------------------------
 
 check_command "rsync"
-
-SCRIPT_DIR=$(dirname "$0")
-source "${SCRIPT_DIR}/utils.sh"
 
 function prepare_backup_home {
     perform_rsync
@@ -19,7 +18,7 @@ function prepare_restore_home {
 
 function restore_home {
     local rsync_quiet=-q
-    if [ "${BITBUCKET_VERBOSE_BACKUP}" = "TRUE" ]; then
+    if [ "${BITBUCKET_VERBOSE_BACKUP}" = "true" ]; then
         rsync_quiet=
     fi
 
@@ -32,7 +31,7 @@ function perform_rsync {
     done
 
     local rsync_quiet=-q
-    if [ "${BITBUCKET_VERBOSE_BACKUP}" = "TRUE" ]; then
+    if [ "${BITBUCKET_VERBOSE_BACKUP}" = true ]; then
         rsync_quiet=
     fi
 

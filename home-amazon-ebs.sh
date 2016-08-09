@@ -1,8 +1,9 @@
-#!/bin/bash
+# -------------------------------------------------------------------------------------
+# A backup and restore strategy for Amazon EBS
+# -------------------------------------------------------------------------------------
 
 SCRIPT_DIR=$(dirname "$0")
 source "${SCRIPT_DIR}/aws-common.sh"
-source "${SCRIPT_DIR}/common.sh"
 
 function prepare_backup_home {
     # Validate that all the configuration parameters have been provided to avoid bailing out and leaving Bitbucket locked

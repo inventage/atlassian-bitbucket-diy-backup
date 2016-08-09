@@ -1,26 +1,55 @@
-#!/bin/bash
-
-# Contains common functionality related to Bitbucket (e.g.: lock/unlock instance, clean up lock files in repositories, etc)
+# -------------------------------------------------------------------------------------
+# Common functionality related to Bitbucket (e.g.: lock/unlock instance,
+# clean up lock files in repositories, etc)
+# -------------------------------------------------------------------------------------
 
 check_command "curl"
 check_command "jq"
 
-BITBUCKET_HTTP_AUTH="-u ${BITBUCKET_BACKUP_USER}:${BITBUCKET_BACKUP_PASS}"
-
 # The name of the product
 PRODUCT=Bitbucket
 
+BACKUP_VARS_FILE=${BACKUP_VARS_FILE:-"${SCRIPT_DIR}"/bitbucket.diy-backup.vars.sh}
 
+if [ -f "${BACKUP_VARS_FILE}" ]; then
+    source "${BACKUP_VARS_FILE}"
+    info "Using vars file: '${BACKUP_VARS_FILE}'"
+else
+    error "'${BACKUP_VARS_FILE}' not found"
+    bail "You should create it using '${SCRIPT_DIR}/bitbucket.diy-backup.vars.sh.example' as a template"
+fi
+
+if [ -e "${SCRIPT_DIR}/home-${BACKUP_HOME_TYPE}.sh" ]; then
+    source "${SCRIPT_DIR}/home-${BACKUP_HOME_TYPE}.sh"
+else
+    error "BACKUP_HOME_TYPE=${BACKUP_HOME_TYPE} is not implemented, '${SCRIPT_DIR}/home-${BACKUP_HOME_TYPE}.sh' does not exist"
+    bail "Please update BACKUP_HOME_TYPE in '${BACKUP_VARS_FILE}'"
+fi
+
+if [ -e "${SCRIPT_DIR}/database-${BACKUP_DATABASE_TYPE}.sh" ]; then
+    source "${SCRIPT_DIR}/database-${BACKUP_DATABASE_TYPE}.sh"
+else
+    error "BACKUP_DATABASE_TYPE=${BACKUP_DATABASE_TYPE} is not implemented, '${SCRIPT_DIR}/database-${BACKUP_DATABASE_TYPE}.sh' does not exist"
+    bail "Please update BACKUP_DATABASE_TYPE in '${BACKUP_VARS_FILE}'"
+fi
+
+if [ -e "${SCRIPT_DIR}/archive-${BACKUP_ARCHIVE_TYPE}.sh" ]; then
+    source "${SCRIPT_DIR}/archive-${BACKUP_ARCHIVE_TYPE}.sh"
+else
+    error "BACKUP_ARCHIVE_TYPE=${BACKUP_ARCHIVE_TYPE} is not implemented, '${SCRIPT_DIR}/database-${BACKUP_ARCHIVE_TYPE}.sh' does not exist"
+    bail "Please update BACKUP_ARCHIVE_TYPE in '${BACKUP_VARS_FILE}'"
+fi
+
+# Lock a Bitbucket instance for maintenance
 function lock_bitbucket {
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
     fi
 
-    local lock_response=$(run curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X POST -H "Content-type: application/json" \
+    local lock_response=$(run curl ${CURL_OPTIONS} -u "${BITBUCKET_BACKUP_USER}:${BITBUCKET_BACKUP_PASS}" -X POST -H "Content-type: application/json" \
         "${BITBUCKET_URL}/mvc/maintenance/lock")
     if [ -z "${lock_response}" ]; then
-        bail "Unable to lock Bitbucket for maintenance. POST to '${BITBUCKET_URL}/mvc/maintenance/lock' \
-            returned '${lock_response}'"
+        bail "Unable to lock Bitbucket for maintenance. POST to '${BITBUCKET_URL}/mvc/maintenance/lock' returned '${lock_response}'"
     fi
 
     BITBUCKET_LOCK_TOKEN=$(echo "${lock_response}" | jq -r ".unlockToken" | tr -d '\r')
@@ -35,12 +64,13 @@ function lock_bitbucket {
     info "    curl -u ... -X DELETE -H 'Content-type:application/json' '${BITBUCKET_URL}/mvc/maintenance/lock?token=${BITBUCKET_LOCK_TOKEN}'"
 }
 
+# Instruct Bitbucket to begin a backup
 function backup_start {
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
     fi
 
-    local backup_response=$(run curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X POST -H \
+    local backup_response=$(run curl ${CURL_OPTIONS} -u "${BITBUCKET_BACKUP_USER}:${BITBUCKET_BACKUP_PASS}" -X POST -H \
         "X-Atlassian-Maintenance-Token: ${BITBUCKET_LOCK_TOKEN}" -H "Accept: application/json" \
         -H "Content-type: application/json" "${BITBUCKET_URL}/mvc/admin/backups?external=true")
     if [ -z "${backup_response}" ]; then
@@ -57,6 +87,7 @@ function backup_start {
     info "    curl -u ... -X DELETE -H 'Content-type:application/json' '${BITBUCKET_URL}/mvc/admin/backups/${BITBUCKET_BACKUP_TOKEN}'"
 }
 
+# Wait for database and SCM to drain to ensure a consistent backup
 function backup_wait {
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
@@ -65,9 +96,11 @@ function backup_wait {
     local db_state="AVAILABLE"
     local scm_state="AVAILABLE"
 
-    print "Waiting for Bitbucket to be in DRAINED state"
+    info "Waiting for Bitbucket to become ready to be backed up"
+
     while [ "${db_state}_${scm_state}" != "DRAINED_DRAINED" ]; do
-        local progress_response=$(run curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X GET \
+        # The following curl command is not executed with run to suppress the polling spam of messages
+        local progress_response=$(curl ${CURL_OPTIONS} -u "${BITBUCKET_BACKUP_USER}:${BITBUCKET_BACKUP_PASS}" -X GET \
             -H "X-Atlassian-Maintenance-Token: ${BITBUCKET_LOCK_TOKEN}" -H "Accept: application/json" \
             -H "Content-type: application/json" "${BITBUCKET_URL}/mvc/maintenance")
         if [ -z "${progress_response}" ]; then
@@ -81,14 +114,15 @@ function backup_wait {
 
         if [ "${drained_state}" != "RUNNING" ]; then
             unlock_bitbucket
-            bail "Unable to start Bitbucket backup"
+            bail "Unable to start Bitbucket backup, because it could not enter DRAINED state"
         fi
     done
-
-    print "db state '${db_state}'"
-    print "scm state '${scm_state}'"
 }
 
+# Instruct Bitbucket to update the progress of a backup
+#
+# backup_progress = The percentage completion
+#
 function update_backup_progress {
     local backup_progress=$1
 
@@ -96,10 +130,11 @@ function update_backup_progress {
         return
     fi
 
-    run curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X POST -H "Accept: application/json" -H "Content-type: application/json" \
+    run curl ${CURL_OPTIONS} -u "${BITBUCKET_BACKUP_USER}:${BITBUCKET_BACKUP_PASS}" -X POST -H "Accept: application/json" -H "Content-type: application/json" \
         "${BITBUCKET_URL}/mvc/admin/backups/progress/client?token=${BITBUCKET_LOCK_TOKEN}&percentage=${backup_progress}"
 }
 
+# Unlock a previously locked Bitbucket instance
 function unlock_bitbucket {
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
@@ -107,50 +142,78 @@ function unlock_bitbucket {
 
     remove_cleanup_routine bitbucket_unlock
 
-    run curl ${CURL_OPTIONS} ${BITBUCKET_HTTP_AUTH} -X DELETE -H "Accept: application/json" \
+    run curl ${CURL_OPTIONS} -u "${BITBUCKET_BACKUP_USER}:${BITBUCKET_BACKUP_PASS}" -X DELETE -H "Accept: application/json" \
         -H "Content-type: application/json" "${BITBUCKET_URL}/mvc/maintenance/lock?token=${BITBUCKET_LOCK_TOKEN}"
 }
 
+# Get the version of Bitbucket running on the Bitbucket instance
 function bitbucket_version {
     run curl ${CURL_OPTIONS} "${BITBUCKET_URL}/rest/api/1.0/application-properties" | jq -r '.version' | \
         sed -e 's/\./ /' -e 's/\..*//'
 }
 
+# Freeze the filesystem mounted under the provided directory.
+# Note that this function requires password-less SUDO access.
+#
+# $1 = mount point
+#
 function freeze_mount_point {
     run sudo fsfreeze -f "${1}"
 }
 
+# Unfreeze the filesystem mounted under the provided mount point.
+# Note that this function requires password-less SUDO access.
+#
+# $1 = mount point
+#
 function unfreeze_mount_point {
     run sudo fsfreeze -u "${1}"
 }
 
+# Remount the previously mounted home directory
 function remount_device {
     remove_cleanup_routine remount_device
     run sudo mount "${HOME_DIRECTORY_DEVICE_NAME}" "${HOME_DIRECTORY_MOUNT_POINT}"
 }
 
+# Unmount the currently mounted home directory
 function unmount_device {
     run sudo umount "${HOME_DIRECTORY_MOUNT_POINT}"
     add_cleanup_routine remount_device
 }
 
-function add_cleanup_routine() {
-    cleanup_queue=($1 ${cleanup_queue[@]})
+# Add a argument-less callback to the list of cleanup routines.
+#
+# $1 = a argument-less function
+#
+function add_cleanup_routine {
+    local var="cleanup_queue_${BASH_SUBSHELL}"
+    eval ${var}=\"$1 ${!var}\"
     trap run_cleanup EXIT INT ABRT PIPE
 }
 
-function remove_cleanup_routine() {
-    cleanup_queue=("${cleanup_queue[@]/$1}")
+# Remove a previously registered cleanup callback.
+#
+# $1 = a argument-less function
+#
+function remove_cleanup_routine {
+    local var="cleanup_queue_${BASH_SUBSHELL}"
+    eval ${var}=\"${!var/$1}\"
 }
 
-function run_cleanup() {
+# Execute the callbacks previously registered via "add_cleanup_routine"
+function run_cleanup {
     info "Running cleanup jobs..."
-    for cleanup in ${cleanup_queue[@]}; do
+    local var="cleanup_queue_${BASH_SUBSHELL}"
+    for cleanup in ${!var}; do
         ${cleanup}
     done
 }
 
-# This removes config.lock, index.lock, gc.pid, and refs/heads/*.lock
+# Remove files like config.lock, index.lock, gc.pid, and refs/heads/*.lock from the provided directory
+#
+# $1 = the home directory to clean
+#
 function cleanup_locks {
     local home_directory="$1"
 

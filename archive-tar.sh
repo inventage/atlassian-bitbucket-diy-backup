@@ -1,9 +1,8 @@
-#!/bin/bash
+# -------------------------------------------------------------------------------------
+# An archive strategy using Tar and Gzip
+# -------------------------------------------------------------------------------------
 
 check_command "tar"
-
-SCRIPT_DIR=$(dirname "$0")
-source "${SCRIPT_DIR}/utils.sh"
 
 function archive_backup {
     mkdir -p "${BITBUCKET_BACKUP_ARCHIVE_ROOT}"
@@ -43,7 +42,7 @@ function prepare_restore_archive {
     BITBUCKET_RESTORE_HOME="${BITBUCKET_RESTORE_ROOT}/bitbucket-home"
 }
 
-function bitbucket_restore_archive {
+function restore_archive {
     run tar -xzf "${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}" -C "${BITBUCKET_RESTORE_ROOT}"
 }
 
