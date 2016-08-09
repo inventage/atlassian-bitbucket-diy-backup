@@ -69,7 +69,7 @@ esac
 case ${BACKUP_DATABASE_TYPE} in
     amazon-rds)
         # RDS instance ID of the database to backup
-        BACKUP_RDS_INSTANCE_ID=
+        RDS_INSTANCE_ID=
 
         # The instance class to use when restoring the database
         RESTORE_RDS_INSTANCE_CLASS=db.r3.large
@@ -187,8 +187,8 @@ BACKUP_DEST_REGION=
 
 # === AWS RDS Variables ===
 
-# The RDS instance ID for the database to backup
-BACKUP_RDS_INSTANCE_ID=
+# The RDS instance ID for the database used for backup and restore
+RDS_INSTANCE_ID=
 
 # The instance class to use when restoring the database
 RESTORE_RDS_INSTANCE_CLASS=db.r3.large

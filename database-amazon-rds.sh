@@ -5,20 +5,20 @@
 SCRIPT_DIR=$(dirname "$0")
 source "${SCRIPT_DIR}/aws-common.sh"
 
-# Validate that the BACKUP_RDS_INSTANCE_ID variable has been set to a valid Amazon RDS instance
+# Validate that the RDS_INSTANCE_ID variable has been set to a valid Amazon RDS instance
 function prepare_backup_db {
-    if [ -z "${BACKUP_RDS_INSTANCE_ID}" ]; then
+    if [ -z "${RDS_INSTANCE_ID}" ]; then
         error "The RDS instance id must be set in '${BACKUP_VARS_FILE}'"
         bail "See 'bitbucket.diy-aws-backup.vars.sh.example' for the defaults."
     fi
 
-    validate_rds_instance_id "${BACKUP_RDS_INSTANCE_ID}"
+    validate_rds_instance_id "${RDS_INSTANCE_ID}"
 }
 
 # Backup the Bitbucket database
 function backup_db {
-    info "Performing backup of RDS instance '${BACKUP_RDS_INSTANCE_ID}'"
-    snapshot_rds_instance "${BACKUP_RDS_INSTANCE_ID}"
+    info "Performing backup of RDS instance '${RDS_INSTANCE_ID}'"
+    snapshot_rds_instance "${RDS_INSTANCE_ID}"
 }
 
 function prepare_restore_db {
@@ -50,24 +50,24 @@ function restore_db {
     fi
 
     local date_postfix=$(date +"%Y%m%d-%H%M%S")
-    local renamed_rds_instance="${BACKUP_RDS_INSTANCE_ID}-${date_postfix}"
-    $(rename_rds_instance "${BACKUP_RDS_INSTANCE_ID}" "${renamed_rds_instance}")
+    local renamed_rds_instance="${RDS_INSTANCE_ID}-${date_postfix}"
+    $(rename_rds_instance "${RDS_INSTANCE_ID}" "${renamed_rds_instance}")
 
     # Restore RDS instance from backup snapshot
-    run aws rds restore-db-instance-from-db-snapshot --db-instance-identifier "${BACKUP_RDS_INSTANCE_ID}" \
+    run aws rds restore-db-instance-from-db-snapshot --db-instance-identifier "${RDS_INSTANCE_ID}" \
         --db-snapshot-identifier "${RESTORE_RDS_SNAPSHOT_ID}" ${optional_args} > /dev/null
 
     info "Waiting until the RDS instance is available. This could take some time"
-    run aws rds wait db-instance-available --db-instance-identifier "${BACKUP_RDS_INSTANCE_ID}"  > /dev/null
+    run aws rds wait db-instance-available --db-instance-identifier "${RDS_INSTANCE_ID}"  > /dev/null
 
     if [ -n "${RESTORE_RDS_SECURITY_GROUP}" ]; then
         # When restoring a DB instance outside of a VPC this command will need to be modified to use --db-security-groups instead of --vpc-security-group-ids
         # For more information see http://docs.aws.amazon.com/cli/latest/reference/rds/modify-db-instance.html
-        run aws rds modify-db-instance --apply-immediately --db-instance-identifier "${BACKUP_RDS_INSTANCE_ID}" \
+        run aws rds modify-db-instance --apply-immediately --db-instance-identifier "${RDS_INSTANCE_ID}" \
             --vpc-security-group-ids "${RESTORE_RDS_SECURITY_GROUP}" > /dev/null
     fi
 
-    info "Performed restore of '${RESTORE_RDS_SNAPSHOT_ID}' to RDS instance '${BACKUP_RDS_INSTANCE_ID}'"
+    info "Performed restore of '${RESTORE_RDS_SNAPSHOT_ID}' to RDS instance '${RDS_INSTANCE_ID}'"
 }
 
 function rename_rds_instance {

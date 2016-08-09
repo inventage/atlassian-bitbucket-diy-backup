@@ -143,7 +143,7 @@ function wait_attached_volume {
         # aws ec2 wait volume-in-use ${VOLUME_ID} is not enough.
         # A volume state can be 'in-use' while its attachment state is still 'attaching'
         # If the volume is not fully attach we cannot issue a mount command for it
-        local volume_description=$(aws ec2 describe-volumes --volume-ids "${volume_id}")
+        local volume_description=$(run aws ec2 describe-volumes --volume-ids "${volume_id}")
 
         attachment_state=$(echo "${volume_description}" | jq -r '.Volumes[0].Attachments[0].State')
         if [ -z "${attachment_state}" -o "${attachment_state}" = "null" ]; then
