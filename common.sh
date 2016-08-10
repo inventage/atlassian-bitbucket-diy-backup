@@ -33,11 +33,8 @@ else
     bail "Please update BACKUP_DATABASE_TYPE in '${BACKUP_VARS_FILE}'"
 fi
 
-if [ -e "${SCRIPT_DIR}/archive-${BACKUP_ARCHIVE_TYPE}.sh" ]; then
+if [[ -e "${SCRIPT_DIR}/archive-${BACKUP_ARCHIVE_TYPE}.sh" ]]; then
     source "${SCRIPT_DIR}/archive-${BACKUP_ARCHIVE_TYPE}.sh"
-else
-    error "BACKUP_ARCHIVE_TYPE=${BACKUP_ARCHIVE_TYPE} is not implemented, '${SCRIPT_DIR}/database-${BACKUP_ARCHIVE_TYPE}.sh' does not exist"
-    bail "Please update BACKUP_ARCHIVE_TYPE in '${BACKUP_VARS_FILE}'"
 fi
 
 # Lock a Bitbucket instance for maintenance
