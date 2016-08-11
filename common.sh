@@ -37,6 +37,8 @@ if [[ -e "${SCRIPT_DIR}/archive-${BACKUP_ARCHIVE_TYPE}.sh" ]]; then
     source "${SCRIPT_DIR}/archive-${BACKUP_ARCHIVE_TYPE}.sh"
 fi
 
+BACKUP_TIME=$(date +"%Y%m%d-%H%M%S")
+
 # Lock a Bitbucket instance for maintenance
 function lock_bitbucket {
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then

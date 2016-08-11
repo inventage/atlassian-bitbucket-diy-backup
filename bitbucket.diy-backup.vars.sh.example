@@ -99,7 +99,7 @@ case ${BACKUP_DATABASE_TYPE} in
 
         # Make use of PostgreSQL 9.3+ options if available
         psql_version="$(psql --version | awk '{print $3}')"
-        psql_majorminor="$(printf "%d%03d" $(echo "${psql_version}" | tr "." "\n" | head -n 2))"
+        psql_majorminor="$(printf "%d%03d" $(echo "${psql_version}" | tr "." "\n" | sed 2q))"
         if [[ ${psql_majorminor} -ge 9003 ]]; then
             PG_PARALLEL="-j 5"
             PG_SNAPSHOT_OPT="--no-synchronized-snapshots"
@@ -165,3 +165,13 @@ HIPCHAT_TOKEN=
 # The number of backups to retain. After backups are taken, all old snapshots except for the most recent
 # ${KEEP_BACKUPS} are deleted.  Set to 0 to disable cleanup of old snapshots.
 KEEP_BACKUPS=0
+
+# ==== DISASTER RECOVERY VARS ====
+
+# The AWS ARN of the RDS instance to replicate
+DR_RDS_READ_REPLICA=
+
+# The hostname or IP that the primary can use to SSH to run replication commands.
+STANDBY=
+# The user to SSH as when running replication commands. Note this user needs sudo access to run zfs commands.
+STANDBY_SSH_USER=

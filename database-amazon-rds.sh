@@ -46,15 +46,17 @@ function restore_db {
     info "Performed restore of '${RESTORE_RDS_SNAPSHOT_ID}' to RDS instance '${RESTORE_RDS_INSTANCE_ID}'"
 }
 
-function prepare_failover_db {
-    no_op
-}
 
-function failover_db {
+function promote_standby_db {
     info "Promoting RDS read replica '${DR_RDS_READ_REPLICA}'"
 
     run aws --region ${AWS_REGION} rds promote-read-replica --db-instance-identifier "${DR_RDS_READ_REPLICA}" > /dev/null
     run aws rds wait db-instance-available --db-instance-identifier "${DR_RDS_READ_REPLICA}"
 
     success "Promoted RDS read replica '${DR_RDS_READ_REPLICA}'"
+}
+
+function replicate_db {
+    # This is a no op as RDS replication is handled via an AWS RDS read replica
+    no_op
 }

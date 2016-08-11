@@ -47,8 +47,7 @@ SNAPSHOT_TAG_KEY="Name"
 # This is used to identify RDS + EBS snapshots.
 # Note that this prefix is used to delete old backups and if set improperly will delete incorrect snapshots on cleanup.
 SNAPSHOT_TAG_PREFIX="${INSTANCE_NAME}-"
-SNAPSHOT_TIME=$(date +"%Y%m%d-%H%M%S-%3N")
-SNAPSHOT_TAG_VALUE="${SNAPSHOT_TAG_PREFIX}${SNAPSHOT_TIME}"
+SNAPSHOT_TAG_VALUE="${SNAPSHOT_TAG_PREFIX}${BACKUP_TIME}"
 
 # Create a snapshot of an EBS volume
 #

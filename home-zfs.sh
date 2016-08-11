@@ -38,35 +38,31 @@ function restore_home {
     run sudo zfs rollback "${RESTORE_ZFS_SNAPSHOT}"
 }
 
-function prepare_failover_home {
+
+function promote_standby_home {
+    # This is a no op as the ZFS filesystem is kept up to date with the primary instance.
     no_op
-}
-
-function failover_home {
-    no_op
-}
-
-function prepare_replicate_home {
-    debug "Taking ZFS before replicating to ${STANDBY}"
-    backup_home
-
-    STANDBY_LAST_SNAPSHOT=$(ssh "${STANDBY_SSH_USER}@${STANDBY}" \
-        sudo zfs list -H -t snapshot -o name -S creation | grep "${ZFS_HOME_TANK_NAME}" | head -n 1)
-    LATEST_SNAPSHOT=$(sudo zfs list -H -t snapshot -o name -S creation | grep "${ZFS_HOME_TANK_NAME}" | head -n 1)
 }
 
 function replicate_home {
-    if [[ -z "${STANDBY_LAST_SNAPSHOT}" ]]; then
+    debug "Taking ZFS snapshot before replicating to ${STANDBY}"
+    backup_home
+
+    standby_last_snapshot=$(ssh "${STANDBY_SSH_USER}@${STANDBY}" \
+        sudo zfs list -H -t snapshot -o name -S creation | grep "${ZFS_HOME_TANK_NAME}" | sed 1q)
+    primary_last_snapshot=$(sudo zfs list -H -t snapshot -o name -S creation | grep "${ZFS_HOME_TANK_NAME}" | sed 1q)
+
+    if [[ -z "${standby_last_snapshot}" ]]; then
         debug "No ZFS snapshot found on '${STANDBY}'"
         setup_home_replication
     else
-        run sudo zfs send -R -i "${STANDBY_LAST_SNAPSHOT}" "${LATEST_SNAPSHOT}" \
+        run sudo zfs send -R -i "${standby_last_snapshot}" "${primary_last_snapshot}" \
             | ssh "${STANDBY_SSH_USER}@${STANDBY}" sudo zfs receive -F "${ZFS_HOME_TANK_NAME}"
     fi
 }
 
 function setup_home_replication {
     info "Setting up standby"
-    run sudo zfs send -vR -i snapshot "${LATEST_SNAPSHOT}"\
+    run sudo zfs send -vR -i snapshot "${primary_last_snapshot}"\
         | ssh "${STANDBY_SSH_USER}@${STANDBY}" sudo zfs receive -vF "${ZFS_HOME_TANK_NAME}"
 }
