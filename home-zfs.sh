@@ -57,7 +57,7 @@ function replicate_home {
         send_base_snapshot
     else
         run sudo zfs send -R -i "${standby_last_snapshot}" "${primary_last_snapshot}" \
-            | ssh ${SSH_FLAGS} "${STANDBY_SSH_USER}@${STANDBY}" sudo zfs receive "${ZFS_HOME_TANK_NAME}"
+            | ssh ${SSH_FLAGS} "${STANDBY_SSH_USER}@${STANDBY}" sudo zfs receive -F "${ZFS_HOME_TANK_NAME}"
     fi
 
     if [ "${KEEP_BACKUPS}" -gt 0 ]; then
