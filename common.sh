@@ -8,10 +8,9 @@ check_command "jq"
 
 # The name of the product
 PRODUCT=Bitbucket
-
 BACKUP_VARS_FILE=${BACKUP_VARS_FILE:-"${SCRIPT_DIR}"/bitbucket.diy-backup.vars.sh}
-
 PATH=$PATH:/sbin:/usr/sbin:/usr/local/bin
+BACKUP_TIME=$(date +"%Y%m%d-%H%M%S")
 
 if [ -f "${BACKUP_VARS_FILE}" ]; then
     source "${BACKUP_VARS_FILE}"
@@ -38,8 +37,6 @@ fi
 if [[ -e "${SCRIPT_DIR}/archive-${BACKUP_ARCHIVE_TYPE}.sh" ]]; then
     source "${SCRIPT_DIR}/archive-${BACKUP_ARCHIVE_TYPE}.sh"
 fi
-
-BACKUP_TIME=$(date +"%Y%m%d-%H%M%S")
 
 # Lock a Bitbucket instance for maintenance
 function lock_bitbucket {

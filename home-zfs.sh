@@ -20,7 +20,7 @@ function backup_home {
 function prepare_restore_home {
     local snapshot="$1"
 
-    if [[ -z ${snapshot} ]]; then
+    if [ -z "${snapshot}" ]; then
         snapshot_list=$(run sudo zfs list -H -t snapshot -o name)
         info "Available Snapshots:"
         info "${snapshot_list}"
@@ -56,6 +56,7 @@ function replicate_home {
         debug "No ZFS snapshot found on '${STANDBY}'"
         send_base_snapshot
     else
+        # This will over write the standby filesystem with the latest primary snapshot
         run sudo zfs send -R -i "${standby_last_snapshot}" "${primary_last_snapshot}" \
             | ssh ${SSH_FLAGS} "${STANDBY_SSH_USER}@${STANDBY}" sudo zfs receive -F "${ZFS_HOME_TANK_NAME}"
     fi
