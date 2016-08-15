@@ -165,3 +165,6 @@ HIPCHAT_TOKEN=
 # The number of backups to retain. After backups are taken, all old snapshots except for the most recent
 # ${KEEP_BACKUPS} are deleted.  Set to 0 to disable cleanup of old snapshots.
 KEEP_BACKUPS=0
+
+# If FSFREEZE is set to true, freeze the file system before performing backup.
+FSFREEZE=
