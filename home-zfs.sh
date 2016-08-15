@@ -40,8 +40,8 @@ function restore_home {
 
 
 function promote_standby_home {
-    # This is a no op as the ZFS filesystem is kept up to date with the primary instance.
-    no_op
+    run sudo echo "disaster.recovery=true" >> ${BITBUCKET_HOME}shared/bitbucket.properties
+    run sudo echo "jdbc.url=${STANDBY_JDBC_URL}" >> ${BITBUCKET_HOME}shared/bitbucket.properties
 }
 
 function replicate_home {

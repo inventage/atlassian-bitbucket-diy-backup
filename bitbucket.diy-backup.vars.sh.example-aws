@@ -44,3 +44,4 @@ KEEP_BACKUPS=5
 DR_RDS_READ_REPLICA=
 STANDBY=
 STANDBY_SSH_USER=ec2-user
+SSH_FLAGS="-i standby_replicator.pem"
