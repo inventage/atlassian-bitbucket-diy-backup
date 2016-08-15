@@ -11,6 +11,8 @@ PRODUCT=Bitbucket
 
 BACKUP_VARS_FILE=${BACKUP_VARS_FILE:-"${SCRIPT_DIR}"/bitbucket.diy-backup.vars.sh}
 
+PATH=$PATH:/sbin:/usr/sbin:/usr/local/bin
+
 if [ -f "${BACKUP_VARS_FILE}" ]; then
     source "${BACKUP_VARS_FILE}"
     info "Using vars file: '${BACKUP_VARS_FILE}'"

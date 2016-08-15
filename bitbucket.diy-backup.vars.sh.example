@@ -175,3 +175,5 @@ DR_RDS_READ_REPLICA=
 STANDBY=
 # The user to SSH as when running replication commands. Note this user needs sudo access to run zfs commands.
 STANDBY_SSH_USER=
+# (Optional) Append flags to the SSH command. e.g. "-i private_key.pem"
+SSH_FLAGS

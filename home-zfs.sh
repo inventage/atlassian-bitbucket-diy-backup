@@ -10,7 +10,7 @@ function prepare_backup_home {
     fi
 
     debug "Validating ZFS_HOME_TANK_NAME=${ZFS_HOME_TANK_NAME}"
-    $(run sudo zfs list -H -o name "${ZFS_HOME_TANK_NAME}")
+    run sudo zfs list -H -o name ${ZFS_HOME_TANK_NAME}
 }
 
 function backup_home {
@@ -48,21 +48,38 @@ function replicate_home {
     debug "Taking ZFS snapshot before replicating to ${STANDBY}"
     backup_home
 
-    standby_last_snapshot=$(ssh "${STANDBY_SSH_USER}@${STANDBY}" \
+    standby_last_snapshot=$(ssh ${SSH_FLAGS} "${STANDBY_SSH_USER}@${STANDBY}" \
         sudo zfs list -H -t snapshot -o name -S creation | grep "${ZFS_HOME_TANK_NAME}" | sed 1q)
     primary_last_snapshot=$(sudo zfs list -H -t snapshot -o name -S creation | grep "${ZFS_HOME_TANK_NAME}" | sed 1q)
 
     if [[ -z "${standby_last_snapshot}" ]]; then
         debug "No ZFS snapshot found on '${STANDBY}'"
-        setup_home_replication
+        send_base_snapshot
     else
         run sudo zfs send -R -i "${standby_last_snapshot}" "${primary_last_snapshot}" \
-            | ssh "${STANDBY_SSH_USER}@${STANDBY}" sudo zfs receive -F "${ZFS_HOME_TANK_NAME}"
+            | ssh ${SSH_FLAGS} "${STANDBY_SSH_USER}@${STANDBY}" sudo zfs receive "${ZFS_HOME_TANK_NAME}"
+    fi
+
+    if [ "${KEEP_BACKUPS}" -gt 0 ]; then
+        cleanup_standby_snapshots
+        cleanup_primary_snapshots
     fi
 }
 
-function setup_home_replication {
+function send_base_snapshot {
     info "Setting up standby"
     run sudo zfs send -vR -i snapshot "${primary_last_snapshot}"\
-        | ssh "${STANDBY_SSH_USER}@${STANDBY}" sudo zfs receive -vF "${ZFS_HOME_TANK_NAME}"
+        | ssh ${SSH_FLAGS} "${STANDBY_SSH_USER}@${STANDBY}" sudo zfs receive -vF "${ZFS_HOME_TANK_NAME}"
+}
+
+function cleanup_standby_snapshots {
+    # Cleanup all ZFS snapshots except latest ${KEEP_BACKUPS}
+    run ssh ${SSH_FLAGS} ${STANDBY_SSH_USER}@${STANDBY} "sudo zfs list -H -t snapshot -o name -S creation \
+        | grep ${ZFS_HOME_TANK_NAME} | tail -n +${KEEP_BACKUPS} | xargs -rn 1 sudo zfs destroy"
+}
+
+function cleanup_primary_snapshots {
+    # Cleanup all ZFS snapshots except latest ${KEEP_BACKUPS}
+    run sudo zfs list -H -t snapshot -o name -S creation | grep ${ZFS_HOME_TANK_NAME} | tail -n +${KEEP_BACKUPS} \
+        | xargs -rn 1 sudo zfs destroy
 }
