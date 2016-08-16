@@ -11,7 +11,7 @@ if [ -z "${AWS_REGION}" -o "${AWS_REGION}" = "null" ]; then
 fi
 
 if [ -z "${AWS_ACCESS_KEY_ID}" -o -z "${AWS_SECRET_ACCESS_KEY}" ]; then
-    AWS_INSTANCE_ROLE=$(curl ${CURL_OPTIONS} http://169.254.169.254/latest/meta-data/iam/security-credentials/)
+    ! AWS_INSTANCE_ROLE=$(curl ${CURL_OPTIONS} http://169.254.169.254/latest/meta-data/iam/security-credentials/)
     if [ -z "${AWS_INSTANCE_ROLE}" ]; then
         error "Could not find the necessary credentials to run backup"
         error "We recommend launching the instance with an appropriate IAM role"

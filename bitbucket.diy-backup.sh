@@ -15,6 +15,9 @@ set -e
 SCRIPT_DIR=$(dirname "$0")
 source "${SCRIPT_DIR}/utils.sh"
 source "${SCRIPT_DIR}/common.sh"
+source_archive_strategy
+source_database_strategy
+source_home_strategy
 
 # Ensure compatibility if BACKUP_ZERO_DOWNTIME is set
 if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then

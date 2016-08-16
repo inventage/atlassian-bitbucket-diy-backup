@@ -15,6 +15,9 @@ set -e
 SCRIPT_DIR=$(dirname "$0")
 source "${SCRIPT_DIR}/utils.sh"
 source "${SCRIPT_DIR}/common.sh"
+source_archive_strategy
+source_database_strategy
+source_home_strategy
 
 # Ensure we know which user:group things should be owned as
 if [ -z "${BITBUCKET_UID}" -o -z "${BITBUCKET_GID}" ]; then

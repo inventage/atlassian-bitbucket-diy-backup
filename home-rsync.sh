@@ -5,6 +5,9 @@
 check_command "rsync"
 
 function prepare_backup_home {
+    check_config_var "BITBUCKET_BACKUP_HOME"
+    check_config_var "BITBUCKET_HOME"
+
     perform_rsync
 }
 
@@ -13,6 +16,9 @@ function backup_home {
 }
 
 function prepare_restore_home {
+    check_config_var "BITBUCKET_RESTORE_HOME"
+    check_config_var "BITBUCKET_HOME"
+
     no_op
 }
 
@@ -26,6 +32,7 @@ function restore_home {
 }
 
 function perform_rsync {
+    local rsync_exclude_repos=
     for repo_id in ${BITBUCKET_BACKUP_EXCLUDE_REPOS[@]}; do
         rsync_exclude_repos="${rsync_exclude_repos} --exclude=/shared/data/repositories/${repo_id}"
     done
@@ -48,4 +55,20 @@ function perform_rsync {
         --exclude=/shared/.lock \
         ${rsync_exclude_repos} \
         "${BITBUCKET_HOME}" "${BITBUCKET_BACKUP_HOME}"
+}
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Disaster recovery functions
+# ----------------------------------------------------------------------------------------------------------------------
+
+function promote_home {
+    bail "Disaster recovery is not available with this home strategy"
+}
+
+function replicate_home {
+    bail "Disaster recovery is not available with this home strategy"
+}
+
+function setup_home_replication {
+    bail "Disaster recovery is not available with this home strategy"
 }
