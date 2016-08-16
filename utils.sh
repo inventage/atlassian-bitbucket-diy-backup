@@ -15,7 +15,7 @@ function check_command {
 
 # Log an debug message to standard error
 function debug {
-    if [ "${BITBUCKET_VERBOSE_BACKUP}" = true ]; then
+    if [ "${BITBUCKET_VERBOSE_BACKUP}" = "true" ]; then
         echo "[${BITBUCKET_URL}] DEBUG: $*" > /dev/stderr
     fi
 }

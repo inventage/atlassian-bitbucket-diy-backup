@@ -6,7 +6,7 @@ check_command "gpg-zip"
 
 function archive_backup {
     mkdir -p "${BITBUCKET_BACKUP_ARCHIVE_ROOT}"
-    BITBUCKET_BACKUP_ARCHIVE_NAME="$(date "+${INSTANCE_NAME}-%Y%m%d-%H%M%S.tar.gz.gpg")"
+    BITBUCKET_BACKUP_ARCHIVE_NAME="${INSTANCE_NAME}-${BACKUP_TIME}.tar.gz.gpg"
     ( cd "${BITBUCKET_BACKUP_ROOT}" || bail "Unable to change directory to '${BITBUCKET_BACKUP_ROOT}'"; \
         run gpg-zip --encrypt --recipient "${BITBUCKET_BACKUP_GPG_RECIPIENT}" \
             --output "${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}" . )
