@@ -59,7 +59,7 @@ case ${BACKUP_HOME_TYPE} in
         # The IOPS that should be provisioned for the new volume. Note: Maximum IOPS to volume size ratio is 30
         RESTORE_HOME_DIRECTORY_IOPS=1000
         # If FSFREEZE is set to true, freeze the file system before performing backup.
-        # Set this to false when your file system does not support the fsfreeze command, e.g. ZFS.
+        # Set this to false when your file system does not need the fsfreeze command, e.g. ZFS.
         FSFREEZE=true
         ;;
     rsync)
