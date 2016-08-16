@@ -156,7 +156,9 @@ function bitbucket_version {
 # $1 = mount point
 #
 function freeze_mount_point {
-    run sudo fsfreeze -f "${1}"
+    if [ "${FSFREEZE}" = "true" ]; then
+        run sudo fsfreeze -f "${1}"
+    fi
 }
 
 # Unfreeze the filesystem mounted under the provided mount point.
@@ -165,7 +167,9 @@ function freeze_mount_point {
 # $1 = mount point
 #
 function unfreeze_mount_point {
-    run sudo fsfreeze -u "${1}"
+    if [ "${FSFREEZE}" = "true" ]; then
+        run sudo fsfreeze -u "${1}"
+    fi
 }
 
 # Remount the previously mounted home directory
