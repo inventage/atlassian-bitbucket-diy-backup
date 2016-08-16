@@ -40,8 +40,12 @@ function restore_home {
 
 
 function promote_standby_home {
-    run sudo echo "disaster.recovery=true" >> ${BITBUCKET_HOME}shared/bitbucket.properties
-    run sudo echo "jdbc.url=${STANDBY_JDBC_URL}" >> ${BITBUCKET_HOME}shared/bitbucket.properties
+    # Attempt to run the following commands but don't exit scripts if they fail.
+    ! run echo "# The following properties were appended during the promote-standby script." \
+        >> ${BITBUCKET_HOME}shared/bitbucket.properties
+    ! run echo "jdbc.url=${STANDBY_JDBC_URL}" >> ${BITBUCKET_HOME}shared/bitbucket.properties
+    ! run echo "disaster.recovery=true" >> ${BITBUCKET_HOME}shared/bitbucket.properties
+    true
 }
 
 function replicate_home {
@@ -56,7 +60,7 @@ function replicate_home {
         debug "No ZFS snapshot found on '${STANDBY}'"
         send_base_snapshot
     else
-        # This will over write the standby filesystem with the latest primary snapshot
+        # This will overwrite the standby filesystem with the latest primary snapshot
         run sudo zfs send -R -i "${standby_last_snapshot}" "${primary_last_snapshot}" \
             | ssh ${SSH_FLAGS} "${STANDBY_SSH_USER}@${STANDBY}" sudo zfs receive -F "${ZFS_HOME_TANK_NAME}"
     fi

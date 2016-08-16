@@ -55,8 +55,3 @@ function promote_standby_db {
 
     success "Promoted RDS read replica '${DR_RDS_READ_REPLICA}'"
 }
-
-function replicate_db {
-    # This is a no op as RDS replication is handled via an AWS RDS read replica
-    no_op
-}

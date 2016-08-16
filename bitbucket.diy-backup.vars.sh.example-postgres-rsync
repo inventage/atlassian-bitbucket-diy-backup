@@ -5,6 +5,10 @@
 # with a PostgreSQL database and using RSync for filesystem backup.
 # Backups are archived using Tar and Gzip
 #
+# Using rsync to back up the home directory is portable to most file system technologies, but requires some
+# downtime during backup to ensure consistency of Git repositories.
+# See https://confluence.atlassian.com/display/BitbucketServer/Data+recovery+and+backups for more information.
+#
 # For a detailed description of each variable consult the master bitbucket.diy-backup.vars.sh.example file.
 #------------------------------------------------------------------------------------------
 
@@ -34,7 +38,7 @@ POSTGRES_PORT=5432
 
 # Make use of PostgreSQL 9.3+ options if available
 psql_version="$(psql --version | awk '{print $3}')"
-psql_majorminor="$(printf "%d%03d" $(echo "${psql_version}" | tr "." "\n" | sed 1q))"
+psql_majorminor="$(printf "%d%03d" $(echo "${psql_version}" | tr "." "\n" | sed 2q))"
 if [[ ${psql_majorminor} -ge 9003 ]]; then
     PG_PARALLEL="-j 5"
     PG_SNAPSHOT_OPT="--no-synchronized-snapshots"

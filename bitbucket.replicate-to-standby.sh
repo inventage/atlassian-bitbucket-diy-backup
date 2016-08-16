@@ -21,4 +21,3 @@ source "${SCRIPT_DIR}/common.sh"
 ##########################################################
 
 replicate_home
-replicate_db

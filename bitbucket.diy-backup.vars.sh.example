@@ -79,6 +79,10 @@ case ${BACKUP_DATABASE_TYPE} in
         RESTORE_RDS_SUBNET_GROUP_NAME=
         # The security group to assign to the restored instance
         RESTORE_RDS_SECURITY_GROUP=
+
+        # Only used on a Disaster Recovery standby system that has been configured with an RDS read replica of your primary system's RDS database.
+        # See https://confluence.atlassian.com/display/BitbucketServer/Bitbucket+Data+Center+disaster+recovery for more information.
+        DR_RDS_READ_REPLICA=
         ;;
     mysql)
         BITBUCKET_DB=bitbucket
@@ -168,12 +172,9 @@ KEEP_BACKUPS=0
 
 # ==== DISASTER RECOVERY VARS ====
 
-# The AWS ARN of the RDS instance to replicate
-DR_RDS_READ_REPLICA=
-
 # The hostname or IP that the primary can use to SSH to run replication commands.
 STANDBY=
-# The user to SSH as when running replication commands. Note this user needs sudo access to run zfs commands.
+# The user to SSH as when running replication commands from the primary. Note this user needs sudo access to run zfs commands.
 STANDBY_SSH_USER=
-# (Optional) Append flags to the SSH command. e.g. "-i private_key.pem"
-SSH_FLAGS
+# (Optional) Append flags to the SSH commands. e.g. "-i private_key.pem"
+SSH_FLAGS=
