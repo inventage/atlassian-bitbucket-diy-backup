@@ -22,7 +22,7 @@ source "${SCRIPT_DIR}/common.sh"
 
 info "Promoting standby Bitbucket Data Center"
 
-#promote_standby_db
+promote_standby_db
 promote_standby_home
 
 success "Successfully promoted standby instance"

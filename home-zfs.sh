@@ -73,6 +73,7 @@ function replicate_home {
 
 function send_base_snapshot {
     info "Setting up standby"
+    # This will overwrite the standby filesystem with the latest primary snapshot
     run sudo zfs send -vR -i snapshot "${primary_last_snapshot}"\
         | ssh ${SSH_FLAGS} "${STANDBY_SSH_USER}@${STANDBY}" sudo zfs receive -vF "${ZFS_HOME_TANK_NAME}"
 }
