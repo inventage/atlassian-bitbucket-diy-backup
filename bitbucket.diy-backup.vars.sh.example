@@ -58,6 +58,8 @@ case ${BACKUP_HOME_TYPE} in
         # Required if RESTORE_HOME_DIRECTORY_VOLUME_TYPE has been set to 'io1'. Ignored otherwise.
         # The IOPS that should be provisioned for the new volume. Note: Maximum IOPS to volume size ratio is 30
         RESTORE_HOME_DIRECTORY_IOPS=1000
+        # If FSFREEZE is set to true, freeze the file system before performing backup.
+        FSFREEZE=
         ;;
     rsync)
         # Optional list of repo IDs which should be excluded from the backup. For example: (2 5 88)
@@ -165,6 +167,3 @@ HIPCHAT_TOKEN=
 # The number of backups to retain. After backups are taken, all old snapshots except for the most recent
 # ${KEEP_BACKUPS} are deleted.  Set to 0 to disable cleanup of old snapshots.
 KEEP_BACKUPS=0
-
-# If FSFREEZE is set to true, freeze the file system before performing backup.
-FSFREEZE=

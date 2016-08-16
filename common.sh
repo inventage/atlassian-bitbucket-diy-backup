@@ -158,7 +158,7 @@ function bitbucket_version {
 # $1 = mount point
 #
 function freeze_mount_point {
-    if [ "${FZFREEZE}" = "true" ]; then
+    if [ "${FSFREEZE}" = "true" ]; then
         run sudo fsfreeze -f "${1}"
     fi
 }
@@ -169,7 +169,7 @@ function freeze_mount_point {
 # $1 = mount point
 #
 function unfreeze_mount_point {
-    if [ "${FZFREEZE}" = "true" ]; then
+    if [ "${FSFREEZE}" = "true" ]; then
         run sudo fsfreeze -u "${1}"
     fi
 }
