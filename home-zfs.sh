@@ -38,7 +38,6 @@ function restore_home {
     run sudo zfs rollback "${RESTORE_ZFS_SNAPSHOT}"
 }
 
-
 function promote_standby_home {
     # Attempt to run the following commands but don't exit scripts if they fail.
     ! run echo "# The following properties were appended during the promote-standby script." \
@@ -49,6 +48,10 @@ function promote_standby_home {
 }
 
 function replicate_home {
+    if [ -z "${ZFS_HOME_TANK_NAME}" ]; then
+        bail "Please set var 'ZFS_HOME_TANK_NAME' in '${BACKUP_VARS_FILE}"
+    fi
+
     debug "Taking ZFS snapshot before replicating to ${STANDBY}"
     backup_home
 

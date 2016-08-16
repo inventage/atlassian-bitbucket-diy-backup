@@ -51,7 +51,7 @@ function promote_standby_db {
     info "Promoting RDS read replica '${DR_RDS_READ_REPLICA}'"
 
     run aws --region ${AWS_REGION} rds promote-read-replica --db-instance-identifier "${DR_RDS_READ_REPLICA}" > /dev/null
-    run aws rds wait db-instance-available --db-instance-identifier "${DR_RDS_READ_REPLICA}"
+    run aws --region ${AWS_REGION} rds wait db-instance-available --db-instance-identifier "${DR_RDS_READ_REPLICA}"
 
     success "Promoted RDS read replica '${DR_RDS_READ_REPLICA}'"
 }

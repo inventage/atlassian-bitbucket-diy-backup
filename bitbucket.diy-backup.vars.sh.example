@@ -63,6 +63,11 @@ case ${BACKUP_HOME_TYPE} in
         # Optional list of repo IDs which should be excluded from the backup. For example: (2 5 88)
         BITBUCKET_BACKUP_EXCLUDE_REPOS=()
         ;;
+    zfs)
+        # The tank name that holds the file server data.
+        # This must be the same name on the standby if using replication.
+        ZFS_HOME_TANK_NAME=tank/bitbucket-shared-home
+        ;;
 esac
 
 # Sub-options for each database backup strategy
