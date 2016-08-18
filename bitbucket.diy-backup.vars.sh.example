@@ -58,10 +58,18 @@ case ${BACKUP_HOME_TYPE} in
         # Required if RESTORE_HOME_DIRECTORY_VOLUME_TYPE has been set to 'io1'. Ignored otherwise.
         # The IOPS that should be provisioned for the new volume. Note: Maximum IOPS to volume size ratio is 30
         RESTORE_HOME_DIRECTORY_IOPS=1000
+        # If FSFREEZE is set to true, freeze the file system before performing backup.
+        # Set this to false when your file system does not need the fsfreeze command, e.g. ZFS.
+        FSFREEZE=true
         ;;
     rsync)
         # Optional list of repo IDs which should be excluded from the backup. For example: (2 5 88)
         BITBUCKET_BACKUP_EXCLUDE_REPOS=()
+        ;;
+    zfs)
+        # The tank name that holds the file server data.
+        # This must be the same name on the standby if using replication.
+        ZFS_HOME_TANK_NAME=tank/bitbucket-shared-home
         ;;
 esac
 
@@ -77,6 +85,11 @@ case ${BACKUP_DATABASE_TYPE} in
         RESTORE_RDS_SUBNET_GROUP_NAME=
         # The security group to assign to the restored instance
         RESTORE_RDS_SECURITY_GROUP=
+
+        # In standby instances using RDS read replicas, set this variable to the RDS read replica instance id.
+        # Only used on a Disaster Recovery standby system that has been configured with an RDS read replica of your primary system's RDS database.
+        # See https://confluence.atlassian.com/display/BitbucketServer/Bitbucket+Data+Center+disaster+recovery for more information.
+        DR_RDS_READ_REPLICA=
         ;;
     mysql)
         BITBUCKET_DB=bitbucket
@@ -97,7 +110,7 @@ case ${BACKUP_DATABASE_TYPE} in
 
         # Make use of PostgreSQL 9.3+ options if available
         psql_version="$(psql --version | awk '{print $3}')"
-        psql_majorminor="$(printf "%d%03d" $(echo "${psql_version}" | tr "." "\n" | head -n 2))"
+        psql_majorminor="$(printf "%d%03d" $(echo "${psql_version}" | tr "." "\n" | sed 2q))"
         if [[ ${psql_majorminor} -ge 9003 ]]; then
             PG_PARALLEL="-j 5"
             PG_SNAPSHOT_OPT="--no-synchronized-snapshots"
@@ -164,35 +177,13 @@ HIPCHAT_TOKEN=
 # ${KEEP_BACKUPS} are deleted.  Set to 0 to disable cleanup of old snapshots.
 KEEP_BACKUPS=0
 
-# The mount point for the home directory volume
-HOME_DIRECTORY_MOUNT_POINT=/media/atl
-# The device name to which the home directory volume is attached as it appears in your Amazon console
-# Do NOT use the 'mount' command to retrieve this value as the linux device-driver might have assigned a different value
-HOME_DIRECTORY_DEVICE_NAME=/dev/xvdf
+# ==== DISASTER RECOVERY VARS ====
+# Only used on a Bitbucket Data Center primary instance which has been configured with a Disaster Recovery standby system.
+# See https://confluence.atlassian.com/display/BitbucketServer/Bitbucket+Data+Center+disaster+recovery for more information.
 
-# The type of volume to create when restoring the home directory
-RESTORE_HOME_DIRECTORY_VOLUME_TYPE=gp2
-# Required if RESTORE_HOME_DIRECTORY_VOLUME_TYPE has been set to 'io1'. Ignored otherwise.
-# The IOPS that should be provisioned for the new volume. Note: Maximum IOPS to volume size ratio is 30
-RESTORE_HOME_DIRECTORY_IOPS=1000
-
-# The AWS Account ID, used when copying EBS + RDS snapshots across region
-BACKUP_DEST_AWS_ACCOUNT_ID=
-# The AWS Role ARN to assume when tagging the EBS + RDS snapshots
-BACKUP_DEST_AWS_ROLE=
-
-# This variable is only required if you wish to copy the EBS and RDS snapshots to another region
-# If set, this variable will copy the EBS & RDS snapshot to the specified region
-BACKUP_DEST_REGION=
-
-# === AWS RDS Variables ===
-
-# The RDS instance ID for the database used for backup and restore
-RDS_INSTANCE_ID=
-
-# The instance class to use when restoring the database
-RESTORE_RDS_INSTANCE_CLASS=db.r3.large
-# The subnet in which the database will be restored
-RESTORE_RDS_SUBNET_GROUP_NAME=
-# The security group to assign to the restored instance
-RESTORE_RDS_SECURITY_GROUP=
+# The hostname or IP that the primary can use to SSH to run replication commands.
+STANDBY=
+# The user to SSH as when running replication commands from the primary. Note this user needs sudo access to run zfs commands.
+STANDBY_SSH_USER=
+# (Optional) Append flags to the SSH commands. e.g. "-i private_key.pem"
+SSH_FLAGS=

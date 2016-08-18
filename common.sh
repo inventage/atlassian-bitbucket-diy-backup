@@ -8,8 +8,9 @@ check_command "jq"
 
 # The name of the product
 PRODUCT=Bitbucket
-
 BACKUP_VARS_FILE=${BACKUP_VARS_FILE:-"${SCRIPT_DIR}"/bitbucket.diy-backup.vars.sh}
+PATH=$PATH:/sbin:/usr/sbin:/usr/local/bin
+BACKUP_TIME=$(date +"%Y%m%d-%H%M%S")
 
 if [ -f "${BACKUP_VARS_FILE}" ]; then
     source "${BACKUP_VARS_FILE}"
@@ -33,11 +34,8 @@ else
     bail "Please update BACKUP_DATABASE_TYPE in '${BACKUP_VARS_FILE}'"
 fi
 
-if [ -e "${SCRIPT_DIR}/archive-${BACKUP_ARCHIVE_TYPE}.sh" ]; then
+if [[ -e "${SCRIPT_DIR}/archive-${BACKUP_ARCHIVE_TYPE}.sh" ]]; then
     source "${SCRIPT_DIR}/archive-${BACKUP_ARCHIVE_TYPE}.sh"
-else
-    error "BACKUP_ARCHIVE_TYPE=${BACKUP_ARCHIVE_TYPE} is not implemented, '${SCRIPT_DIR}/database-${BACKUP_ARCHIVE_TYPE}.sh' does not exist"
-    bail "Please update BACKUP_ARCHIVE_TYPE in '${BACKUP_VARS_FILE}'"
 fi
 
 # Lock a Bitbucket instance for maintenance
@@ -158,7 +156,9 @@ function bitbucket_version {
 # $1 = mount point
 #
 function freeze_mount_point {
-    run sudo fsfreeze -f "${1}"
+    if [ "${FSFREEZE}" = "true" ]; then
+        run sudo fsfreeze -f "${1}"
+    fi
 }
 
 # Unfreeze the filesystem mounted under the provided mount point.
@@ -167,7 +167,9 @@ function freeze_mount_point {
 # $1 = mount point
 #
 function unfreeze_mount_point {
-    run sudo fsfreeze -u "${1}"
+    if [ "${FSFREEZE}" = "true" ]; then
+        run sudo fsfreeze -u "${1}"
+    fi
 }
 
 # Remount the previously mounted home directory
