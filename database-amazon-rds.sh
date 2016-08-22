@@ -22,7 +22,7 @@ function backup_db {
 }
 
 function prepare_restore_db {
-    local snapshot_tag="$1"
+    local restore_point="$1"
 
     if [ -z "${RESTORE_RDS_INSTANCE_CLASS}" ]; then
         info "No restore instance class has been set in '${BACKUP_VARS_FILE}'"
@@ -36,7 +36,7 @@ function prepare_restore_db {
         info "No restore security group has been set in '${BACKUP_VARS_FILE}'"
     fi
 
-    RESTORE_RDS_SNAPSHOT_ID="$(retrieve_rds_snapshot_id "${snapshot_tag}")"
+    RESTORE_RDS_SNAPSHOT_ID="$(retrieve_rds_snapshot_id "${restore_point}")"
 }
 
 function restore_db {
@@ -53,9 +53,35 @@ function restore_db {
     local renamed_rds_instance="${RDS_INSTANCE_ID}-${date_postfix}"
     $(rename_rds_instance "${RDS_INSTANCE_ID}" "${renamed_rds_instance}")
 
-    # Restore RDS instance from backup snapshot
-    run aws rds restore-db-instance-from-db-snapshot --db-instance-identifier "${RDS_INSTANCE_ID}" \
-        --db-snapshot-identifier "${RESTORE_RDS_SNAPSHOT_ID}" ${optional_args} > /dev/null
+    info "Attempting to restore snapshot '${RESTORE_RDS_SNAPSHOT_ID}' as '${RDS_INSTANCE_ID}'"
+
+    # Bail after 10 Minutes
+    local max_wait_time=600
+    local end_time=$((SECONDS+max_wait_time))
+
+    set +e
+    while [ $SECONDS -lt ${end_time} ]; do
+        restore_result=$(aws rds restore-db-instance-from-db-snapshot --region=${AWS_DEFAULT_REGION} \
+            --db-instance-identifier "${RDS_INSTANCE_ID}" \
+            --db-snapshot-identifier "${RESTORE_RDS_SNAPSHOT_ID}" ${optional_args})
+
+        case $? in
+            0)
+                # Restore successful
+                info "Restored snapshot '${RESTORE_RDS_SNAPSHOT_ID}' as '${RDS_INSTANCE_ID}'"
+                break
+                ;;
+            *)
+                # Non-zero indicates the AWS command failed
+                sleep 30
+                ;;
+        esac
+    done
+    set -e
+
+    if [ $? != 0 ]; then
+        bail "Failed to restore snapshot '${RESTORE_RDS_SNAPSHOT_ID}' as '${RDS_INSTANCE_ID}'"
+    fi
 
     info "Waiting until the RDS instance is available. This could take some time"
     run aws rds wait db-instance-available --db-instance-identifier "${RDS_INSTANCE_ID}"  > /dev/null
@@ -63,7 +89,7 @@ function restore_db {
     if [ -n "${RESTORE_RDS_SECURITY_GROUP}" ]; then
         # When restoring a DB instance outside of a VPC this command will need to be modified to use --db-security-groups instead of --vpc-security-group-ids
         # For more information see http://docs.aws.amazon.com/cli/latest/reference/rds/modify-db-instance.html
-        run aws rds modify-db-instance --apply-immediately --db-instance-identifier "${RDS_INSTANCE_ID}" \
+        run aws rds --region=${AWS_DEFAULT_REGION} modify-db-instance --apply-immediately --db-instance-identifier "${RDS_INSTANCE_ID}" \
             --vpc-security-group-ids "${RESTORE_RDS_SECURITY_GROUP}" > /dev/null
     fi
 
@@ -77,46 +103,16 @@ function rename_rds_instance {
     info "Renaming RDS instance '${source_rds_instance}' to '${dest_rds_instance}'"
 
     # Rename existing rds instance
-    run aws rds modify-db-instance --db-instance-identifier "${source_rds_instance}" \
+    run aws rds --region=${AWS_DEFAULT_REGION} modify-db-instance --db-instance-identifier "${source_rds_instance}" \
         --new-db-instance-identifier "${dest_rds_instance}" --apply-immediately > /dev/null
-
-    info "Waiting for RDS instance '${dest_rds_instance}' to become available. This could take some time"
-
-    # 10 Minutes
-    local max_wait_time=600
-    local end_time=$((SECONDS+max_wait_time))
-
-    set +e
-    while [ $SECONDS -lt ${end_time} ]; do
-        rds_instance_status=$(aws rds describe-db-instances --db-instance-identifier "${dest_rds_instance}" \
-            | jq -r '.DBInstances[0]|.DBInstanceStatus')
-
-        case "${rds_instance_status}" in
-            "")
-                # Empty string indicates the AWS command failed which indicates that the RDS instance hasn't been found
-                sleep 30
-                ;;
-            "rebooting")
-                sleep 10
-                ;;
-            "available")
-                break
-                ;;
-            *)
-                echo "Error while waiting for RDS instance '${current_rds_id}' to become available"
-                exit 99
-                ;;
-        esac
-    done
-    set -e
 }
 
 
 function promote_standby_db {
     info "Promoting RDS read replica '${DR_RDS_READ_REPLICA}'"
 
-    run aws --region ${AWS_REGION} rds promote-read-replica --db-instance-identifier "${DR_RDS_READ_REPLICA}" > /dev/null
-    run aws --region ${AWS_REGION} rds wait db-instance-available --db-instance-identifier "${DR_RDS_READ_REPLICA}"
+    run aws --region=${AWS_REGION} rds promote-read-replica --db-instance-identifier "${DR_RDS_READ_REPLICA}" > /dev/null
+    run aws --region=${AWS_REGION} rds wait db-instance-available --db-instance-identifier "${DR_RDS_READ_REPLICA}"
 
     success "Promoted RDS read replica '${DR_RDS_READ_REPLICA}'"
 }

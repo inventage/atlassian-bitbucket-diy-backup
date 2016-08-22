@@ -38,6 +38,10 @@ if [[ -e "${SCRIPT_DIR}/archive-${BACKUP_ARCHIVE_TYPE}.sh" ]]; then
     source "${SCRIPT_DIR}/archive-${BACKUP_ARCHIVE_TYPE}.sh"
 fi
 
+# Note that this prefix is used to delete old backups and if set improperly will delete incorrect backups on cleanup.
+SNAPSHOT_TAG_PREFIX="${INSTANCE_NAME}-"
+SNAPSHOT_TAG_VALUE="${SNAPSHOT_TAG_PREFIX}${BACKUP_TIME}"
+
 # Lock a Bitbucket instance for maintenance
 function lock_bitbucket {
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then

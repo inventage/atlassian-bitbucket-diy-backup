@@ -28,7 +28,7 @@ function prepare_restore_home {
     fi
 
     debug "Validating ZFS snapshot '${ZFS_HOME_TANK_NAME}@${restore_point}'"
-    run sudo zfs list -t snapshot -o name "${ZFS_HOME_TANK_NAME}@${restore_point}"
+    run sudo zfs list -t snapshot -o name "${ZFS_HOME_TANK_NAME}@${restore_point}" > /dev/null
 
     RESTORE_ZFS_SNAPSHOT="${ZFS_HOME_TANK_NAME}@${restore_point}"
 }
