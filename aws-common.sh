@@ -189,20 +189,20 @@ function create_and_attach_volume {
 
 # Validate the existence of a EBS snapshot
 #
-# snapshot_tag = The tag to search for
+# restore_point = The timestamp used to retrieve the EBS snapshot ID
 #
 function retrieve_ebs_snapshot_id {
-    local snapshot_tag="$1"
+    local restore_point="$1"
 
-    local snapshot_description=$(run aws ec2 describe-snapshots --filters Name=tag-key,Values="Name" \
-        Name=tag-value,Values="${snapshot_tag}")
+    local snapshot_description=$(run aws --region ${AWS_DEFAULT_REGION} ec2 describe-snapshots \
+        --filters Name=tag-value,Values="*${restore_point}")
 
     local snapshot_id=$(echo "${snapshot_description}" | jq -r '.Snapshots[0]?.SnapshotId')
     if [ -z "${snapshot_id}" -o "${snapshot_id}" = "null" ]; then
         error "Could not find a 'Snapshot' with 'SnapshotId' in response '${snapshot_description}'"
         # Get the list of available snapshot tags to assist with selecting a valid one
-        list_available_ebs_snapshot_tags
-        bail "Please select an available tag"
+        list_available_ebs_restore_points
+        bail "Please select an available EBS restore point"
     fi
     echo "${snapshot_id}"
 }
@@ -235,7 +235,7 @@ function snapshot_rds_instance {
 #
 function find_attached_ebs_volume {
     local device_name="${1}"
-    local volume_description=$(run aws ec2 describe-volumes --filter Name=attachment.instance-id,Values="${AWS_EC2_INSTANCE_ID}" \
+    local volume_description=$(run aws --region ${AWS_DEFAULT_REGION} ec2 describe-volumes --filter Name=attachment.instance-id,Values="${AWS_EC2_INSTANCE_ID}" \
             Name=attachment.device,Values="${device_name}")
 
     local ebs_volume=$(echo "${volume_description}" | jq -r '.Volumes[0].VolumeId')
@@ -253,7 +253,7 @@ function find_attached_ebs_volume {
 #
 function validate_rds_instance_id {
     local instance_id="$1"
-    local instance_description=$(run aws rds describe-db-instances --db-instance-identifier "${instance_id}")
+    local instance_description=$(run aws --region ${AWS_DEFAULT_REGION} rds describe-db-instances --db-instance-identifier "${instance_id}")
 
     local db_instance_status=$(echo "${instance_description}" | jq -r '.DBInstances[0].DBInstanceStatus')
     case "${db_instance_status}" in
@@ -272,33 +272,50 @@ function validate_rds_instance_id {
 
 # Verify the existence of a RDS snapshot
 #
-# snapshot_tag = The tag to search for
+# restore_point = The timestamp used to retrieve the RDS snapshot ID
 #
 function retrieve_rds_snapshot_id {
-    local snapshot_tag="$1"
-    local db_snapshot_description=$(run aws rds describe-db-snapshots --db-snapshot-identifier "${snapshot_tag}")
+    local restore_point="$1"
+    local db_snapshot_description=$(run aws --region ${AWS_DEFAULT_REGION} rds describe-db-snapshots \
+        --db-snapshot-identifier "${SNAPSHOT_TAG_PREFIX}${restore_point}")
 
     local rds_snapshot_id=$(echo "${db_snapshot_description}" | jq -r '.DBSnapshots[0]?.DBSnapshotIdentifier')
     if [ -z "${rds_snapshot_id}" -o "${rds_snapshot_id}" = "null" ]; then
         error "Could not find a 'DBSnapshot' with 'DBSnapshotIdentifier' in response '${db_snapshot_description}'"
         # To assist the with locating snapshot tags list the available EBS snapshot tags, and then bail
-        list_available_ebs_snapshot_tags
-        bail "Please select a tag with an associated RDS snapshot."
+        list_available_rds_restore_points
+        bail "Please select a restore point"
     fi
 
     echo "${rds_snapshot_id}"
 }
 
-# List available EBS snapshot tags
-function list_available_ebs_snapshot_tags {
-    local available_ebs_snapshot_tags=$(run aws ec2 describe-snapshots --region "${AWS_DEFAULT_REGION}" --filters Name=tag-key,Values="Name" Name=tag-value,Values="${SNAPSHOT_TAG_PREFIX}*" | jq -r ".Snapshots[].Tags[] | select(.Key == \"Name\") | .Value" | sort -r)
-    if [ -z "${available_ebs_snapshot_tags}" -o "${available_ebs_snapshot_tags}" = "null" ]; then
+# List available EBS restore points
+function list_available_ebs_restore_points {
+    local available_ebs_snapshots=$(run aws --region ${AWS_DEFAULT_REGION} ec2 describe-snapshots \
+        --region "${AWS_DEFAULT_REGION}" --filters Name=tag-key,Values="Name" Name=tag-value,Values="${SNAPSHOT_TAG_PREFIX}*"\
+        | jq -r ".Snapshots[].Tags[] | select(.Key == \"Name\") | .Value" | sort -r)
+    if [ -z "${available_ebs_snapshots}" -o "${available_ebs_snapshots}" = "null" ]; then
         error "Could not find 'Snapshots' with 'Tags' with 'Value' in response '${snapshot_description}'"
-        bail "Unable to retrieve list of available EBS snapshot tags"
+        bail "Unable to retrieve list of available EBS snapshots"
     fi
-    # Print a list of all snapshots tag values that start with the tag prefix
-    print "Available snapshot tags, ordered by most recent:"
-    print "${available_ebs_snapshot_tags}"
+
+    print "Available EBS restore points:"
+    print "${available_ebs_snapshots}"
+}
+
+# List available RDS restore points
+function list_available_rds_restore_points {
+    local available_rds_snapshots=$(run aws --region ${AWS_DEFAULT_REGION} rds describe-db-snapshots --region "${AWS_DEFAULT_REGION}" \
+        | jq -r '.DBSnapshots[] | select(.DBSnapshotIdentifier | contains("'${INSTANCE_NAME}'") ) \
+        | .DBSnapshotIdentifier' | sort -r | grep -o ".\{15\}$" )
+    if [ -z "${available_rds_snapshots}" -o "${available_rds_snapshots}" = "null" ]; then
+        error "Failed to retrieve RDS snapshots in response '${available_rds_snapshots}'"
+        bail "Unable to retrieve list of available RDS restore points"
+    fi
+
+    print "Available RDS restore points:"
+    print "${available_rds_snapshots}"
 }
 
 # List all RDS DB snapshots older than the most recent ${KEEP_BACKUPS}

@@ -74,6 +74,8 @@ function rename_rds_instance {
     local source_rds_instance="$1"
     local dest_rds_instance="$2"
 
+    info "Renaming RDS instance '${source_rds_instance}' to '${dest_rds_instance}'"
+
     # Rename existing rds instance
     run aws rds modify-db-instance --db-instance-identifier "${source_rds_instance}" \
         --new-db-instance-identifier "${dest_rds_instance}" --apply-immediately > /dev/null

@@ -42,15 +42,8 @@ function archive_backup {
 }
 
 function prepare_restore_archive {
-    local snapshot_tag="${1}"
-
-    if [ -z "${snapshot_tag}" ]; then
-        info "Usage: $0 <snapshot-tag>"
-
-        list_available_ebs_snapshot_tags
-
-        exit 99
-    fi
+    # AWS snapshots reside in AWS and do not need any un-archiving.
+    no_op
 }
 
 function restore_archive {
