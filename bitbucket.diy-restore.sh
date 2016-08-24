@@ -47,3 +47,7 @@ restore_home
 restore_db
 
 success "Successfully completed the restore of your ${PRODUCT} instance"
+
+if [ -n "${FINAL_MESSAGE}" ]; then
+    echo "${FINAL_MESSAGE}"
+fi

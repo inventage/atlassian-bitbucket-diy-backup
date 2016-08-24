@@ -14,23 +14,23 @@ function prepare_backup_home {
 }
 
 function backup_home {
-    run sudo zfs snapshot "${ZFS_HOME_TANK_NAME}@${BACKUP_TIME}"
+    run sudo zfs snapshot "${ZFS_HOME_TANK_NAME}@${SNAPSHOT_TAG_VALUE}"
 }
 
 function prepare_restore_home {
-    local restore_point="$1"
+    local snapshot_tag="$1"
 
-    if [ -z "${restore_point}" ]; then
-        zfs_restore_points=$(run sudo zfs list -H -t snapshot -o name | cut -d "@" -f2)
-        info "Available ZFS restore points:"
-        echo "${zfs_restore_points}"
-        bail "Please select a timestamp to restore"
+    if [ -z "${snapshot_tag}" ]; then
+        zfs_snapshots=$(run sudo zfs list -H -t snapshot -o name | cut -d "@" -f2)
+        info "Available ZFS snapshots:"
+        echo "${zfs_snapshots}"
+        bail "Please select a snapshot to restore"
     fi
 
-    debug "Validating ZFS snapshot '${ZFS_HOME_TANK_NAME}@${restore_point}'"
-    run sudo zfs list -t snapshot -o name "${ZFS_HOME_TANK_NAME}@${restore_point}" > /dev/null
+    debug "Validating ZFS snapshot '${snapshot_tag}'"
+    run sudo zfs list -t snapshot -o name "${ZFS_HOME_TANK_NAME}@${snapshot_tag}" > /dev/null
 
-    RESTORE_ZFS_SNAPSHOT="${ZFS_HOME_TANK_NAME}@${restore_point}"
+    RESTORE_ZFS_SNAPSHOT="${ZFS_HOME_TANK_NAME}@${snapshot_tag}"
 }
 
 function restore_home {
