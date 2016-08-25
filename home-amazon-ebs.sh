@@ -7,15 +7,8 @@ source "${SCRIPT_DIR}/aws-common.sh"
 
 function prepare_backup_home {
     # Validate that all the configuration parameters have been provided to avoid bailing out and leaving Bitbucket locked
-    if [ -z "${HOME_DIRECTORY_MOUNT_POINT}" ]; then
-        error "The home directory mount point must be set as HOME_DIRECTORY_MOUNT_POINT in ${BACKUP_VARS_FILE}"
-        bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
-    fi
-
-    if [ -z "${HOME_DIRECTORY_DEVICE_NAME}" ]; then
-        error "The home directory volume device name must be set as HOME_DIRECTORY_DEVICE_NAME in ${BACKUP_VARS_FILE}"
-        bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
-    fi
+    check_config_var "HOME_DIRECTORY_MOUNT_POINT"
+    check_config_var "HOME_DIRECTORY_DEVICE_NAME"
 
     BACKUP_HOME_DIRECTORY_VOLUME_ID="$(find_attached_ebs_volume "${HOME_DIRECTORY_DEVICE_NAME}")"
 
@@ -36,6 +29,13 @@ function backup_home {
 }
 
 function prepare_restore_home {
+    check_config_var "BITBUCKET_HOME"
+    check_config_var "BITBUCKET_UID"
+    check_config_var "AWS_AVAILABILITY_ZONE"
+    check_config_var "HOME_DIRECTORY_DEVICE_NAME"
+    check_config_var "HOME_DIRECTORY_MOUNT_POINT"
+    check_config_var "RESTORE_HOME_DIRECTORY_VOLUME_TYPE"
+
     local snapshot_tag="$1"
 
     if [ -z "${snapshot_tag}" ]; then
@@ -44,37 +44,10 @@ function prepare_restore_home {
         bail "Please select the tag for the snapshot that you wish to restore"
     fi
 
-    if [ -z "${BITBUCKET_HOME}" ]; then
-        error "The ${PRODUCT} home directory must be set as BITBUCKET_HOME in ${BACKUP_VARS_FILE}"
-        bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
-    fi
-
-    if [ -z "${BITBUCKET_UID}" ]; then
-        error "The ${PRODUCT} home directory owner account must be set as BITBUCKET_UID in ${BACKUP_VARS_FILE}"
-        bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
-    fi
-
-    if [ -z "${AWS_AVAILABILITY_ZONE}" ]; then
-        error "The availability zone for new volumes must be set as AWS_AVAILABILITY_ZONE in ${BACKUP_VARS_FILE}"
-        bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
-    fi
-
-    if [ -z "${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}" ]; then
-        error "The type of volume to create when restoring the home directory must be set as RESTORE_HOME_DIRECTORY_VOLUME_TYPE in ${BACKUP_VARS_FILE}"
-        bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
-    elif [ "io1" = "${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}" -a -z "${RESTORE_HOME_DIRECTORY_IOPS}" ]; then
-        error "The provisioned iops must be set as RESTORE_HOME_DIRECTORY_IOPS in ${BACKUP_VARS_FILE} when choosing 'io1' volume type for the home directory EBS volume"
-        bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
-    fi
-
-    if [ -z "${HOME_DIRECTORY_DEVICE_NAME}" ]; then
-        error "The home directory volume device name must be set as HOME_DIRECTORY_DEVICE_NAME in ${BACKUP_VARS_FILE}"
-        bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
-    fi
-
-    if [ -z "${HOME_DIRECTORY_MOUNT_POINT}" ]; then
-        error "The home directory mount point must be set as HOME_DIRECTORY_MOUNT_POINT in ${BACKUP_VARS_FILE}"
-        bail "See bitbucket.diy-backup.vars.sh.example for the defaults."
+    if [ "io1" = "${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}" ]; then
+        check_config_var "RESTORE_HOME_DIRECTORY_IOPS" \
+            "The provisioned IOPS must be set as RESTORE_HOME_DIRECTORY_IOPS in ${BACKUP_VARS_FILE} when choosing 'io1' \
+            volume type for the home directory EBS volume"
     fi
 
     BACKUP_HOME_DIRECTORY_VOLUME_ID="$(find_attached_ebs_volume "${HOME_DIRECTORY_DEVICE_NAME}")"
@@ -118,4 +91,20 @@ function cleanup_home_backups {
             run aws ec2 delete-snapshot --snapshot-id "${ebs_snapshot_id}" > /dev/null
         done
     fi
+}
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Disaster recovery functions
+# ----------------------------------------------------------------------------------------------------------------------
+
+function promote_home {
+    bail "Disaster recovery is not available with this home strategy"
+}
+
+function replicate_home {
+    bail "Disaster recovery is not available with this home strategy"
+}
+
+function setup_home_replication {
+    bail "Disaster recovery is not available with this home strategy"
 }

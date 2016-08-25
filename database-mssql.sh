@@ -24,3 +24,15 @@ function restore_db {
 function cleanup_db_backups {
     no_op
 }
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Disaster recovery functions
+# ----------------------------------------------------------------------------------------------------------------------
+
+function promote_db {
+    bail "Disaster recovery is not available with this database strategy"
+}
+
+function setup_db_replication {
+    bail "Disaster recovery is not available with this database strategy"
+}

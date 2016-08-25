@@ -7,11 +7,7 @@ source "${SCRIPT_DIR}/aws-common.sh"
 
 # Validate that the RDS_INSTANCE_ID variable has been set to a valid Amazon RDS instance
 function prepare_backup_db {
-    if [ -z "${RDS_INSTANCE_ID}" ]; then
-        error "The RDS instance id must be set in '${BACKUP_VARS_FILE}'"
-        bail "See 'bitbucket.diy-aws-backup.vars.sh.example' for the defaults."
-    fi
-
+    check_config_var "BACKUP_RDS_INSTANCE_ID"
     validate_rds_instance_id "${RDS_INSTANCE_ID}"
 }
 
@@ -22,21 +18,12 @@ function backup_db {
 }
 
 function prepare_restore_db {
-    local snapshot_tag="$1"
+    check_config_var "RESTORE_RDS_INSTANCE_ID"
+    check_config_var "RESTORE_RDS_INSTANCE_CLASS"
+    check_config_var "RESTORE_RDS_SUBNET_GROUP_NAME"
+    check_config_var "RESTORE_RDS_SECURITY_GROUP"
 
-    if [ -z "${RESTORE_RDS_INSTANCE_CLASS}" ]; then
-        info "No restore instance class has been set in '${BACKUP_VARS_FILE}'"
-    fi
-
-    if [ -z "${RESTORE_RDS_SUBNET_GROUP_NAME}" ]; then
-        info "No restore subnet group has been set in '${BACKUP_VARS_FILE}'"
-    fi
-
-    if [ -z "${RESTORE_RDS_SECURITY_GROUP}" ]; then
-        info "No restore security group has been set in '${BACKUP_VARS_FILE}'"
-    fi
-
-    RESTORE_RDS_SNAPSHOT_ID="$(retrieve_rds_snapshot_id "${snapshot_tag}")"
+    RESTORE_RDS_SNAPSHOT_ID="$(retrieve_rds_snapshot_id "$1")"
 }
 
 function restore_db {
@@ -109,16 +96,6 @@ function rename_rds_instance {
         --new-db-instance-identifier "${dest_rds_instance}" --apply-immediately > /dev/null
 }
 
-
-function promote_standby_db {
-    info "Promoting RDS read replica '${DR_RDS_READ_REPLICA}'"
-
-    run aws --region=${AWS_REGION} rds promote-read-replica --db-instance-identifier "${DR_RDS_READ_REPLICA}" > /dev/null
-    run aws --region=${AWS_REGION} rds wait db-instance-available --db-instance-identifier "${DR_RDS_READ_REPLICA}"
-
-    success "Promoted RDS read replica '${DR_RDS_READ_REPLICA}'"
-}
-
 function cleanup_db_backups {
     if [ "${KEEP_BACKUPS}" -gt 0 ]; then
         info "Cleaning up any old RDS snapshots and retaining only the most recent ${KEEP_BACKUPS}"
@@ -127,3 +104,22 @@ function cleanup_db_backups {
         done
     fi
 }
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Disaster recovery functions
+# ----------------------------------------------------------------------------------------------------------------------
+
+function promote_db {
+    info "Promoting RDS read replica '${DR_RDS_READ_REPLICA}'"
+
+    run aws --region=${AWS_REGION} rds promote-read-replica --db-instance-identifier "${DR_RDS_READ_REPLICA}" > /dev/null
+    run aws --region=${AWS_REGION} rds wait db-instance-available --db-instance-identifier "${DR_RDS_READ_REPLICA}"
+
+    success "Promoted RDS read replica '${DR_RDS_READ_REPLICA}'"
+}
+
+function setup_db_replication {
+    # Automatically configured when the standby DB has been launched as an Amazon RDS read replica of a primary
+    no_op
+}
+

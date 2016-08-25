@@ -16,6 +16,7 @@ BITBUCKET_GID=atlbitbucket
 #  - amazon-ebs           - Amazon EBS snapshots of the volume containing the home directory
 #  - rsync                - "rsync" of the home directory contents to a temporary location. NOTE: This can NOT be used
 #                           with BACKUP_ZERO_DOWNTIME=true.
+#  - zfs                  - Select the ZFS snapshot strategy for home directory backups.
 BACKUP_HOME_TYPE=rsync
 
 # Strategy for backing up the database:
@@ -69,7 +70,20 @@ case ${BACKUP_HOME_TYPE} in
     zfs)
         # The tank name that holds the file server data.
         # This must be the same name on the standby if using replication.
-        ZFS_HOME_TANK_NAME=tank/bitbucket-shared-home
+        ZFS_HOME_TANK_NAME=tank/atlassian-home
+
+        # ==== DISASTER RECOVERY VARS ====
+
+        # The user for SSH when running replication commands on the standby file server.
+        # Note this user needs password-less sudo on the standby to run zfs commands and password-less ssh from
+        # the primary file server to the standby file server.
+        STANDBY_SSH_USER=
+        # (Optional) Append flags to the SSH commands. e.g. "-i private_key.pem"
+        #            Useful flags for unattended ssh commands: -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+        STANDBY_SSH_OPTIONS=
+
+        # The hostname of the standby file server
+        STANDBY_SSH_HOST=
         ;;
 esac
 
@@ -85,6 +99,8 @@ case ${BACKUP_DATABASE_TYPE} in
         RESTORE_RDS_SUBNET_GROUP_NAME=
         # The security group to assign to the restored instance
         RESTORE_RDS_SECURITY_GROUP=
+
+        # ==== DISASTER RECOVERY VARS ====
 
         # In standby instances using RDS read replicas, set this variable to the RDS read replica instance id.
         # Only used on a Disaster Recovery standby system that has been configured with an RDS read replica of your primary system's RDS database.
@@ -102,19 +118,42 @@ case ${BACKUP_DATABASE_TYPE} in
         BITBUCKET_DB=bitbucket
         ;;
     postgresql)
+        # The connection details for your primary instance's PostgreSQL database.  The pg_hba.conf file must
+        # be configured to allow the backup and restore scripts full access as POSTGRES_USERNAME with the
+        # specified PGPASSWORD. When Disaster Recovery is used, POSTGRES_HOST must also be accessible from
+        # the standby system with the same level of access.
         BITBUCKET_DB=bitbucket
         POSTGRES_HOST=
         POSTGRES_USERNAME=
         export PGPASSWORD=
         POSTGRES_PORT=5432
 
-        # Make use of PostgreSQL 9.3+ options if available
-        psql_version="$(psql --version | awk '{print $3}')"
-        psql_majorminor="$(printf "%d%03d" $(echo "${psql_version}" | tr "." "\n" | sed 2q))"
-        if [[ ${psql_majorminor} -ge 9003 ]]; then
-            PG_PARALLEL="-j 5"
-            PG_SNAPSHOT_OPT="--no-synchronized-snapshots"
+        if which psql > /dev/null 2>&1; then
+            # Make use of PostgreSQL 9.3+ options if available
+            psql_version="$(psql --version | awk '{print $3}')"
+            psql_majorminor="$(printf "%d%03d" $(echo "${psql_version}" | tr "." "\n" | sed 2q))"
+            psql_major="$(echo ${psql_version} | tr -d '.' | cut -c 1-2)"
+            if [[ ${psql_majorminor} -ge 9003 ]]; then
+                PG_PARALLEL="-j 5"
+                PG_SNAPSHOT_OPT="--no-synchronized-snapshots"
+            fi
         fi
+
+        # ==== DISASTER RECOVERY VARS ====
+
+        # The full path to the standby server's PostgreSQL data folder. i.e "/var/lib/pgsql94/data"
+        # Note: Attempt auto-detection based on major version (Works with CentOS, RHEL and Amazon Linux, override if unsure)
+        STANDBY_DATABASE_DATA_DIR="/var/lib/pgsql${psql_major}/data"
+        # The user which runs the PostgreSQL system service. This is normally "postgres"
+        STANDBY_DATABASE_SERVICE_USER="postgres"
+        # The name of the replication slot
+        STANDBY_DATABASE_REPLICATION_SLOT_NAME="bitbucket"
+        # The username and password of the user that will be used to execute the replication.
+        STANDBY_DATABASE_REPLICATION_USER_USERNAME=
+        STANDBY_DATABASE_REPLICATION_USER_PASSWORD=
+        # The postgres service name for stopping / starting it.
+        # Note: Attempt auto-detection based on major version (Works with CentOS, RHEL and Amazon Linux, override if unsure)
+        STANDBY_DATABASE_SERVICE_NAME="postgresql${psql_major}"
         ;;
 esac
 
@@ -166,7 +205,7 @@ if [ "amazon-ebs" = "${BACKUP_HOME_TYPE}" -o "amazon-rds" = "${BACKUP_DATABASE_T
 fi
 
 # Used by the scripts for verbose logging. If not true only errors will be shown.
-BITBUCKET_VERBOSE_BACKUP=true
+BITBUCKET_VERBOSE_BACKUP=${BITBUCKET_VERBOSE_BACKUP:-true}
 
 # HipChat options
 HIPCHAT_URL=https://api.hipchat.com
@@ -175,15 +214,22 @@ HIPCHAT_TOKEN=
 
 # The number of backups to retain. After backups are taken, all old snapshots except for the most recent
 # ${KEEP_BACKUPS} are deleted.  Set to 0 to disable cleanup of old snapshots.
+# This is also used by Disaster Recovery to limit snapshots.
 KEEP_BACKUPS=0
 
 # ==== DISASTER RECOVERY VARS ====
+
 # Only used on a Bitbucket Data Center primary instance which has been configured with a Disaster Recovery standby system.
 # See https://confluence.atlassian.com/display/BitbucketServer/Bitbucket+Data+Center+disaster+recovery for more information.
-
-# The hostname or IP that the primary can use to SSH to run replication commands.
-STANDBY=
-# The user to SSH as when running replication commands from the primary. Note this user needs sudo access to run zfs commands.
-STANDBY_SSH_USER=
-# (Optional) Append flags to the SSH commands. e.g. "-i private_key.pem"
-SSH_FLAGS=
+# The JDBC URL for the STANDBY database server.
+# WARNING: It is imperative that you set this to the correct JDBC URL for your STANDBY database.
+# During fail-over, 'promote-home.sh' will write this to your 'bitbucket.properties' file so that
+# your standby Bitbucket instance will connect to the right database. If this is incorrect, then
+# in a fail-over scenario your standby Bitbucket instance may fail to start or even connect to the
+# incorrect database.
+#
+# Example for PostgreSQL:
+#           "jdbc:postgres://standby-db.my-company.com:${POSTGRES_PORT}/${BITBUCKET_DB}"
+# Example for PostgreSQL running in Amazon RDS
+#           jdbc:postgres://${RDS_ENDPOINT}/${BITBUCKET_DB}
+STANDBY_JDBC_URL=

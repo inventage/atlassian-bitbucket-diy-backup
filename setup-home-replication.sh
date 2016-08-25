@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # -------------------------------------------------------------------------------------
-# The Disaster Recovery script to promote a standby Bitbucket Data Center instance.
+# The Disaster Recovery script to configure Bitbucket Data Center home replication for DR
 #
 # Ensure you are using this script in accordance with the following document:
 # https://confluence.atlassian.com/display/BitbucketServer/Bitbucket+Data+Center+disaster+recovery
@@ -17,16 +17,7 @@ set -e
 SCRIPT_DIR=$(dirname "$0")
 source "${SCRIPT_DIR}/utils.sh"
 source "${SCRIPT_DIR}/common.sh"
+source_home_strategy
 
 ##########################################################
-
-info "Promoting standby Bitbucket Data Center"
-
-promote_standby_db
-promote_standby_home
-
-success "Successfully promoted standby instance"
-
-info "This script may have appended properties to your ${BITBUCKET_HOME}shared/bitbucket.properties file,
- please check this file before continuing the failover process."
-info "Ensure you continue the failover steps to successfully failover to your standby instance"
+setup_home_replication
