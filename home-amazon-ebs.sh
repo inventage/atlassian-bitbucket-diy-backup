@@ -33,6 +33,8 @@ function backup_home {
 
     # Unfreeze the home directory as soon as the EBS snapshot has been taken
     unfreeze_home_directory
+
+    add_cleanup_routine cleanup_home_backups
 }
 
 function prepare_restore_home {
@@ -109,4 +111,13 @@ function unfreeze_home_directory {
     remove_cleanup_routine unfreeze_home_directory
 
     unfreeze_mount_point "${HOME_DIRECTORY_MOUNT_POINT}"
+}
+
+function cleanup_home_backups {
+    if [ "${KEEP_BACKUPS}" -gt 0 ]; then
+        info "Cleaning up any old EBS snapshots and retaining only the most recent ${KEEP_BACKUPS}"
+        for ebs_snapshot_id in $(list_old_ebs_snapshot_ids "${AWS_REGION}"); do
+            run aws ec2 delete-snapshot --snapshot-id "${ebs_snapshot_id}" > /dev/null
+        done
+    fi
 }

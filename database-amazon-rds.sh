@@ -19,6 +19,7 @@ function prepare_backup_db {
 function backup_db {
     info "Performing backup of RDS instance '${RDS_INSTANCE_ID}'"
     snapshot_rds_instance "${RDS_INSTANCE_ID}"
+    add_cleanup_routine cleanup_db_backups
 }
 
 function prepare_restore_db {
@@ -117,4 +118,13 @@ function promote_standby_db {
     run aws --region=${AWS_REGION} rds wait db-instance-available --db-instance-identifier "${DR_RDS_READ_REPLICA}"
 
     success "Promoted RDS read replica '${DR_RDS_READ_REPLICA}'"
+}
+
+function cleanup_db_backups {
+    if [ "${KEEP_BACKUPS}" -gt 0 ]; then
+        info "Cleaning up any old RDS snapshots and retaining only the most recent ${KEEP_BACKUPS}"
+        for snapshot_id in $(list_old_rds_snapshot_ids "${AWS_REGION}"); do
+            run aws rds delete-db-snapshot --db-snapshot-identifier "${snapshot_id}" > /dev/null
+        done
+    fi
 }
