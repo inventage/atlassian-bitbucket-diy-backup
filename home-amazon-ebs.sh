@@ -33,8 +33,6 @@ function backup_home {
 
     # Unfreeze the home directory as soon as the EBS snapshot has been taken
     unfreeze_home_directory
-
-    add_cleanup_routine cleanup_home_backups
 }
 
 function prepare_restore_home {

@@ -28,3 +28,7 @@ function prepare_restore_db {
 function restore_db {
     run mysql "${MYSQL_HOST_CMD}" -u "${MYSQL_USERNAME}" -p"${MYSQL_PASSWORD}" < "${BITBUCKET_RESTORE_DB}"
 }
+
+function cleanup_db_backups {
+    no_op
+}

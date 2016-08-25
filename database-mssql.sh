@@ -20,3 +20,7 @@ function prepare_restore_db {
 function restore_db {
     no_op
 }
+
+function cleanup_db_backups {
+    no_op
+}

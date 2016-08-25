@@ -33,3 +33,7 @@ function restore_db {
     run pg_restore -U "${POSTGRES_USERNAME}" -h "${POSTGRES_HOST}" --port=${POSTGRES_PORT} -d postgres -C -Fd \
         ${PG_PARALLEL} "${BITBUCKET_RESTORE_DB}"
 }
+
+function cleanup_db_backups {
+    no_op
+}

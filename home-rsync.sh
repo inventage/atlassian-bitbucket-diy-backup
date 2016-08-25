@@ -49,3 +49,7 @@ function perform_rsync {
         ${rsync_exclude_repos} \
         "${BITBUCKET_HOME}" "${BITBUCKET_BACKUP_HOME}"
 }
+
+function cleanup_home_backups {
+    no_op
+}

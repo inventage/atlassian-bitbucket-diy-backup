@@ -33,3 +33,7 @@ function restore_db {
     # to do any work.  All we need to do is start the service back up again.
     sudo service postgresql93 start
 }
+
+function cleanup_db_backups {
+    no_op
+}

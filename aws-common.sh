@@ -191,7 +191,8 @@ function create_and_attach_volume {
 function retrieve_ebs_snapshot_id {
     local snapshot_tag="$1"
 
-    local snapshot_description=$(run aws ec2 describe-snapshots --filters Name=tag-value,Values="${snapshot_tag}")
+    local snapshot_description=$(run aws ec2 describe-snapshots --filters Name=tag-key,Values="${SNAPSHOT_TAG_KEY}" \
+        Name=tag-value,Values="${snapshot_tag}")
 
     local snapshot_id=$(echo "${snapshot_description}" | jq -r '.Snapshots[0]?.SnapshotId')
     if [ -z "${snapshot_id}" -o "${snapshot_id}" = "null" ]; then

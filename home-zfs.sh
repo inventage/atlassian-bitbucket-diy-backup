@@ -92,3 +92,7 @@ function cleanup_primary_snapshots {
     run sudo zfs list -H -t snapshot -o name -S creation | grep ${ZFS_HOME_TANK_NAME} | tail -n +${KEEP_BACKUPS} \
         | xargs -rn 1 sudo zfs destroy
 }
+
+function cleanup_home_backups {
+    no_op
+}

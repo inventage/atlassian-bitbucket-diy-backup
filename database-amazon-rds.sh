@@ -19,7 +19,6 @@ function prepare_backup_db {
 function backup_db {
     info "Performing backup of RDS instance '${RDS_INSTANCE_ID}'"
     snapshot_rds_instance "${RDS_INSTANCE_ID}"
-    add_cleanup_routine cleanup_db_backups
 }
 
 function prepare_restore_db {
