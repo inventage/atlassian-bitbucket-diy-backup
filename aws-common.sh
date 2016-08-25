@@ -349,10 +349,8 @@ function list_available_ebs_snapshot_tags {
 #
 function list_old_rds_snapshot_ids {
     local region=$1
-    run aws rds describe-db-snapshots --region "${region}" --snapshot-type manual | \
-        jq -r ".DBSnapshots | map(select(.DBSnapshotIdentifier | \
-        startswith(\"${SNAPSHOT_TAG_PREFIX}\"))) | sort_by(.SnapshotCreateTime) | reverse | .[${KEEP_BACKUPS}:] | \
-        map(.DBSnapshotIdentifier)[]"
+    run aws --output=text rds describe-db-snapshots --region "${region}" --snapshot-type manual \
+      --query "reverse(sort_by(DBSnapshots[?starts_with(DBSnapshotIdentifier, \`${SNAPSHOT_TAG_PREFIX}\`)]|[?Status==\`available\`], &SnapshotCreateTime))[${KEEP_BACKUPS}:].DBSnapshotIdentifier"
 }
 
 # List all EBS snapshots older than the most recent ${KEEP_BACKUPS}
