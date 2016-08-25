@@ -5,6 +5,10 @@
 check_command "tar"
 
 function archive_backup {
+    check_config_var "BITBUCKET_BACKUP_ARCHIVE_ROOT"
+    check_config_var "INSTANCE_NAME"
+    check_config_var "BITBUCKET_BACKUP_ROOT"
+
     mkdir -p "${BITBUCKET_BACKUP_ARCHIVE_ROOT}"
     BITBUCKET_BACKUP_ARCHIVE_NAME="${INSTANCE_NAME}-${BACKUP_TIME}.tar.gz"
     run tar -czf "${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}" -C "${BITBUCKET_BACKUP_ROOT}" .
@@ -33,6 +37,10 @@ function prepare_restore_archive {
     if [ -e "${BITBUCKET_HOME}" ]; then
         bail "Cannot restore over existing contents of '${BITBUCKET_HOME}'. Please rename or delete this first."
     fi
+
+    check_config_var "BITBUCKET_UID"
+    check_config_var "BITBUCKET_GID"
+
     run mkdir -p "${BITBUCKET_HOME}"
     run chown "${BITBUCKET_UID}":"${BITBUCKET_GID}" "${BITBUCKET_HOME}"
 
@@ -43,6 +51,9 @@ function prepare_restore_archive {
 }
 
 function restore_archive {
+    check_config_var "BITBUCKET_BACKUP_ARCHIVE_ROOT"
+    check_var "BITBUCKET_BACKUP_ARCHIVE_NAME"
+    check_var "BITBUCKET_RESTORE_ROOT"
     run tar -xzf "${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}" -C "${BITBUCKET_RESTORE_ROOT}"
 }
 
@@ -52,6 +63,7 @@ function cleanup_old_archives {
 }
 
 function available_backups {
-	print "Available backups:"
-	ls "${BITBUCKET_BACKUP_ARCHIVE_ROOT}"
+    check_config_var "BITBUCKET_BACKUP_ARCHIVE_ROOT"
+    print "Available backups:"
+    ls "${BITBUCKET_BACKUP_ARCHIVE_ROOT}"
 }

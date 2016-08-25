@@ -23,13 +23,26 @@ function backup_db {
 }
 
 function prepare_restore_db {
+    check_config_var "STANDBY_DATABASE_SERVICE_NAME"
     # Since the whole database is restored implicitly as part of the file system volume, this function doesn't need
     # to do any work.  All we need to do is stop the service beforehand.
-    sudo service postgresql93 stop
+    run sudo service "${STANDBY_DATABASE_SERVICE_NAME}" stop
 }
 
 function restore_db {
     # Since the whole database is restored implicitly as part of the file system volume, this function doesn't need
     # to do any work.  All we need to do is start the service back up again.
-    sudo service postgresql93 start
+    run sudo service "${STANDBY_DATABASE_SERVICE_NAME}" start
+}
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Disaster recovery functions
+# ----------------------------------------------------------------------------------------------------------------------
+
+function promote_db {
+    bail "Disaster recovery is not available with this database strategy"
+}
+
+function setup_db_replication {
+    bail "Disaster recovery is not available with this database strategy"
 }

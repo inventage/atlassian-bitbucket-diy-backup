@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # -------------------------------------------------------------------------------------
-# The replicate-to-standby script, invoked on the primary Bitbucket Data Center instance to replicate
-# the file system and database to the standby.
+# The Disaster Recovery script to promote a standby Bitbucket Data Center file server.
 #
 # Ensure you are using this script in accordance with the following document:
 # https://confluence.atlassian.com/display/BitbucketServer/Bitbucket+Data+Center+disaster+recovery
 #
-# It requires a properly configured bitbucket.diy-backup.vars.sh file,
-# which can be copied and customized from bitbucket.diy-backup.vars.sh.example.
+# It requires the following configuration file:
+#   bitbucket.diy-backup.vars.sh
+#   which can be copied from bitbucket.diy-backup.vars.sh.example and customized.
 # -------------------------------------------------------------------------------------
 
 # Ensure the script terminates whenever a required operation encounters an error
@@ -17,7 +17,7 @@ set -e
 SCRIPT_DIR=$(dirname "$0")
 source "${SCRIPT_DIR}/utils.sh"
 source "${SCRIPT_DIR}/common.sh"
+source_home_strategy
 
 ##########################################################
-
-replicate_home
+promote_home

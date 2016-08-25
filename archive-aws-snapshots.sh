@@ -9,6 +9,9 @@
 # snapshot with another AWS account.
 # -------------------------------------------------------------------------------------
 
+check_command "aws"
+check_command "jq"
+
 function archive_backup {
     # AWS snapshots reside in AWS and do not need to be archived.
 

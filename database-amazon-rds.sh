@@ -7,11 +7,7 @@ source "${SCRIPT_DIR}/aws-common.sh"
 
 # Validate that the BACKUP_RDS_INSTANCE_ID variable has been set to a valid Amazon RDS instance
 function prepare_backup_db {
-    if [ -z "${BACKUP_RDS_INSTANCE_ID}" ]; then
-        error "The RDS instance id must be set in '${BACKUP_VARS_FILE}'"
-        bail "See 'bitbucket.diy-aws-backup.vars.sh.example' for the defaults."
-    fi
-
+    check_config_var "BACKUP_RDS_INSTANCE_ID"
     validate_rds_instance_id "${BACKUP_RDS_INSTANCE_ID}"
 }
 
@@ -22,22 +18,10 @@ function backup_db {
 }
 
 function prepare_restore_db {
-    if [ -z "${RESTORE_RDS_INSTANCE_ID}" ]; then
-        error "The RDS instance id must be set in '${BACKUP_VARS_FILE}'"
-        bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
-    fi
-
-    if [ -z "${RESTORE_RDS_INSTANCE_CLASS}" ]; then
-        info "No restore instance class has been set in '${BACKUP_VARS_FILE}'"
-    fi
-
-    if [ -z "${RESTORE_RDS_SUBNET_GROUP_NAME}" ]; then
-        info "No restore subnet group has been set in '${BACKUP_VARS_FILE}'"
-    fi
-
-    if [ -z "${RESTORE_RDS_SECURITY_GROUP}" ]; then
-        info "No restore security group has been set in '${BACKUP_VARS_FILE}'"
-    fi
+    check_config_var "RESTORE_RDS_INSTANCE_ID"
+    check_config_var "RESTORE_RDS_INSTANCE_CLASS"
+    check_config_var "RESTORE_RDS_SUBNET_GROUP_NAME"
+    check_config_var "RESTORE_RDS_SECURITY_GROUP"
 }
 
 function restore_db {
@@ -46,8 +30,11 @@ function restore_db {
     info "Performed restore of '${RESTORE_RDS_SNAPSHOT_ID}' to RDS instance '${RESTORE_RDS_INSTANCE_ID}'"
 }
 
+# ----------------------------------------------------------------------------------------------------------------------
+# Disaster recovery functions
+# ----------------------------------------------------------------------------------------------------------------------
 
-function promote_standby_db {
+function promote_db {
     info "Promoting RDS read replica '${DR_RDS_READ_REPLICA}'"
 
     run aws --region ${AWS_REGION} rds promote-read-replica --db-instance-identifier "${DR_RDS_READ_REPLICA}" > /dev/null
@@ -55,3 +42,9 @@ function promote_standby_db {
 
     success "Promoted RDS read replica '${DR_RDS_READ_REPLICA}'"
 }
+
+function setup_db_replication {
+    # Automatically configured when the standby DB has been launched as an Amazon RDS read replica of a primary
+    no_op
+}
+

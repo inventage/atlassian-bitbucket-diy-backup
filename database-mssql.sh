@@ -20,3 +20,15 @@ function prepare_restore_db {
 function restore_db {
     no_op
 }
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Disaster recovery functions
+# ----------------------------------------------------------------------------------------------------------------------
+
+function promote_db {
+    bail "Disaster recovery is not available with this database strategy"
+}
+
+function setup_db_replication {
+    bail "Disaster recovery is not available with this database strategy"
+}
