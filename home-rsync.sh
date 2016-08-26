@@ -58,6 +58,7 @@ function perform_rsync {
 }
 
 function cleanup_home_backups {
+     # Not required as old backups with this strategy are typically cleaned up in the archiving strategy.
     no_op
 }
 

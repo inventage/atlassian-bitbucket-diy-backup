@@ -48,5 +48,6 @@ function setup_db_replication {
 }
 
 function cleanup_db_backups {
+    # Not required as the database is backed up implicitly as part of the file system volume.
     no_op
 }

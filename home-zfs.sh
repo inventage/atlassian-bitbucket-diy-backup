@@ -64,7 +64,6 @@ function replicate_home {
 
     if [ "${KEEP_BACKUPS}" -gt 0 ]; then
         cleanup_standby_snapshots
-        cleanup_primary_snapshots
     fi
 }
 
@@ -182,17 +181,6 @@ fi"
     debug $(run ssh ${STANDBY_SSH_OPTIONS} "${STANDBY_SSH_USER}@${STANDBY_SSH_HOST}" "${script}")
 }
 
-function cleanup_primary_snapshots {
-    # Cleanup all ZFS snapshots except latest ${KEEP_BACKUPS}
-    debug "Getting a list of snapshots to delete from the primary file server"
-    local old_snapshots=$(run sudo zfs list -H -t snapshot -o name -S creation | grep ${ZFS_HOME_TANK_NAME} | tail -n +${KEEP_BACKUPS})
-    if [ -n "${old_snapshots}" ]; then
-        debug "Destroying primary snapshots: ${old_snapshots}"
-        echo "${old_snapshots}" | xargs -n 1 sudo zfs destroy
-    else
-        debug "No snapshots to clean found"
-    fi
-}
 
 function get_latest_snapshot {
     run sudo zfs list -H -t snapshot -o name -S creation | grep -m1 "${ZFS_HOME_TANK_NAME}"
@@ -208,5 +196,15 @@ function mount_zfs_filesystem {
 }
 
 function cleanup_home_backups {
-    no_op
+    if [ "${KEEP_BACKUPS}" -gt 0 ]; then
+        # Cleanup all ZFS snapshots except latest ${KEEP_BACKUPS}
+        debug "Getting a list of snapshots to delete"
+        local old_snapshots=$(run sudo zfs list -H -t snapshot -o name -S creation | grep ${ZFS_HOME_TANK_NAME} | tail -n +${KEEP_BACKUPS})
+        if [ -n "${old_snapshots}" ]; then
+            debug "Destroying snapshots: ${old_snapshots}"
+            echo "${old_snapshots}" | xargs -n 1 sudo zfs destroy
+        else
+            debug "No snapshots to clean"
+        fi
+    fi
 }
