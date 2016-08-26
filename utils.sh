@@ -42,10 +42,10 @@ function check_config_var {
     local conf_bail_message="$3"
 
     if [ -z "${conf_error_message}" ]; then
-        error_message="The configuration var '${conf_var_name}' is required, please update '${BACKUP_VARS_FILE}'."
+        conf_error_message="The configuration var '${conf_var_name}' is required, please update '${BACKUP_VARS_FILE}'."
     fi
     if [ -z "${conf_bail_message}" ]; then
-        bail_message="See bitbucket.diy-backup.vars.sh.example for the defaults and instructions."
+        conf_bail_message="See bitbucket.diy-backup.vars.sh.example for the defaults and instructions."
     fi
 
     check_var "${conf_var_name}" "${conf_error_message}" "${conf_bail_message}"
