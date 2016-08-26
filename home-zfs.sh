@@ -122,16 +122,13 @@ function setup_home_replication {
     mount_zfs_filesystem
 
     success "Home replication has been set up successfully."
-    echo -e "$(cat << EOF
-\n
-To continuously replicate from the primary to the standby you can configure a cron entry execute 'replicate-home.sh' every minute.\n
-An example of what the cron tab cload look like:\n
-MAILTO="administrator@company.com" # Sets the destination email, provided you have set up mail delivery correctly
-* * * * * BITBUCKET_VERBOSE_BACKUP=false ${SCRIPT_DIR}/replicate-home.sh\n
-To test the replication, simply execute 'replicate-home.sh' from the command line.\n
-${SCRIPT_DIR}/replicate-home.sh\n
-EOF
-)"
+    print
+    print "To continuously replicate from the primary to the standby you can configure a"
+    print "crontab entry to run 'replicate-home.sh' every minute. For example:"
+    print "    MAILTO=\"administrator@company.com\""
+    print "    * * * * * BITBUCKET_VERBOSE_BACKUP=false ${SCRIPT_DIR}/replicate-home.sh"
+    print "To test the replication manually, just run"
+    print "    ${SCRIPT_DIR}/replicate-home.sh"
 }
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -174,9 +171,9 @@ function send_initial_snapshot_to_standby {
 function cleanup_standby_snapshots {
     # Cleanup all ZFS snapshots except latest ${KEEP_BACKUPS}
     local script="OLD_SNAPSHOTS=\$(sudo zfs list -H -t snapshot -o name -S creation | grep ${ZFS_HOME_TANK_NAME} | tail -n +${KEEP_BACKUPS})
-if [ -n "\${OLD_SNAPSHOTS}" ]; then
-    echo "Destroying standby snapshots: \${OLD_SNAPSHOTS}"
-    echo "\${OLD_SNAPSHOTS}" | xargs -n 1 sudo zfs destroy
+if [ -n \"\${OLD_SNAPSHOTS}\" ]; then
+    echo \"Destroying standby snapshots: \${OLD_SNAPSHOTS}\"
+    echo \"\${OLD_SNAPSHOTS}\" | xargs -n 1 sudo zfs destroy
 fi"
     debug "Cleaning up old snapshots in standby file server '${STANDBY_SSH_HOST}'"
     debug $(run ssh ${STANDBY_SSH_OPTIONS} "${STANDBY_SSH_USER}@${STANDBY_SSH_HOST}" "${script}")
