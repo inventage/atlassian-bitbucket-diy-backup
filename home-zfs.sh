@@ -1,5 +1,9 @@
 # -------------------------------------------------------------------------------------
 # A backup and restore strategy using ZFS
+#
+# Please consult the following documentation about administering ZFS:
+#           http://open-zfs.org/wiki/System_Administration
+#
 # -------------------------------------------------------------------------------------
 
 check_command "zfs"

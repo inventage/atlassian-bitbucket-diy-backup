@@ -33,6 +33,18 @@ BACKUP_DATABASE_TYPE=postgresql
 #  - tar                  - Unix "tar" archive
 BACKUP_ARCHIVE_TYPE=tar
 
+
+# Strategy for backing up Elasticsearch:
+#  - <leave blank>        - Don't back up Elasticsearch
+#  - amazon-s3            - Make use of a Amazon S3 bucket
+#  - shared-filesystem    - Make use of a shared filesystem
+#
+# NOTE: all Elasticsearch data and master nodes MUST mount the shared file system to the same mount point.
+#       See https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-snapshots.html for more information
+#
+BACKUP_ELASTICSEARCH_TYPE=
+
+
 # If BACKUP_ZERO_DOWNTIME is set to true, the home directory and database will be backed up WITHOUT locking Bitbucket
 # in maintenance mode. NOTE: This can NOT be used with Bitbucket Server versions older than 4.8. For more information,
 # see https://confluence.atlassian.com/display/BitbucketServer/Using+Bitbucket+Zero+Downtime+Backup.
@@ -212,6 +224,19 @@ HIPCHAT_TOKEN=
 # ${KEEP_BACKUPS} are deleted.  Set to 0 to disable cleanup of old snapshots.
 # This is also used by Disaster Recovery to limit snapshots.
 KEEP_BACKUPS=0
+
+# ==== Elasticsearch VARS ====
+
+ELASTICSEARCH_INDEX_NAME="bitbucket-search-v1"
+# The hostname and port for the primary Elasticsearch server / Elasticsearch load balancer
+ELASTICSEARCH_HOST=
+STANDBY_ELASTICSEARCH_HOST=
+ELASTICSEARCH_PORT=
+# Elasticsearch credentials in the format: -u "username:password"
+ELASTICSEARCH_CREDENTIALS=
+ELASTICSEARCH_REPOSITORY_NAME=
+ELASTICSEARCH_S3_BUCKET=
+ELASTICSEARCH_S3_BUCKET_REGION=
 
 # ==== DISASTER RECOVERY VARS ====
 
