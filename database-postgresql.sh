@@ -5,8 +5,6 @@
 check_command "pg_dump"
 check_command "psql"
 check_command "pg_restore"
-check_command "pg_ctl"
-check_command "pg_basebackup"
 
 function prepare_backup_db {
     check_config_var "BITBUCKET_BACKUP_DB"
@@ -52,6 +50,8 @@ function restore_db {
 
 # Promote a standby database to take over from the primary, as part of a disaster recovery failover process
 function promote_db {
+    check_command "pg_ctl"
+
     check_config_var "STANDBY_DATABASE_SERVICE_USER"
     check_config_var "STANDBY_DATABASE_REPLICATION_USER_USERNAME"
     check_config_var "STANDBY_DATABASE_REPLICATION_USER_PASSWORD"
@@ -85,6 +85,8 @@ function promote_db {
 # Configures a standby PostgreSQL database (which must be accessible locally by the "pg_basebackup" command) to
 # replicate from the primary PostgreSQL database specified by the POSTGRES_HOST, POSTGRES_DB, etc. variables.
 function setup_db_replication {
+    check_command "pg_basebackup"
+
     check_config_var "POSTGRES_HOST"
     # Checks to see if the primary instance is set up for replication
     info "Checking primary PostgreSQL server '${POSTGRES_HOST}'"
