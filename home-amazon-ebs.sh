@@ -40,7 +40,7 @@ function prepare_restore_home {
 
     if [ -z "${snapshot_tag}" ]; then
         # Get the list of available snapshot tags to assist with selecting a valid one
-        list_available_ebs_snapshot_tags
+        list_available_ebs_snapshots
         bail "Please select the tag for the snapshot that you wish to restore"
     fi
 

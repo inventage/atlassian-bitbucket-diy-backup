@@ -132,7 +132,7 @@ function wait_attached_volume {
 
     # 60 Minutes
     local max_wait_time=3600
-    local end_time=$((SECONDS+max_wait_time))
+    local end_time=$(($SECONDS + max_wait_time))
 
     local attachment_state='attaching'
     while [ $SECONDS -lt ${end_time} ]; do

@@ -7,7 +7,7 @@ source "${SCRIPT_DIR}/aws-common.sh"
 
 # Validate that the RDS_INSTANCE_ID variable has been set to a valid Amazon RDS instance
 function prepare_backup_db {
-    check_config_var "BACKUP_RDS_INSTANCE_ID"
+    check_config_var "RDS_INSTANCE_ID"
     validate_rds_instance_id "${RDS_INSTANCE_ID}"
 }
 
@@ -18,10 +18,7 @@ function backup_db {
 }
 
 function prepare_restore_db {
-    check_config_var "RESTORE_RDS_INSTANCE_ID"
-    check_config_var "RESTORE_RDS_INSTANCE_CLASS"
-    check_config_var "RESTORE_RDS_SUBNET_GROUP_NAME"
-    check_config_var "RESTORE_RDS_SECURITY_GROUP"
+    check_config_var "RDS_INSTANCE_ID"
 
     RESTORE_RDS_SNAPSHOT_ID="$(retrieve_rds_snapshot_id "$1")"
 }
@@ -36,17 +33,17 @@ function restore_db {
         optional_args="${optional_args} --db-subnet-group-name ${RESTORE_RDS_SUBNET_GROUP_NAME}"
     fi
 
-    local date_postfix=$(date +"%Y%m%d-%H%M%S")
-    local renamed_rds_instance="${RDS_INSTANCE_ID}-${date_postfix}"
-    $(rename_rds_instance "${RDS_INSTANCE_ID}" "${renamed_rds_instance}")
+    local renamed_rds_instance="${RDS_INSTANCE_ID}-${TIMESTAMP}"
+    rename_rds_instance "${RDS_INSTANCE_ID}" "${renamed_rds_instance}"
 
     FINAL_MESSAGE+=$'RDS Instance '${RDS_INSTANCE_ID}$' has been renamed to '${renamed_rds_instance}$'\n'
+    FINAL_MESSAGE+=$'Note that if this instance was serving as a RDS Read master then you will need to re-provision the read replicas\n'
 
     info "Attempting to restore RDS snapshot '${RESTORE_RDS_SNAPSHOT_ID}' as RDS instance '${RDS_INSTANCE_ID}'"
 
     # Bail after 10 Minutes
     local max_wait_time=600
-    local end_time=$((SECONDS+max_wait_time))
+    local end_time=$(($SECONDS + max_wait_time))
 
     set +e
     while [ $SECONDS -lt ${end_time} ]; do
@@ -62,7 +59,7 @@ function restore_db {
                 ;;
             *)
                 # Non-zero indicates the AWS command failed
-                sleep 30
+                sleep 10
                 ;;
         esac
     done

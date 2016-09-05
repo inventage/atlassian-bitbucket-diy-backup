@@ -93,8 +93,10 @@ case ${BACKUP_DATABASE_TYPE} in
         # RDS instance ID of the database to backup
         RDS_INSTANCE_ID=
 
+        # === Optionals ===
+        
         # The instance class to use when restoring the database
-        RESTORE_RDS_INSTANCE_CLASS=db.r3.large
+        RESTORE_RDS_INSTANCE_CLASS=
         # The subnet in which the database will be restored
         RESTORE_RDS_SUBNET_GROUP_NAME=
         # The security group to assign to the restored instance
