@@ -7,7 +7,7 @@
 PRODUCT=Bitbucket
 BACKUP_VARS_FILE=${BACKUP_VARS_FILE:-"${SCRIPT_DIR}"/bitbucket.diy-backup.vars.sh}
 PATH=$PATH:/sbin:/usr/sbin:/usr/local/bin
-BACKUP_TIME=$(date +"%Y%m%d-%H%M%S")
+TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
 
 if [ -f "${BACKUP_VARS_FILE}" ]; then
     source "${BACKUP_VARS_FILE}"
@@ -16,6 +16,11 @@ else
     error "'${BACKUP_VARS_FILE}' not found"
     bail "You should create it using '${SCRIPT_DIR}/bitbucket.diy-backup.vars.sh.example' as a template"
 fi
+
+# Note that this prefix is used to delete old backups and if set improperly will delete incorrect backups on cleanup.
+SNAPSHOT_TAG_PREFIX="${INSTANCE_NAME}-"
+SNAPSHOT_TAG_VALUE="${SNAPSHOT_TAG_PREFIX}${TIMESTAMP}"
+
 
 # Lock a Bitbucket instance for maintenance
 function lock_bitbucket {

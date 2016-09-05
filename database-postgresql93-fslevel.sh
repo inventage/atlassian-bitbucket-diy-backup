@@ -46,3 +46,8 @@ function promote_db {
 function setup_db_replication {
     bail "Disaster recovery is not available with this database strategy"
 }
+
+function cleanup_db_backups {
+    # Not required as the database is backed up implicitly as part of the file system volume.
+    no_op
+}

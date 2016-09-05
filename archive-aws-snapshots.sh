@@ -45,24 +45,8 @@ function archive_backup {
 }
 
 function prepare_restore_archive {
-    local snapshot_tag="${1}"
-
-    if [ -z "${snapshot_tag}" ]; then
-        info "Usage: $0 <snapshot-tag>"
-
-        list_available_ebs_snapshot_tags
-
-        exit 99
-    fi
-
-    BACKUP_HOME_DIRECTORY_VOLUME_ID="$(find_attached_ebs_volume "${HOME_DIRECTORY_DEVICE_NAME}")"
-
-    RESTORE_HOME_DIRECTORY_SNAPSHOT_ID=
-    validate_ebs_snapshot "${snapshot_tag}" RESTORE_HOME_DIRECTORY_SNAPSHOT_ID
-
-    validate_rds_snapshot "${snapshot_tag}"
-
-    RESTORE_RDS_SNAPSHOT_ID="${snapshot_tag}"
+    # AWS snapshots reside in AWS and do not need any un-archiving.
+    no_op
 }
 
 function restore_archive {
@@ -72,20 +56,6 @@ function restore_archive {
 
 function cleanup_old_archives {
     if [ "${KEEP_BACKUPS}" -gt 0 ]; then
-        info "Cleaning up any old backups and retaining only the most recent ${KEEP_BACKUPS}"
-        # Cleanup RDS snapshots
-        if [ "${BACKUP_DATABASE_TYPE}" = "amazon-rds" ]; then
-            for snapshot_id in $(list_old_rds_snapshot_ids "${AWS_REGION}"); do
-                run aws rds delete-db-snapshot --db-snapshot-identifier "${snapshot_id}" > /dev/null
-            done
-        fi
-        # Cleanup EBS snapshots
-        if [ "${BACKUP_HOME_TYPE}" = "amazon-ebs" ]; then
-            for ebs_snapshot_id in $(list_old_ebs_snapshot_ids "${AWS_REGION}"); do
-                run aws ec2 delete-snapshot --snapshot-id "${ebs_snapshot_id}" > /dev/null
-            done
-        fi
-
         # If necessary, cleanup off-site snapshots
         if [ -n "${BACKUP_DEST_REGION}" ]; then
             if [ -n "${BACKUP_DEST_AWS_ACCOUNT_ID}" -a -n "${BACKUP_DEST_AWS_ROLE}" ]; then

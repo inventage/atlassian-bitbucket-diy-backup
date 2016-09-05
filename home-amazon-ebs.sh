@@ -36,11 +36,22 @@ function prepare_restore_home {
     check_config_var "HOME_DIRECTORY_MOUNT_POINT"
     check_config_var "RESTORE_HOME_DIRECTORY_VOLUME_TYPE"
 
+    local snapshot_tag="$1"
+
+    if [ -z "${snapshot_tag}" ]; then
+        # Get the list of available snapshot tags to assist with selecting a valid one
+        list_available_ebs_snapshots
+        bail "Please select the tag for the snapshot that you wish to restore"
+    fi
+
     if [ "io1" = "${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}" ]; then
         check_config_var "RESTORE_HOME_DIRECTORY_IOPS" \
             "The provisioned IOPS must be set as RESTORE_HOME_DIRECTORY_IOPS in ${BACKUP_VARS_FILE} when choosing 'io1' \
             volume type for the home directory EBS volume"
     fi
+
+    BACKUP_HOME_DIRECTORY_VOLUME_ID="$(find_attached_ebs_volume "${HOME_DIRECTORY_DEVICE_NAME}")"
+    RESTORE_EBS_SNAPSHOT_ID="$(retrieve_ebs_snapshot_id "${snapshot_tag}")"
 }
 
 function restore_home {
@@ -50,9 +61,9 @@ function restore_home {
         detach_volume
     fi
 
-    info "Restoring home directory from snapshot '${RESTORE_HOME_DIRECTORY_SNAPSHOT_ID}' into a '${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}' volume"
-    
-    create_and_attach_volume "${RESTORE_HOME_DIRECTORY_SNAPSHOT_ID}" "${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}" \
+    info "Restoring home directory from snapshot '${RESTORE_EBS_SNAPSHOT_ID}' into a '${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}' volume"
+
+    create_and_attach_volume "${RESTORE_EBS_SNAPSHOT_ID}" "${RESTORE_HOME_DIRECTORY_VOLUME_TYPE}" \
             "${RESTORE_HOME_DIRECTORY_IOPS}" "${HOME_DIRECTORY_DEVICE_NAME}" "${HOME_DIRECTORY_MOUNT_POINT}"
 
     remount_device
@@ -71,6 +82,15 @@ function unfreeze_home_directory {
     remove_cleanup_routine unfreeze_home_directory
 
     unfreeze_mount_point "${HOME_DIRECTORY_MOUNT_POINT}"
+}
+
+function cleanup_home_backups {
+    if [ "${KEEP_BACKUPS}" -gt 0 ]; then
+        info "Cleaning up any old EBS snapshots and retaining only the most recent ${KEEP_BACKUPS}"
+        for ebs_snapshot_id in $(list_old_ebs_snapshot_ids "${AWS_REGION}"); do
+            run aws ec2 delete-snapshot --snapshot-id "${ebs_snapshot_id}" > /dev/null
+        done
+    fi
 }
 
 # ----------------------------------------------------------------------------------------------------------------------

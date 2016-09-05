@@ -14,10 +14,17 @@ function bitbucket_backup_db {
 }
 
 function prepare_restore_db {
+    # This method has not yet been implemented
     no_op
 }
 
 function restore_db {
+    # This method has not yet been implemented
+    no_op
+}
+
+function cleanup_db_backups {
+    # Not required as old backups with this strategy are typically cleaned up in the archiving strategy.
     no_op
 }
 

@@ -57,6 +57,11 @@ function perform_rsync {
         "${BITBUCKET_HOME}" "${BITBUCKET_BACKUP_HOME}"
 }
 
+function cleanup_home_backups {
+     # Not required as old backups with this strategy are typically cleaned up in the archiving strategy.
+    no_op
+}
+
 # ----------------------------------------------------------------------------------------------------------------------
 # Disaster recovery functions
 # ----------------------------------------------------------------------------------------------------------------------

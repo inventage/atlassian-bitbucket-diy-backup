@@ -44,6 +44,11 @@ function restore_db {
         ${PG_PARALLEL} "${BITBUCKET_RESTORE_DB}"
 }
 
+function cleanup_db_backups {
+    # Not required as old backups with this strategy are typically cleaned up in the archiving strategy.
+    no_op
+}
+
 # ----------------------------------------------------------------------------------------------------------------------
 # Disaster recovery functions
 # ----------------------------------------------------------------------------------------------------------------------

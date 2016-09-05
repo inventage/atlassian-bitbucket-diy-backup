@@ -37,6 +37,11 @@ function restore_db {
     run mysql "${MYSQL_HOST_CMD}" -u "${MYSQL_USERNAME}" -p"${MYSQL_PASSWORD}" < "${BITBUCKET_RESTORE_DB}"
 }
 
+function cleanup_db_backups {
+    # Not required as old backups with this strategy are typically cleaned up in the archiving strategy.
+    no_op
+}
+
 # ----------------------------------------------------------------------------------------------------------------------
 # Disaster recovery functions
 # ----------------------------------------------------------------------------------------------------------------------
