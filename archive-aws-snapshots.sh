@@ -240,11 +240,11 @@ function cleanup_old_offsite_rds_snapshots_in_backup_account {
     local aws_session_token=$(echo ${credentials} | jq -r .Credentials.SessionToken)
 
     # Query for RDS snapshots using the assumed credentials
-    local old_backup_account_rds_snapshots=$(AWS_ACCESS_KEY_ID="${aws_access_key_id}" AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}" \
-        AWS_SESSION_TOKEN="${aws_session_token}" run aws rds describe-db-snapshots --region "${BACKUP_DEST_REGION}" \
-        --snapshot-type manual | jq -r ".DBSnapshots | map(select(.DBSnapshotIdentifier | \
-        startswith(\"${SNAPSHOT_TAG_PREFIX}\"))) | sort_by(.SnapshotCreateTime) | reverse | .[${KEEP_BACKUPS}:] | \
-        map(.DBSnapshotIdentifier)[]")
+    local old_backup_account_rds_snapshots=$(AWS_ACCESS_KEY_ID="${aws_access_key_id}" \AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}" \
+        AWS_SESSION_TOKEN="${aws_session_token}" run aws --output=text rds describe-db-snapshots \
+        --region "${BACKUP_DEST_REGION}" --snapshot-type manual \
+        --query "reverse(sort_by(DBSnapshots[?starts_with(DBSnapshotIdentifier,\
+        \`${SNAPSHOT_TAG_PREFIX}\`)]|[?Status==\`available\`], &SnapshotCreateTime))[${KEEP_BACKUPS}:].DBSnapshotIdentifier")
 
     # Delete old RDS snapshots from BACKUP_DEST_AWS_ACCOUNT_ID in region BACKUP_DEST_REGION
     for rds_snapshot_id in ${old_backup_account_rds_snapshots}; do
