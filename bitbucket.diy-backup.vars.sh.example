@@ -33,19 +33,19 @@ BACKUP_DATABASE_TYPE=postgresql
 #  - tar                  - Unix "tar" archive
 BACKUP_ARCHIVE_TYPE=tar
 
-
 # Strategy for backing up Elasticsearch:
 #  - <leave blank>        - Don't back up Elasticsearch
+#                               NOTE: Elasticsearch's index is rebuild by Bitbucket on first start, but this could
+#                                     take some time depending on the size of your source repositories
 #  - s3                   - Make use of a Amazon S3 bucket
 #                               NOTE: For using S3 an additional Elasticsearch plugin needs to be installed
 #  - fs                   - Make use of a shared filesystem
 #                               NOTE: all data and master nodes MUST mount the shared file system to the same mount point
 #
-# Full documentation is available here:
+# Elasticsearch snapshot and restore documentation is available here:
 #         https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-snapshots.html
 #
 BACKUP_ELASTICSEARCH_TYPE=
-
 
 # If BACKUP_ZERO_DOWNTIME is set to true, the home directory and database will be backed up WITHOUT locking Bitbucket
 # in maintenance mode. NOTE: This can NOT be used with Bitbucket Server versions older than 4.8. For more information,
@@ -108,7 +108,7 @@ case ${BACKUP_DATABASE_TYPE} in
         RDS_INSTANCE_ID=
 
         # === Optionals ===
-        
+
         # The instance class to use when restoring the database
         RESTORE_RDS_INSTANCE_CLASS=
         # The subnet in which the database will be restored
@@ -143,6 +143,13 @@ case ${BACKUP_DATABASE_TYPE} in
         POSTGRES_USERNAME=
         export PGPASSWORD=
         POSTGRES_PORT=5432
+
+        # The target database for a database restore, if not set defaults to the value of BITBUCKET_DB
+        BITBUCKET_RESTORE_DB=${BITBUCKET_RESTORE_DB:-${BITBUCKET_DB}}
+        # The location on disk of the location where a PostgreSQL backup can be found
+        BITBUCKET_RESTORE_DB_BACKUP=${BITBUCKET_RESTORE_DB_BACKUP:-}
+        # The PostgreSQL user that will own the restored database (should match the user bitbucket uses to connect to the db)
+        BITBUCKET_RESTORE_OWNER=
 
         # ==== DISASTER RECOVERY VARS ====
 
@@ -229,6 +236,7 @@ KEEP_BACKUPS=0
 
 # ==== Elasticsearch VARS ====
 
+# The following variable is set to the default bitbucket search index alias. Most users will NOT need to change this.
 ELASTICSEARCH_INDEX_NAME="bitbucket-search-v1"
 # The hostname and port for the primary Elasticsearch server / Elasticsearch load balancer
 ELASTICSEARCH_HOST=
@@ -237,8 +245,13 @@ ELASTICSEARCH_PORT=
 # Elasticsearch credentials in the format: -u "username:password"
 ELASTICSEARCH_CREDENTIALS=
 ELASTICSEARCH_REPOSITORY_NAME=
+
+# Configuration for the Amazon S3 snapshot repository (s3)
 ELASTICSEARCH_S3_BUCKET=
 ELASTICSEARCH_S3_BUCKET_REGION=
+
+# Configuration for the shared filesystem snapshot repository (fs)
+ELASTICSEARCH_REPOSITORY_LOCATION=
 
 # ==== DISASTER RECOVERY VARS ====
 

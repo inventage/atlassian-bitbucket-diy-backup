@@ -46,12 +46,13 @@ info "Preparing for backup"
 prepare_backup_db
 prepare_backup_home
 
-# Run Elasticsearch backup in the background (if not configured, this will be a No-Operation)
-(backup_elasticsearch) &
-
 # If necessary, lock Bitbucket, start an external backup and wait for instance readiness
 lock_bitbucket
 backup_start
+
+# Run Elasticsearch backup in the background (if not configured, this will be a No-Operation)
+backup_elasticsearch &
+
 backup_wait
 
 info "Backing up the database and filesystem in parallel"
@@ -75,3 +76,4 @@ if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then
     archive_backup
     cleanup_old_archives
 fi
+

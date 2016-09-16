@@ -2,18 +2,41 @@
 # Utilities used for Elasticsearch backup, restore and disaster Recovery
 # -------------------------------------------------------------------------------------
 
-# Check whether the Elasticsearch server's configured port is accepting connections
-function check_es_connectivity {
-    local server="$1"
+# ----------------------------------------------------------------------------------------------------------------------
+# Shared backup, restore and DR implementation
+# ----------------------------------------------------------------------------------------------------------------------
 
-    info "Checking whether Elasticsearch is responding to connections"
-    if nc -z -w5 ${server} ${ELASTICSEARCH_PORT}; then
-        true
-    else
-        error "Please ensure that Elasticsearch is correctly configured on host '${server}'"
-        false
-    fi
+function backup_elasticsearch {
+    check_config_var "ELASTICSEARCH_HOST"
+    check_config_var "ELASTICSEARCH_PORT"
+
+    create_es_snapshot "${ELASTICSEARCH_HOST}"
 }
+
+function restore_elasticsearch {
+    check_config_var "ELASTICSEARCH_HOST"
+    check_config_var "ELASTICSEARCH_PORT"
+
+    local latest_snapshot=$(get_es_snapshots "${ELASTICSEARCH_HOST}" | tail -1)
+    restore_es_snapshot "${STANDBY_ELASTICSEARCH_HOST}" "${latest_snapshot}"
+}
+
+function replicate_elasticsearch {
+    check_config_var "ELASTICSEARCH_HOST"
+    check_config_var "ELASTICSEARCH_PORT"
+    check_config_var "STANDBY_ELASTICSEARCH_HOST"
+
+    create_es_snapshot "${ELASTICSEARCH_HOST}"
+
+    local latest_snapshot=$(get_es_snapshots "${ELASTICSEARCH_HOST}" | tail -1)
+    restore_es_snapshot "${STANDBY_ELASTICSEARCH_HOST}" "${latest_snapshot}"
+
+    cleanup_es_snapshots "${ELASTICSEARCH_HOST}"
+}
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Private functions
+# ----------------------------------------------------------------------------------------------------------------------
 
 # Check whether the Elasticsearch server has a snapshot repository configured
 function check_es_needs_configuration {
@@ -56,6 +79,36 @@ EOF
     fi
 
     success "Created Elasticsearch S3 snapshot repository '${ELASTICSEARCH_REPOSITORY_NAME}' on server '${server}'."
+}
+
+# Configure a shared filesystem based snapshot repository
+function configure_shared_fs_snapshot_repository {
+    local server="$1"
+
+    # Configure the document to configure the FS repository
+    local create_fs_repository=$(cat << EOF
+{
+    "type": "fs",
+    "settings": {
+        "location": "${ELASTICSEARCH_REPOSITORY_LOCATION}",
+        "compress": true,
+        "chunk_size": "10m"
+    }
+}
+EOF
+)
+    info "Creating Elasticsearch shared filesystem snapshot repository with name '${ELASTICSEARCH_REPOSITORY_NAME}' on server '${server}'"
+
+    local es_url="http://${server}:${ELASTICSEARCH_PORT}/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}"
+    local es_response=$(run curl -s ${ELASTICSEARCH_CREDENTIALS} -X PUT "${es_url}" -d "${create_fs_repository}")
+
+    if [ "$(echo ${es_response} | jq -r '.acknowledged')" != "true" ]; then
+        error "Please ensure that Elasticsearch is correctly configured to access shared filesystem '${ELASTICSEARCH_REPOSITORY_LOCATION}'"
+        error "To do this the 'elasticsearch.yml' entry 'path.repo: /media/${ELASTICSEARCH_REPOSITORY_LOCATION}' must exist"
+        bail "Unable to create snapshot repository on server '${server}'. Elasticsearch returned: ${es_response}"
+    fi
+
+    success "Created Elasticsearch shared filesystem snapshot repository '${ELASTICSEARCH_REPOSITORY_NAME}' on server '${server}'."
 }
 
 # Close the requested index (used for restores)
@@ -159,9 +212,6 @@ EOF
         fi
     fi
 
-    # Wait for restore to complete
-    wait_for_es_recovery "${server}"
-
     # Open the index
     open_es_index "${server}"
     remove_cleanup_routine "open_es_index '${server}'"
@@ -242,34 +292,6 @@ function wait_for_es_snapshot {
 
     if [ "${timeout}" = "true" ]; then
         bail "Restore of snapshot '${snapshot_name}' timed out after '${max_wait_time}' seconds on server '${server}'"
-    fi
-}
-
-# Wait for a Elasticsearch index to recover after a restore
-function wait_for_es_recovery {
-    local server="$1"
-    # 60 Minutes
-    local max_wait_time=3600
-    local end_time=$((SECONDS+max_wait_time))
-    local timeout=true
-    local recovery_url="http://${server}:${ELASTICSEARCH_PORT}/${ELASTICSEARCH_INDEX_NAME}/_recovery"
-
-    debug "Waiting for recovery to complete on server '${server}'"
-
-    while [ $SECONDS -lt ${end_time} ]; do
-        sleep 15 # Give small snapshots time to settle before we check
-        local es_response=$(run curl -s ${ELASTICSEARCH_CREDENTIALS} -X GET "${recovery_url}")
-        local busy_shards=$(echo ${es_response} | jq -r '.[]?.shards | map(select(.stage!="DONE")) | length')
-        if [ ${busy_shards} -eq 0 ]; then
-            timeout=false
-            break;
-        fi
-        debug "Waiting for '${busy_shards}' shards to finish recovering on server '${server}'"
-        sleep 15
-    done
-
-    if [ "${timeout}" = "true" ]; then
-        bail "Waiting for recovery timed out after '${max_wait_time}' seconds on server '${server}'"
     fi
 }
 

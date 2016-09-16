@@ -20,29 +20,5 @@ source "${SCRIPT_DIR}/common.sh"
 source_elasticsearch_strategy
 
 ##########################################################
-REPLICATE_LOCK_FILE="/tmp/elasticsearch-lock.pid"
-
-function acquire_replicate_lock {
-    set -o noclobber
-    if ! echo "$$" > "${REPLICATE_LOCK_FILE}"; then
-        local other_pid=$(cat "${REPLICATE_LOCK_FILE}")
-        # Check if the other process is alive
-        if run kill -0 "${other_pid}" 2>/dev/null; then
-            bail "Replication is currently in progress by process with PID '${other_pid}', cannot continue."
-        else
-            debug "Lock file is held by process with PID '${other_pid}', but it is not running. Taking lock."
-            set +o noclobber
-            echo "$$" > "${REPLICATE_LOCK_FILE}"
-        fi
-    fi
-    set +o noclobber
-}
-
-function release_replicate_lock {
-    rm -f "${REPLICATE_LOCK_FILE}"
-}
-
-acquire_replicate_lock
-add_cleanup_routine release_replicate_lock
 
 replicate_elasticsearch
