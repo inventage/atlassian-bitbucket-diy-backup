@@ -45,7 +45,9 @@ fi
 info "Preparing for backup"
 prepare_backup_db
 prepare_backup_home
-prepare_backup_es
+
+# Run Elasticsearch backup in the background (if not configured, this will be a No-Operation)
+(backup_elasticsearch) &
 
 # If necessary, lock Bitbucket, start an external backup and wait for instance readiness
 lock_bitbucket
@@ -53,9 +55,8 @@ backup_start
 backup_wait
 
 info "Backing up the database and filesystem in parallel"
-(backup_db && update_backup_progress 33) &
-(backup_home && update_backup_progress 33) &
-(backup_elasticsearch && update_backup_progress 33) &
+(backup_db && update_backup_progress 50) &
+(backup_home && update_backup_progress 50)
 
 # Wait until home and database backups are complete
 wait $(jobs -p)

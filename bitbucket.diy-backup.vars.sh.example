@@ -36,11 +36,13 @@ BACKUP_ARCHIVE_TYPE=tar
 
 # Strategy for backing up Elasticsearch:
 #  - <leave blank>        - Don't back up Elasticsearch
-#  - amazon-s3            - Make use of a Amazon S3 bucket
-#  - shared-filesystem    - Make use of a shared filesystem
+#  - s3                   - Make use of a Amazon S3 bucket
+#                               NOTE: For using S3 an additional Elasticsearch plugin needs to be installed
+#  - fs                   - Make use of a shared filesystem
+#                               NOTE: all data and master nodes MUST mount the shared file system to the same mount point
 #
-# NOTE: all Elasticsearch data and master nodes MUST mount the shared file system to the same mount point.
-#       See https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-snapshots.html for more information
+# Full documentation is available here:
+#         https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-snapshots.html
 #
 BACKUP_ELASTICSEARCH_TYPE=
 
