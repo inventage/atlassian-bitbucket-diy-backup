@@ -21,6 +21,12 @@ fi
 SNAPSHOT_TAG_PREFIX="${INSTANCE_NAME}-"
 SNAPSHOT_TAG_VALUE="${SNAPSHOT_TAG_PREFIX}${TIMESTAMP}"
 
+# If "psql" is installed, get its version number
+if which psql > /dev/null 2>&1; then
+    psql_version="$(psql --version | awk '{print $3}')"
+    psql_majorminor="$(printf "%d%03d" $(echo "${psql_version}" | tr "." "\n" | sed 2q))"
+    psql_major="$(echo ${psql_version} | tr -d '.' | cut -c 1-2)"
+fi
 
 # Lock a Bitbucket instance for maintenance
 function lock_bitbucket {

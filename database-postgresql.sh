@@ -6,6 +6,12 @@ check_command "pg_dump"
 check_command "psql"
 check_command "pg_restore"
 
+# Make use of PostgreSQL 9.3+ options if available
+if [[ ${psql_majorminor} -ge 9003 ]]; then
+    PG_PARALLEL="-j 5"
+    PG_SNAPSHOT_OPT="--no-synchronized-snapshots"
+fi
+
 function prepare_backup_db {
     check_config_var "BITBUCKET_BACKUP_DB"
     check_config_var "POSTGRES_USERNAME"
