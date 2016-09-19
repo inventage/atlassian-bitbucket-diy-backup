@@ -57,7 +57,7 @@ backup_wait
 
 info "Backing up the database and filesystem in parallel"
 (backup_db && update_backup_progress 50) &
-(backup_home && update_backup_progress 50)
+(backup_home && update_backup_progress 50) &
 
 # Wait until home and database backups are complete
 wait $(jobs -p)
