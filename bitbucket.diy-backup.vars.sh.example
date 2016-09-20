@@ -23,7 +23,7 @@ BACKUP_HOME_TYPE=rsync
 #  - amazon-rds           - Amazon RDS snapshots
 #  - mysql                - MySQL using "mysqldump" to backup and "mysql" to restore
 #  - postgresql           - PostgreSQL using "pg_dump" to backup and "pg_restore" to restore
-#  - postgresql93-fslevel - PostgreSQL 9.3 with data directory located in the file system volume as home directory (so
+#  - postgresql-fslevel   - PostgreSQL with data directory located in the file system volume as home directory (so
 #                           that it will be included implicitly in the home volume snapshot)
 BACKUP_DATABASE_TYPE=postgresql
 
@@ -130,17 +130,6 @@ case ${BACKUP_DATABASE_TYPE} in
         export PGPASSWORD=
         POSTGRES_PORT=5432
 
-        if which psql > /dev/null 2>&1; then
-            # Make use of PostgreSQL 9.3+ options if available
-            psql_version="$(psql --version | awk '{print $3}')"
-            psql_majorminor="$(printf "%d%03d" $(echo "${psql_version}" | tr "." "\n" | sed 2q))"
-            psql_major="$(echo ${psql_version} | tr -d '.' | cut -c 1-2)"
-            if [[ ${psql_majorminor} -ge 9003 ]]; then
-                PG_PARALLEL="-j 5"
-                PG_SNAPSHOT_OPT="--no-synchronized-snapshots"
-            fi
-        fi
-
         # ==== DISASTER RECOVERY VARS ====
 
         # The full path to the standby server's PostgreSQL data folder. i.e "/var/lib/pgsql94/data"
@@ -156,6 +145,11 @@ case ${BACKUP_DATABASE_TYPE} in
         # The postgres service name for stopping / starting it.
         # Note: Attempt auto-detection based on major version (Works with CentOS, RHEL and Amazon Linux, override if unsure)
         STANDBY_DATABASE_SERVICE_NAME="postgresql${psql_major}"
+        ;;
+
+    postgresql-fslevel)
+        # The postgres service name for stopping / starting it at restore time.
+        POSTGRESQL_SERVICE_NAME="postgresql${psql_major}"
         ;;
 esac
 

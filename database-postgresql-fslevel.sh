@@ -1,13 +1,13 @@
 # -------------------------------------------------------------------------------------
-# A backup and restore strategy for PostgreSQL 9.3 whose data directory (i.e., ${PGDATA}) resides on the
-# same file system volume as Bitbucket's home directory. In this configuration the whole database is backed up and
-# restored implicitly as part of the bitbucket_backup_home and bitbucket_restore_home functions. So the functions
+# A backup and restore strategy for PostgreSQL whose data directory (i.e., ${PGDATA}) resides on the same file
+# system volume as Bitbucket's home directory. In this configuration the whole database is backed up and restored
+# implicitly as part of the bitbucket_backup_home and bitbucket_restore_home functions. So the functions
 # implementing this strategy need to do little or no actual work.
 #
 # Note that recovery time after restoring a PostgreSQL database from a file system level backup may depend on the
 # configuration of the PostgreSQL "hot_standby" and "wal_level" options.
 #
-# Refer to https://www.postgresql.org/docs/9.3/static/backup-file.html for more information.
+# Refer to https://www.postgresql.org/docs/9.5/static/backup-file.html for more information.
 # -------------------------------------------------------------------------------------
 
 function prepare_backup_db {
@@ -23,16 +23,16 @@ function backup_db {
 }
 
 function prepare_restore_db {
-    check_config_var "STANDBY_DATABASE_SERVICE_NAME"
+    check_config_var "POSTGRESQL_SERVICE_NAME"
     # Since the whole database is restored implicitly as part of the file system volume, this function doesn't need
     # to do any work.  All we need to do is stop the service beforehand.
-    run sudo service "${STANDBY_DATABASE_SERVICE_NAME}" stop
+    run sudo service "${POSTGRESQL_SERVICE_NAME}" stop
 }
 
 function restore_db {
     # Since the whole database is restored implicitly as part of the file system volume, this function doesn't need
     # to do any work.  All we need to do is start the service back up again.
-    run sudo service "${STANDBY_DATABASE_SERVICE_NAME}" start
+    run sudo service "${POSTGRESQL_SERVICE_NAME}" start
 }
 
 # ----------------------------------------------------------------------------------------------------------------------
