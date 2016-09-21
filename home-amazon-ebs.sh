@@ -5,10 +5,6 @@
 SCRIPT_DIR=$(dirname "$0")
 source "${SCRIPT_DIR}/aws-common.sh"
 
-if [ ${FILESYSTEM_TYPE} = "zfs" ]; then
-    ZFS_HOME_TANK_NAME=$(run sudo zfs list -H -o name,mountpoint | grep "${HOME_DIRECTORY_MOUNT_POINT}" | cut -f1)
-fi
-
 function prepare_backup_home {
     # Validate that all the configuration parameters have been provided to avoid bailing out and leaving Bitbucket locked
     check_config_var "HOME_DIRECTORY_MOUNT_POINT"

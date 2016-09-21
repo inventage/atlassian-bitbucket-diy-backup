@@ -62,7 +62,10 @@ case ${BACKUP_HOME_TYPE} in
 
         # === Optionals ===
         # Set FILESYSTEM_TYPE=zfs to run ZFS specific commands on backup and restore of EBS snapshots.
-        FILESYSTEM_TYPE=zfs
+        FILESYSTEM_TYPE=
+        if [ "${FILESYSTEM_TYPE}" = "zfs" ]; then
+            ZFS_HOME_TANK_NAME=$(run sudo zfs list -H -o name,mountpoint | grep "${HOME_DIRECTORY_MOUNT_POINT}" | cut -f1)
+        fi
         ;;
     rsync)
         # Optional list of repo IDs which should be excluded from the backup. For example: (2 5 88)
