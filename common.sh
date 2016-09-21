@@ -170,9 +170,14 @@ function bitbucket_version {
 # $1 = mount point
 #
 function freeze_mount_point {
-    if [ "${FSFREEZE}" = "true" ]; then
+    case ${FILESYSTEM_TYPE} in
+    zfs)
+        # A ZFS filesystem doesn't require a fsfreeze
+        ;;
+    *)
         run sudo fsfreeze -f "${1}"
-    fi
+        ;;
+    esac
 }
 
 # Unfreeze the filesystem mounted under the provided mount point.
@@ -189,12 +194,32 @@ function unfreeze_mount_point {
 # Remount the previously mounted home directory
 function remount_device {
     remove_cleanup_routine remount_device
-    run sudo mount "${HOME_DIRECTORY_DEVICE_NAME}" "${HOME_DIRECTORY_MOUNT_POINT}"
+
+    case ${FILESYSTEM_TYPE} in
+    zfs)
+        run sudo zpool import tank
+        run sudo zfs mount -a
+        run sudo zfs share -a
+        ;;
+    *)
+        run sudo mount "${HOME_DIRECTORY_DEVICE_NAME}" "${HOME_DIRECTORY_MOUNT_POINT}"
+        ;;
+    esac
 }
 
 # Unmount the currently mounted home directory
 function unmount_device {
-    run sudo umount "${HOME_DIRECTORY_MOUNT_POINT}"
+    case ${FILESYSTEM_TYPE} in
+    zfs)
+        run sudo zfs unshare "${ZFS_HOME_TANK_NAME}"
+        run sudo zfs unmount "${ZFS_HOME_TANK_NAME}"
+        run sudo zpool export tank
+        ;;
+    *)
+        run sudo umount "${HOME_DIRECTORY_MOUNT_POINT}"
+        ;;
+    esac
+
     add_cleanup_routine remount_device
 }
 

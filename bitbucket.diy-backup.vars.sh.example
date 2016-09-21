@@ -59,9 +59,10 @@ case ${BACKUP_HOME_TYPE} in
         # Required if RESTORE_HOME_DIRECTORY_VOLUME_TYPE has been set to 'io1'. Ignored otherwise.
         # The IOPS that should be provisioned for the new volume. Note: Maximum IOPS to volume size ratio is 30
         RESTORE_HOME_DIRECTORY_IOPS=1000
-        # If FSFREEZE is set to true, freeze the file system before performing backup.
-        # Set this to false when your file system does not need the fsfreeze command, e.g. ZFS.
-        FSFREEZE=true
+
+        # === Optionals ===
+        # Set FILESYSTEM_TYPE=zfs to run ZFS specific commands on backup and restore of EBS snapshots.
+        FILESYSTEM_TYPE=zfs
         ;;
     rsync)
         # Optional list of repo IDs which should be excluded from the backup. For example: (2 5 88)
