@@ -22,7 +22,7 @@ function prepare_backup_db {
 
 function backup_db {
     rm -r "${BITBUCKET_BACKUP_DB}"
-    run pg_dump -i -U "${POSTGRES_USERNAME}" -h "${POSTGRES_HOST}" --port=${POSTGRES_PORT} ${PG_PARALLEL} -Fd \
+    run pg_dump -U "${POSTGRES_USERNAME}" -h "${POSTGRES_HOST}" --port=${POSTGRES_PORT} ${PG_PARALLEL} -Fd \
         "${BITBUCKET_DB}" ${PG_SNAPSHOT_OPT} -f "${BITBUCKET_BACKUP_DB}"
 }
 
@@ -31,33 +31,26 @@ function prepare_restore_db {
     check_config_var "POSTGRES_HOST"
     check_config_var "POSTGRES_PORT"
     check_config_var "BITBUCKET_RESTORE_DB"
-    check_config_var "BITBUCKET_RESTORE_DB_BACKUP"
 
     if ! run psql -U "${POSTGRES_USERNAME}" -h "${POSTGRES_HOST}" --port=${POSTGRES_PORT} --list > /dev/null 2>&1; then
         bail "Unable to get a list of databases from database server '${POSTGRES_HOST}'"
     fi
 
-    local db_exists=$(run psql -U "${POSTGRES_USERNAME}" -h "${POSTGRES_HOST}" --port=${POSTGRES_PORT} -qlt | grep -w "${BITBUCKET_RESTORE_DB}")
+    local db_exists=$(run psql -U "${POSTGRES_USERNAME}" -h "${POSTGRES_HOST}" --port=${POSTGRES_PORT} -qlt 2> /dev/null | grep -w "${BITBUCKET_DB}")
     if [ -n "${db_exists}" ]; then
-        local table_count=$(psql -U "${POSTGRES_USERNAME}" -h "${POSTGRES_HOST}" --port=${POSTGRES_PORT} -d "${BITBUCKET_RESTORE_DB}" -tqc '\dt' | grep -v "^$" | wc -l)
+        local table_count=$(psql -U "${POSTGRES_USERNAME}" -h "${POSTGRES_HOST}" --port=${POSTGRES_PORT} -d "${BITBUCKET_DB}" -tqc '\dt' | grep -v "^$" | wc -l)
         if [ "${table_count}" -gt 0 ]; then
-            error "Database '${BITBUCKET_RESTORE_DB}' already exists and contains ${table_count} tables"
+            error "Database '${BITBUCKET_DB}' already exists and contains ${table_count} tables"
         else
-            error "Database '${BITBUCKET_RESTORE_DB}' already exists"
+            error "Database '${BITBUCKET_DB}' already exists"
         fi
-        bail "Cannot restore over existing database '${BITBUCKET_RESTORE_DB}', please ensure it does not exist before restoring"
+        bail "Cannot restore over existing database '${BITBUCKET_DB}', please ensure it does not exist before restoring"
     fi
 }
 
 function restore_db {
-    local owner=
-    if [ -n "${BITBUCKET_RESTORE_OWNER}" ]; then
-        owner="-O \"${BITBUCKET_RESTORE_OWNER}\""
-    fi
-    run createdb -U "${POSTGRES_USERNAME}" -h "${POSTGRES_HOST}" --port=${POSTGRES_PORT} -E UTF-8 -l en_US.UTF-8 \
-        ${owner} "${BITBUCKET_RESTORE_DB}"
-    run pg_restore -i -U "${POSTGRES_USERNAME}" -h "${POSTGRES_HOST}" --port=${POSTGRES_PORT} ${PG_PARALLEL} \
-        -d "${BITBUCKET_RESTORE_DB}" -Fd "${BITBUCKET_RESTORE_DB_BACKUP}"
+    run pg_restore -U "${POSTGRES_USERNAME}" -h "${POSTGRES_HOST}" --port=${POSTGRES_PORT} ${PG_PARALLEL} \
+        -d postgres -C -Fd "${BITBUCKET_RESTORE_DB}"
 }
 
 function cleanup_db_backups {

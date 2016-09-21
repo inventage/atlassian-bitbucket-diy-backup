@@ -37,6 +37,7 @@ info "Preparing for restore"
 
 prepare_restore_home "${1}"
 prepare_restore_db "${1}"
+prepare_restore_elasticsearch "${1}"
 
 if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then
     restore_archive

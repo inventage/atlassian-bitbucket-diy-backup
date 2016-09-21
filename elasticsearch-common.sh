@@ -10,33 +10,62 @@ function backup_elasticsearch {
     check_config_var "ELASTICSEARCH_HOST"
     check_config_var "ELASTICSEARCH_PORT"
 
+    check_es_needs_configuration "${ELASTICSEARCH_HOST}"
     create_es_snapshot "${ELASTICSEARCH_HOST}"
+}
+
+function prepare_restore_elasticsearch {
+    local snapshot_tag="$1"
+
+    check_es_index_exists "${ELASTICSEARCH_HOST}" "${ELASTICSEARCH_INDEX_NAME}"
+    check_es_needs_configuration "${ELASTICSEARCH_HOST}"
+
+    debug "Getting snapshot list from Elasticsearch server '${ELASTICSEARCH_HOST}'"
+    local snapshot_list=$(get_es_snapshots "${ELASTICSEARCH_HOST}")
+
+    if [ -z "${snapshot_tag}" ]; then
+        info "Available Snapshots:"
+        info "${snapshot_list}"
+        bail "Please select a snapshot to restore"
+    fi
+
+    debug "Validating Elasticsearch snapshot '${snapshot_tag}'"
+    local has_snapshot=$(echo "${snapshot_list}" | grep "${snapshot_tag}")
+    if [ -z "${has_snapshot}" ]; then
+        error "Unable to find snapshot '${snapshot_tag}' in the list of Elasticsearch snapshots:"
+        info "Available Snapshots:"
+        print "${snapshot_list}"
+        bail "Please select a snapshot to restore"
+    fi
+
+    RESTORE_ELASTICSEARCH_SNAPSHOT="${snapshot_tag}"
 }
 
 function restore_elasticsearch {
     check_config_var "ELASTICSEARCH_HOST"
     check_config_var "ELASTICSEARCH_PORT"
+    check_var "RESTORE_ELASTICSEARCH_SNAPSHOT"
 
-    local latest_snapshot=$(get_es_snapshots "${ELASTICSEARCH_HOST}" | tail -1)
-    restore_es_snapshot "${STANDBY_ELASTICSEARCH_HOST}" "${latest_snapshot}"
-}
-
-function replicate_elasticsearch {
-    check_config_var "ELASTICSEARCH_HOST"
-    check_config_var "ELASTICSEARCH_PORT"
-    check_config_var "STANDBY_ELASTICSEARCH_HOST"
-
-    create_es_snapshot "${ELASTICSEARCH_HOST}"
-
-    local latest_snapshot=$(get_es_snapshots "${ELASTICSEARCH_HOST}" | tail -1)
-    restore_es_snapshot "${STANDBY_ELASTICSEARCH_HOST}" "${latest_snapshot}"
-
-    cleanup_es_snapshots "${ELASTICSEARCH_HOST}"
+    restore_es_snapshot "${ELASTICSEARCH_HOST}" "${RESTORE_ELASTICSEARCH_SNAPSHOT}"
 }
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Private functions
 # ----------------------------------------------------------------------------------------------------------------------
+
+# Check whether the Elasticsearch server has a snapshot repository configured
+function check_es_index_exists {
+    local server="$1"
+    local index="$2"
+
+    info "Checking whether index with name '${index}' exists on server '${server}'"
+
+    local es_url="http://${server}:${ELASTICSEARCH_PORT}/${index}"
+
+    if run curl ${CURL_OPTIONS} ${ELASTICSEARCH_CREDENTIALS} -X GET "${es_url}" > /dev/null 2>&1; then
+        bail "An index with name '${index}' exists on server '${server}', please remove it before restoring"
+    fi
+}
 
 # Check whether the Elasticsearch server has a snapshot repository configured
 function check_es_needs_configuration {
@@ -46,16 +75,25 @@ function check_es_needs_configuration {
 
     local es_url="http://${server}:${ELASTICSEARCH_PORT}/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}"
     if run curl ${CURL_OPTIONS} ${ELASTICSEARCH_CREDENTIALS} -X GET "${es_url}" > /dev/null 2>&1; then
-        error "The snapshot repository '${ELASTICSEARCH_REPOSITORY_NAME}' already exists on server '${server}'"
-        false
+        debug "The snapshot repository '${ELASTICSEARCH_REPOSITORY_NAME}' already exists on server '${server}'"
     else
-        true
+        case "${BACKUP_ELASTICSEARCH_TYPE}" in
+        s3)
+            configure_aws_s3_snapshot_repository "${server}"
+            ;;
+        fs)
+            configure_shared_fs_snapshot_repository "${server}"
+            ;;
+        esac
     fi
 }
 
 # Configure a S3 based snapshot repository
 function configure_aws_s3_snapshot_repository {
     local server="$1"
+
+    check_config_var "ELASTICSEARCH_S3_BUCKET"
+    check_config_var "ELASTICSEARCH_S3_BUCKET_REGION"
 
     # Configure the document to configure the S3 bucket
     local create_s3_repository=$(cat << EOF
@@ -85,6 +123,8 @@ EOF
 function configure_shared_fs_snapshot_repository {
     local server="$1"
 
+    check_config_var "ELASTICSEARCH_REPOSITORY_LOCATION"
+
     # Configure the document to configure the FS repository
     local create_fs_repository=$(cat << EOF
 {
@@ -111,20 +151,6 @@ EOF
     success "Created Elasticsearch shared filesystem snapshot repository '${ELASTICSEARCH_REPOSITORY_NAME}' on server '${server}'."
 }
 
-# Close the requested index (used for restores)
-function close_es_index {
-    local server="$1"
-
-    debug "Closing Elasticsearch index '${ELASTICSEARCH_INDEX_NAME}' on server '${server}'"
-
-    local close_url="http://${server}:${ELASTICSEARCH_PORT}/${ELASTICSEARCH_INDEX_NAME}/_close"
-    if ! run curl -s ${ELASTICSEARCH_CREDENTIALS} -X POST "${close_url}" > /dev/null 2>&1; then
-        bail "Unable to close Elasticsearch index '${ELASTICSEARCH_INDEX_NAME}' on server '${server}'"
-    fi
-
-    success "Elasticsearch index '${ELASTICSEARCH_INDEX_NAME}' closed"
-}
-
 # Creates a Elasticsearch snapshot
 function create_es_snapshot {
     local server="$1"
@@ -138,7 +164,7 @@ function create_es_snapshot {
 }
 EOF
 )
-    local snapshot_name="${SNAPSHOT_TAG_PREFIX}${BACKUP_TIME}"
+    local snapshot_name="${SNAPSHOT_TAG_VALUE}"
     local es_url="http://${server}:${ELASTICSEARCH_PORT}/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}/${snapshot_name}"
 
     debug "Creating Elasticsearch snapshot '${snapshot_name}' on server '${server}'"
@@ -148,24 +174,7 @@ EOF
         bail "Unable to create snapshot '${snapshot_name}' on server '${server}'. Elasticsearch returned: ${es_response}"
     fi
 
-    debug "Waiting for Elasticsearch snapshot '${snapshot_name}' to complete"
-    wait_for_es_snapshot "${server}" "${snapshot_name}"
-
     success "Elasticsearch snapshot '${snapshot_name}' created"
-}
-
-# Opens a Elasticsearch index after it has been restored
-function open_es_index {
-    local server="$1"
-
-    debug "Opening Elasticsearch index '${ELASTICSEARCH_INDEX_NAME}' on server '${server}'"
-
-    local open_url="http://${server}:${ELASTICSEARCH_PORT}/${ELASTICSEARCH_INDEX_NAME}/_open"
-    if ! run curl -s ${ELASTICSEARCH_CREDENTIALS} -X POST "${open_url}" > /dev/null 2>&1; then
-        bail "Unable to close index '${ELASTICSEARCH_INDEX_NAME}' on server '${server}'"
-    fi
-
-    success "Elasticsearch index '${ELASTICSEARCH_INDEX_NAME}' opened"
 }
 
 # Deletes a Elasticsearch snapshot
@@ -199,10 +208,6 @@ EOF
 )
     debug "Restoring Elasticsearch snapshot '${snapshot_name}' on server '${server}'"
 
-    # Close the index so it can be restored
-    close_es_index "${server}"
-    add_cleanup_routine "open_es_index '${server}'"
-
     # Begin the restore
     local restore_url="http://${server}:${ELASTICSEARCH_PORT}/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}/${snapshot_name}/_restore"
     local es_response=$(run curl -s ${ELASTICSEARCH_CREDENTIALS} -X POST "${restore_url}" -d "${snapshot_body}")
@@ -212,11 +217,8 @@ EOF
         fi
     fi
 
-    # Open the index
-    open_es_index "${server}"
-    remove_cleanup_routine "open_es_index '${server}'"
-
-    success "Elasticsearch index '${snapshot_name}' has been restored from snapshot '${snapshot_name}' on server '${server}'"
+    success "Elasticsearch index '${ELASTICSEARCH_INDEX_NAME}' has been restored from snapshot '${snapshot_name}' on server '${server}'."
+    info "The index will be available as soon as index recovery completes, it might take a little while."
 }
 
 # Get a list of snapshots available
@@ -253,45 +255,5 @@ function cleanup_es_snapshots {
     fi
 
     success "Elasticsearch snapshot cleanup successful"
-}
-
-# Waits for the snapshot creation to complete
-function wait_for_es_snapshot {
-    local server="$1"
-    local snapshot_name="$2"
-
-    # 60 Minutes
-    local max_wait_time=3600
-    local end_time=$((SECONDS+max_wait_time))
-    local snapshot_status_url="http://${server}:${ELASTICSEARCH_PORT}/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}/${snapshot_name}"
-    local timeout=true
-
-    debug "Waiting for snapshot '${snapshot_name}' to complete on server '${server}'"
-
-    while [ $SECONDS -lt ${end_time} ]; do
-        sleep 15 # Give small snapshots time to settle before we check
-        local es_response=$(run curl -s ${ELASTICSEARCH_CREDENTIALS} -X GET "${snapshot_status_url}")
-        local state=$(echo "${es_response}" | jq -r '.snapshots[0].state')
-        case ${state} in
-        "SUCCESS")
-            debug "Snapshot '${snapshot_name}' is successful"
-            timeout=false
-            break
-            ;;
-        "IN_PROGRESS")
-            debug "Snapshot '${snapshot_name}' is in progress"
-            ;;
-        *)
-            # Aborted / Failed and all the other error cases
-            error "The snapshot '${snapshot_name}' failed, it is currently in state '${state}'"
-            bail "Elasticsearch returned: ${es_response}"
-            ;;
-        esac
-        sleep 15
-    done
-
-    if [ "${timeout}" = "true" ]; then
-        bail "Restore of snapshot '${snapshot_name}' timed out after '${max_wait_time}' seconds on server '${server}'"
-    fi
 }
 

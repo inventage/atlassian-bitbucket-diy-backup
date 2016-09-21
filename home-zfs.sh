@@ -23,9 +23,9 @@ function backup_home {
 function prepare_restore_home {
     local snapshot_tag="$1"
 
-    if [ -z "${snapshot}" ]; then
+    if [ -z "${snapshot_tag}" ]; then
         debug "Getting snapshot list for ZFS filesystem '${ZFS_HOME_TANK_NAME}'"
-        snapshot_list=$(run sudo zfs list -H -t snapshot -o name | cut -d "@" -f2)
+        local snapshot_list=$(run sudo zfs list -H -t snapshot -o name | cut -d "@" -f2)
         info "Available Snapshots:"
         info "${snapshot_list}"
         bail "Please select a snapshot to restore"

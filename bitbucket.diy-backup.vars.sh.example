@@ -34,14 +34,28 @@ BACKUP_DATABASE_TYPE=postgresql
 BACKUP_ARCHIVE_TYPE=tar
 
 # Strategy for backing up Elasticsearch:
-#  - <leave blank>        - Don't back up Elasticsearch
-#                               NOTE: Elasticsearch's index is rebuild by Bitbucket on first start, but this could
-#                                     take some time depending on the size of your source repositories
-#  - s3                   - Make use of a Amazon S3 bucket
-#                               NOTE: For using S3 an additional Elasticsearch plugin needs to be installed
-#  - fs                   - Make use of a shared filesystem
-#                               NOTE: all data and master nodes MUST mount the shared file system to the same mount point
+#  - <leave blank>        - External Elasticsearch backup is NOT required
+#                               When using the bundled Elasticsearch instance this is a valid backup strategy as the
+#                               Elasticsearch data is stored in ${BITBUCKET_HOME}/shared which is backed up using
+#                               the chosen home backup strategy. The only requirement being that the
+#                               'atlbitbucket_search' service be stopped before restore and started after.
 #
+#                               NOTE: Bitbucket will create or update its search index when started. If Bitbucket
+#                                     is started whilst connected to an blank/empty Elasticsearch, the search index will
+#                                     be created and populated. If an existing search index is encountered it is brought
+#                                     up to date, incrementally. From a user perspective, the difference between the two
+#                                     mechanisms is the time required to complete, the latter being faster.
+#
+#  - s3                   - Make use of a Amazon S3 bucket
+#                               When using S3, Elasticsearch requires the cloud plugin to be installed (see link below)
+#
+#  - fs                   - Make use of a shared filesystem
+#                               When using a shared file system, ensure that all data and master nodes mount the
+#                               shared file system to the same mount point and that it is configured in the
+#                               elasticsearch.yml file (see link below)
+#
+# Elasticsearch cloud plugin documentation is available here:
+#         https://www.elastic.co/guide/en/elasticsearch/plugins/2.3/cloud-aws.html
 # Elasticsearch snapshot and restore documentation is available here:
 #         https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-snapshots.html
 #
@@ -144,13 +158,6 @@ case ${BACKUP_DATABASE_TYPE} in
         export PGPASSWORD=
         POSTGRES_PORT=5432
 
-        # The target database for a database restore, if not set defaults to the value of BITBUCKET_DB
-        BITBUCKET_RESTORE_DB=${BITBUCKET_RESTORE_DB:-${BITBUCKET_DB}}
-        # The location on disk of the location where a PostgreSQL backup can be found
-        BITBUCKET_RESTORE_DB_BACKUP=${BITBUCKET_RESTORE_DB_BACKUP:-}
-        # The PostgreSQL user that will own the restored database (should match the user bitbucket uses to connect to the db)
-        BITBUCKET_RESTORE_OWNER=
-
         # ==== DISASTER RECOVERY VARS ====
 
         # The full path to the standby server's PostgreSQL data folder. i.e "/var/lib/pgsql94/data"
@@ -190,6 +197,11 @@ case ${BACKUP_ARCHIVE_TYPE} in
         BITBUCKET_BACKUP_ROOT=
         BITBUCKET_BACKUP_DB=${BITBUCKET_BACKUP_ROOT}/bitbucket-db/
         BITBUCKET_BACKUP_HOME=${BITBUCKET_BACKUP_ROOT}/bitbucket-home/
+
+        if [ -z "${BACKUP_ARCHIVE_TYPE}" ]; then
+            BITBUCKET_RESTORE_DB="${BITBUCKET_BACKUP_DB}"
+            BITBUCKET_RESTORE_HOME="${BITBUCKET_BACKUP_HOME}"
+        fi
 
         # The path to where the backup archives are stored
         BITBUCKET_BACKUP_ARCHIVE_ROOT=
@@ -236,22 +248,26 @@ KEEP_BACKUPS=0
 
 # ==== Elasticsearch VARS ====
 
-# The following variable is set to the default bitbucket search index alias. Most users will NOT need to change this.
+# The Bitbucket search index (default is bitbucket-search-v1). Most users will NOT need to change this.
 ELASTICSEARCH_INDEX_NAME="bitbucket-search-v1"
-# The hostname and port for the primary Elasticsearch server / Elasticsearch load balancer
+# The hostname and port for the Elasticsearch server / Elasticsearch load balancer
 ELASTICSEARCH_HOST=
-STANDBY_ELASTICSEARCH_HOST=
 ELASTICSEARCH_PORT=
 # Elasticsearch credentials in the format: -u "username:password"
 ELASTICSEARCH_CREDENTIALS=
 ELASTICSEARCH_REPOSITORY_NAME=
 
-# Configuration for the Amazon S3 snapshot repository (s3)
-ELASTICSEARCH_S3_BUCKET=
-ELASTICSEARCH_S3_BUCKET_REGION=
-
-# Configuration for the shared filesystem snapshot repository (fs)
-ELASTICSEARCH_REPOSITORY_LOCATION=
+case ${BACKUP_ELASTICSEARCH_TYPE} in
+    s3)
+        # Configuration for the Amazon S3 snapshot repository (s3)
+        ELASTICSEARCH_S3_BUCKET=
+        ELASTICSEARCH_S3_BUCKET_REGION=
+        ;;
+    fs)
+        # Configuration for the shared filesystem snapshot repository (fs)
+        ELASTICSEARCH_REPOSITORY_LOCATION=
+        ;;
+esac
 
 # ==== DISASTER RECOVERY VARS ====
 
