@@ -27,7 +27,7 @@ function backup_db {
 
 function prepare_restore_db {
     check_config_var "BITBUCKET_DB"
-    check_config_var "BITBUCKET_RESTORE_DB"
+    check_var "BITBUCKET_RESTORE_DB"
     check_config_var "MYSQL_USERNAME"
     check_config_var "MYSQL_PASSWORD"
     run mysqlshow "${MYSQL_HOST_CMD}" -u "${MYSQL_USERNAME}" -p"${MYSQL_PASSWORD}" "${BITBUCKET_DB}"

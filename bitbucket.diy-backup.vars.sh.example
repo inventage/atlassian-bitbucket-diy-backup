@@ -13,52 +13,43 @@ BITBUCKET_UID=atlbitbucket
 BITBUCKET_GID=atlbitbucket
 
 # Strategy for backing up the Bitbucket home directory:
-#  - amazon-ebs           - Amazon EBS snapshots of the volume containing the home directory
-#  - rsync                - "rsync" of the home directory contents to a temporary location. NOTE: This can NOT be used
-#                           with BACKUP_ZERO_DOWNTIME=true.
-#  - zfs                  - Select the ZFS snapshot strategy for home directory backups.
+#  - amazon-ebs         - Amazon EBS snapshots of the volume containing the home directory
+#  - rsync              - "rsync" of the home directory contents to a temporary location. NOTE: This can NOT be used
+#                         with BACKUP_ZERO_DOWNTIME=true.
+#  - zfs                - Select the ZFS snapshot strategy for home directory backups.
 BACKUP_HOME_TYPE=rsync
 
 # Strategy for backing up the database:
-#  - amazon-rds           - Amazon RDS snapshots
-#  - mysql                - MySQL using "mysqldump" to backup and "mysql" to restore
-#  - postgresql           - PostgreSQL using "pg_dump" to backup and "pg_restore" to restore
-#  - postgresql-fslevel   - PostgreSQL with data directory located in the file system volume as home directory (so
-#                           that it will be included implicitly in the home volume snapshot)
+#  - amazon-rds         - Amazon RDS snapshots
+#  - mysql              - MySQL using "mysqldump" to backup and "mysql" to restore
+#  - postgresql         - PostgreSQL using "pg_dump" to backup and "pg_restore" to restore
+#  - postgresql-fslevel - PostgreSQL with data directory located in the file system volume as home directory (so
+#                         that it will be included implicitly in the home volume snapshot)
 BACKUP_DATABASE_TYPE=postgresql
 
 # Strategy for archiving backups and/or copying them to an offsite location:
-#  - aws-snapshots        - AWS EBS and/or RDS snapshots, with optional copy to another region
-#  - gpg-zip              - "gpg-zip" archive
-#  - tar                  - Unix "tar" archive
+#  - aws-snapshots      - AWS EBS and/or RDS snapshots, with optional copy to another region
+#  - gpg-zip            - "gpg-zip" archive
+#  - tar                - Unix "tar" archive
 BACKUP_ARCHIVE_TYPE=tar
 
 # Strategy for backing up Elasticsearch:
-#  - <leave blank>        - External Elasticsearch backup is NOT required
-#                               When using the bundled Elasticsearch instance this is a valid backup strategy as the
-#                               Elasticsearch data is stored in ${BITBUCKET_HOME}/shared which is backed up using
-#                               the chosen home backup strategy. The only requirement being that the
-#                               'atlbitbucket_search' service be stopped before restore and started after.
+#  - <leave blank>      - No separate snapshot and restore of Elasticsearch state (default) - recommended for Bitbucket
+#                         Server instances configured to use the (default) bundled Elasticsearch instance. In this case
+#                         all Elasticsearch state is stored under ${BITBUCKET_HOME}/shared and therefore already
+#                         included in the home directory snapshot implicitly.
 #
-#                               NOTE: Bitbucket will create or update its search index when started. If Bitbucket
-#                                     is started whilst connected to an blank/empty Elasticsearch, the search index will
-#                                     be created and populated. If an existing search index is encountered it is brought
-#                                     up to date, incrementally. From a user perspective, the difference between the two
-#                                     mechanisms is the time required to complete, the latter being faster.
+#                         NOTE: If Bitbucket is configured to use a remote Elasticsearch instance (which all Bitbucket
+#                         Data Center instances must be), then its state is NOT included implictly in home directory
+#                         backups, and may therefore take some to rebuild after a restore UNLESS one of the following
+#                         strategies is used.
 #
-#  - s3                   - Make use of a Amazon S3 bucket
-#                               When using S3, Elasticsearch requires the cloud plugin to be installed (see link below)
+#  - s3                 - Amazon S3 bucket - requires the Elasticsearch Cloud plugin to be installed. See
+#                         https://www.elastic.co/guide/en/elasticsearch/plugins/2.3/cloud-aws.html
 #
-#  - fs                   - Make use of a shared filesystem
-#                               When using a shared file system, ensure that all data and master nodes mount the
-#                               shared file system to the same mount point and that it is configured in the
-#                               elasticsearch.yml file (see link below)
-#
-# Elasticsearch cloud plugin documentation is available here:
-#         https://www.elastic.co/guide/en/elasticsearch/plugins/2.3/cloud-aws.html
-# Elasticsearch snapshot and restore documentation is available here:
-#         https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-snapshots.html
-#
+#  - fs                 - Shared filesystem - requires all data and master nodes to mount a shared file system to the
+#                         same mount point and that it is configured in the elasticsearch.yml file. See
+#                         https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-snapshots.html
 BACKUP_ELASTICSEARCH_TYPE=
 
 # If BACKUP_ZERO_DOWNTIME is set to true, the home directory and database will be backed up WITHOUT locking Bitbucket
@@ -197,11 +188,6 @@ case ${BACKUP_ARCHIVE_TYPE} in
         BITBUCKET_BACKUP_ROOT=
         BITBUCKET_BACKUP_DB=${BITBUCKET_BACKUP_ROOT}/bitbucket-db/
         BITBUCKET_BACKUP_HOME=${BITBUCKET_BACKUP_ROOT}/bitbucket-home/
-
-        if [ -z "${BACKUP_ARCHIVE_TYPE}" ]; then
-            BITBUCKET_RESTORE_DB="${BITBUCKET_BACKUP_DB}"
-            BITBUCKET_RESTORE_HOME="${BITBUCKET_BACKUP_HOME}"
-        fi
 
         # The path to where the backup archives are stored
         BITBUCKET_BACKUP_ARCHIVE_ROOT=

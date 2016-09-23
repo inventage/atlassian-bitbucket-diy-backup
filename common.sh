@@ -110,6 +110,11 @@ function backup_wait {
 function source_archive_strategy {
     if [[ -e "${SCRIPT_DIR}/archive-${BACKUP_ARCHIVE_TYPE}.sh" ]]; then
         source "${SCRIPT_DIR}/archive-${BACKUP_ARCHIVE_TYPE}.sh"
+    else
+        # If no archiver was specified, any file system level restore cannot unpack any archives to be restored.
+        # Only the "latest snapshot" (i.e., the working folder used by the backup process) is available.
+        BITBUCKET_RESTORE_DB="${BITBUCKET_BACKUP_DB}"
+        BITBUCKET_RESTORE_HOME="${BITBUCKET_BACKUP_HOME}"
     fi
 }
 
