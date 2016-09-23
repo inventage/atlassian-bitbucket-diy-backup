@@ -2,7 +2,6 @@
 # A backup and restore strategy for Amazon RDS database
 # -------------------------------------------------------------------------------------
 
-SCRIPT_DIR=$(dirname "$0")
 source "${SCRIPT_DIR}/aws-common.sh"
 
 # Validate that the RDS_INSTANCE_ID variable has been set to a valid Amazon RDS instance
