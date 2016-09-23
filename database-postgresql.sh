@@ -30,7 +30,7 @@ function prepare_restore_db {
     check_config_var "POSTGRES_USERNAME"
     check_config_var "POSTGRES_HOST"
     check_config_var "POSTGRES_PORT"
-    check_config_var "BITBUCKET_RESTORE_DB"
+    check_var "BITBUCKET_RESTORE_DB"
 
     if ! run psql -U "${POSTGRES_USERNAME}" -h "${POSTGRES_HOST}" --port=${POSTGRES_PORT} --list > /dev/null 2>&1; then
         bail "Unable to get a list of databases from database server '${POSTGRES_HOST}'"
