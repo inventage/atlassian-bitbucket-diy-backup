@@ -32,12 +32,7 @@ function prepare_restore_db {
     check_config_var "POSTGRES_PORT"
     check_var "BITBUCKET_RESTORE_DB"
 
-    if ! run psql -U "${POSTGRES_USERNAME}" -h "${POSTGRES_HOST}" --port=${POSTGRES_PORT} --list > /dev/null 2>&1; then
-        bail "Unable to get a list of databases from database server '${POSTGRES_HOST}'"
-    fi
-
-    local db_exists=$(run psql -U "${POSTGRES_USERNAME}" -h "${POSTGRES_HOST}" --port=${POSTGRES_PORT} -qlt 2> /dev/null | grep -w "${BITBUCKET_DB}")
-    if [ -n "${db_exists}" ]; then
+    if run psql -U "${POSTGRES_USERNAME}" -h "${POSTGRES_HOST}" --port=${POSTGRES_PORT} -d "${BITBUCKET_DB}" -c "" 2>/dev/null; then
         local table_count=$(psql -U "${POSTGRES_USERNAME}" -h "${POSTGRES_HOST}" --port=${POSTGRES_PORT} -d "${BITBUCKET_DB}" -tqc '\dt' | grep -v "^$" | wc -l)
         if [ "${table_count}" -gt 0 ]; then
             error "Database '${BITBUCKET_DB}' already exists and contains ${table_count} tables"

@@ -16,6 +16,13 @@ function backup_elasticsearch {
     create_es_snapshot "${ELASTICSEARCH_HOST}"
 }
 
+function cleanup_elasticsearch_backups {
+    check_config_var "ELASTICSEARCH_HOST"
+    check_config_var "ELASTICSEARCH_PORT"
+
+    cleanup_es_snapshots "${ELASTICSEARCH_HOST}"
+}
+
 function prepare_restore_elasticsearch {
     check_es_index_exists "${ELASTICSEARCH_HOST}" "${ELASTICSEARCH_INDEX_NAME}"
     check_es_needs_configuration "${ELASTICSEARCH_HOST}"
