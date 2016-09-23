@@ -2,23 +2,12 @@
 # Utilities used for Elasticsearch backup, restore and disaster Recovery
 # -------------------------------------------------------------------------------------
 
-# ----------------------------------------------------------------------------------------------------------------------
-# Shared backup, restore and DR implementation
-# ----------------------------------------------------------------------------------------------------------------------
+check_command "jq"
+check_command "curl"
 
-function backup_elasticsearch {
-    check_config_var "ELASTICSEARCH_HOST"
-    check_config_var "ELASTICSEARCH_PORT"
-
-    check_es_needs_configuration "${ELASTICSEARCH_HOST}"
-    create_es_snapshot "${ELASTICSEARCH_HOST}"
-}
-
-function prepare_restore_elasticsearch {
+# Return a validated Elasticsearch snapshot name on stdout, or bail with an appropriate message
+function validate_es_snapshot {
     local snapshot_tag="$1"
-
-    check_es_index_exists "${ELASTICSEARCH_HOST}" "${ELASTICSEARCH_INDEX_NAME}"
-    check_es_needs_configuration "${ELASTICSEARCH_HOST}"
 
     debug "Getting snapshot list from Elasticsearch server '${ELASTICSEARCH_HOST}'"
     local snapshot_list=$(get_es_snapshots "${ELASTICSEARCH_HOST}")
@@ -38,20 +27,8 @@ function prepare_restore_elasticsearch {
         bail "Please select a snapshot to restore"
     fi
 
-    RESTORE_ELASTICSEARCH_SNAPSHOT="${snapshot_tag}"
+    echo "${snapshot_tag}"
 }
-
-function restore_elasticsearch {
-    check_config_var "ELASTICSEARCH_HOST"
-    check_config_var "ELASTICSEARCH_PORT"
-    check_var "RESTORE_ELASTICSEARCH_SNAPSHOT"
-
-    restore_es_snapshot "${ELASTICSEARCH_HOST}" "${RESTORE_ELASTICSEARCH_SNAPSHOT}"
-}
-
-# ----------------------------------------------------------------------------------------------------------------------
-# Private functions
-# ----------------------------------------------------------------------------------------------------------------------
 
 # Check whether the Elasticsearch server has a snapshot repository configured
 function check_es_index_exists {

@@ -2,7 +2,6 @@
 # A backup and restore strategy for Amazon EBS
 # -------------------------------------------------------------------------------------
 
-SCRIPT_DIR=$(dirname "$0")
 source "${SCRIPT_DIR}/aws-common.sh"
 
 function prepare_backup_home {
