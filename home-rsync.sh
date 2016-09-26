@@ -16,7 +16,7 @@ function backup_home {
 }
 
 function prepare_restore_home {
-    check_config_var "BITBUCKET_RESTORE_HOME"
+    check_var "BITBUCKET_RESTORE_HOME"
     check_config_var "BITBUCKET_HOME"
 
     no_op

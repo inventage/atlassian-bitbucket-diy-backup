@@ -110,6 +110,11 @@ function backup_wait {
 function source_archive_strategy {
     if [[ -e "${SCRIPT_DIR}/archive-${BACKUP_ARCHIVE_TYPE}.sh" ]]; then
         source "${SCRIPT_DIR}/archive-${BACKUP_ARCHIVE_TYPE}.sh"
+    else
+        # If no archiver was specified, any file system level restore cannot unpack any archives to be restored.
+        # Only the "latest snapshot" (i.e., the working folder used by the backup process) is available.
+        BITBUCKET_RESTORE_DB="${BITBUCKET_BACKUP_DB}"
+        BITBUCKET_RESTORE_HOME="${BITBUCKET_BACKUP_HOME}"
     fi
 }
 
@@ -118,6 +123,15 @@ function source_database_strategy {
         source "${SCRIPT_DIR}/database-${BACKUP_DATABASE_TYPE}.sh"
     else
         error "BACKUP_DATABASE_TYPE=${BACKUP_DATABASE_TYPE} is not implemented, '${SCRIPT_DIR}/database-${BACKUP_DATABASE_TYPE}.sh' does not exist"
+        bail "Please update BACKUP_DATABASE_TYPE in '${BACKUP_VARS_FILE}'"
+    fi
+}
+
+function source_elasticsearch_strategy {
+    if [ -e "${SCRIPT_DIR}/elasticsearch-${BACKUP_ELASTICSEARCH_TYPE:-no_op}.sh" ]; then
+        source "${SCRIPT_DIR}/elasticsearch-${BACKUP_ELASTICSEARCH_TYPE:-no_op}.sh"
+    else
+        error "BACKUP_ELASTICSEARCH_TYPE=${BACKUP_ELASTICSEARCH_TYPE} is not implemented, '${SCRIPT_DIR}/elasticsearch-${BACKUP_ELASTICSEARCH_TYPE:-no_op}.sh' does not exist"
         bail "Please update BACKUP_DATABASE_TYPE in '${BACKUP_VARS_FILE}'"
     fi
 }

@@ -18,6 +18,7 @@ source "${SCRIPT_DIR}/common.sh"
 source_archive_strategy
 source_database_strategy
 source_home_strategy
+source_elasticsearch_strategy
 
 # Ensure compatibility if BACKUP_ZERO_DOWNTIME is set
 if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
@@ -48,6 +49,10 @@ prepare_backup_home
 # If necessary, lock Bitbucket, start an external backup and wait for instance readiness
 lock_bitbucket
 backup_start
+
+# Run Elasticsearch backup in the background (if not configured, this will be a No-Operation)
+backup_elasticsearch &
+
 backup_wait
 
 info "Backing up the database and filesystem in parallel"
@@ -65,9 +70,11 @@ success "Successfully completed the backup of your ${PRODUCT} instance"
 
 cleanup_db_backups
 cleanup_home_backups
+cleanup_elasticsearch_backups
 
 if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then
     info "Archiving backups and cleaning up old archives"
     archive_backup
     cleanup_old_archives
 fi
+

@@ -13,25 +13,44 @@ BITBUCKET_UID=atlbitbucket
 BITBUCKET_GID=atlbitbucket
 
 # Strategy for backing up the Bitbucket home directory:
-#  - amazon-ebs           - Amazon EBS snapshots of the volume containing the home directory
-#  - rsync                - "rsync" of the home directory contents to a temporary location. NOTE: This can NOT be used
-#                           with BACKUP_ZERO_DOWNTIME=true.
-#  - zfs                  - Select the ZFS snapshot strategy for home directory backups.
+#  - amazon-ebs         - Amazon EBS snapshots of the volume containing the home directory
+#  - rsync              - "rsync" of the home directory contents to a temporary location. NOTE: This can NOT be used
+#                         with BACKUP_ZERO_DOWNTIME=true.
+#  - zfs                - Select the ZFS snapshot strategy for home directory backups.
 BACKUP_HOME_TYPE=rsync
 
 # Strategy for backing up the database:
-#  - amazon-rds           - Amazon RDS snapshots
-#  - mysql                - MySQL using "mysqldump" to backup and "mysql" to restore
-#  - postgresql           - PostgreSQL using "pg_dump" to backup and "pg_restore" to restore
-#  - postgresql-fslevel   - PostgreSQL with data directory located in the file system volume as home directory (so
-#                           that it will be included implicitly in the home volume snapshot)
+#  - amazon-rds         - Amazon RDS snapshots
+#  - mysql              - MySQL using "mysqldump" to backup and "mysql" to restore
+#  - postgresql         - PostgreSQL using "pg_dump" to backup and "pg_restore" to restore
+#  - postgresql-fslevel - PostgreSQL with data directory located in the file system volume as home directory (so
+#                         that it will be included implicitly in the home volume snapshot)
 BACKUP_DATABASE_TYPE=postgresql
 
 # Strategy for archiving backups and/or copying them to an offsite location:
-#  - aws-snapshots        - AWS EBS and/or RDS snapshots, with optional copy to another region
-#  - gpg-zip              - "gpg-zip" archive
-#  - tar                  - Unix "tar" archive
+#  - aws-snapshots      - AWS EBS and/or RDS snapshots, with optional copy to another region
+#  - gpg-zip            - "gpg-zip" archive
+#  - tar                - Unix "tar" archive
 BACKUP_ARCHIVE_TYPE=tar
+
+# Strategy for backing up Elasticsearch:
+#  - <leave blank>      - No separate snapshot and restore of Elasticsearch state (default) - recommended for Bitbucket
+#                         Server instances configured to use the (default) bundled Elasticsearch instance. In this case
+#                         all Elasticsearch state is stored under ${BITBUCKET_HOME}/shared and therefore already
+#                         included in the home directory snapshot implicitly.
+#
+#                         NOTE: If Bitbucket is configured to use a remote Elasticsearch instance (which all Bitbucket
+#                         Data Center instances must be), then its state is NOT included implictly in home directory
+#                         backups, and may therefore take some to rebuild after a restore UNLESS one of the following
+#                         strategies is used.
+#
+#  - s3                 - Amazon S3 bucket - requires the Elasticsearch Cloud plugin to be installed. See
+#                         https://www.elastic.co/guide/en/elasticsearch/plugins/2.3/cloud-aws.html
+#
+#  - fs                 - Shared filesystem - requires all data and master nodes to mount a shared file system to the
+#                         same mount point and that it is configured in the elasticsearch.yml file. See
+#                         https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-snapshots.html
+BACKUP_ELASTICSEARCH_TYPE=
 
 # If BACKUP_ZERO_DOWNTIME is set to true, the home directory and database will be backed up WITHOUT locking Bitbucket
 # in maintenance mode. NOTE: This can NOT be used with Bitbucket Server versions older than 4.8. For more information,
@@ -98,7 +117,7 @@ case ${BACKUP_DATABASE_TYPE} in
         RDS_INSTANCE_ID=
 
         # === Optionals ===
-        
+
         # The instance class to use when restoring the database
         RESTORE_RDS_INSTANCE_CLASS=
         # The subnet in which the database will be restored
@@ -140,9 +159,9 @@ case ${BACKUP_DATABASE_TYPE} in
         # Note: Attempt auto-detection based on major version (Works with CentOS, RHEL and Amazon Linux, override if unsure)
         STANDBY_DATABASE_DATA_DIR="/var/lib/pgsql${psql_major}/data"
         # The user which runs the PostgreSQL system service. This is normally "postgres"
-        STANDBY_DATABASE_SERVICE_USER="postgres"
+        STANDBY_DATABASE_SERVICE_USER=postgres
         # The name of the replication slot
-        STANDBY_DATABASE_REPLICATION_SLOT_NAME="bitbucket"
+        STANDBY_DATABASE_REPLICATION_SLOT_NAME=bitbucket
         # The username and password of the user that will be used to execute the replication.
         STANDBY_DATABASE_REPLICATION_USER_USERNAME=
         STANDBY_DATABASE_REPLICATION_USER_PASSWORD=
@@ -216,6 +235,29 @@ HIPCHAT_TOKEN=
 # ${KEEP_BACKUPS} are deleted.  Set to 0 to disable cleanup of old snapshots.
 # This is also used by Disaster Recovery to limit snapshots.
 KEEP_BACKUPS=0
+
+# ==== Elasticsearch VARS ====
+
+# The Bitbucket search index (default is bitbucket-search-v1). Most users will NOT need to change this.
+ELASTICSEARCH_INDEX_NAME=bitbucket-search-v1
+# The hostname and port for the Elasticsearch server / Elasticsearch load balancer
+ELASTICSEARCH_HOST=localhost
+ELASTICSEARCH_PORT=7993
+# Elasticsearch credentials in the format: -u "username:password"
+ELASTICSEARCH_CREDENTIALS=
+ELASTICSEARCH_REPOSITORY_NAME=bitbucket-snapshots
+
+case ${BACKUP_ELASTICSEARCH_TYPE} in
+    s3)
+        # Configuration for the Amazon S3 snapshot repository (s3)
+        ELASTICSEARCH_S3_BUCKET=bitbucket-search-snapshots
+        ELASTICSEARCH_S3_BUCKET_REGION=us-east-1
+        ;;
+    fs)
+        # Configuration for the shared filesystem snapshot repository (fs)
+        ELASTICSEARCH_REPOSITORY_LOCATION=
+        ;;
+esac
 
 # ==== DISASTER RECOVERY VARS ====
 

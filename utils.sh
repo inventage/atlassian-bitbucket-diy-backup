@@ -17,22 +17,22 @@ function check_command {
 # Log an debug message to the console if BITBUCKET_VERBOSE_BACKUP=true
 function debug {
     if [ "${BITBUCKET_VERBOSE_BACKUP}" = "true" ]; then
-        print "$(script_ctx)[${BITBUCKET_URL}] DEBUG: $*"
+        print "$(script_ctx)[$(hostname)] DEBUG: $*"
     fi
 }
 
 # Log an error message to the console and publish it to Hipchat
 function error {
     # Set the following to have log statements print contextual information
-    echo "$(script_ctx)[${BITBUCKET_URL}] ERROR: $*" > /dev/stderr
-    hc_announce "[${BITBUCKET_URL}] ERROR: $*" "red" 1
+    echo "$(script_ctx)[$(hostname)] ERROR: $*" > /dev/stderr
+    hc_announce "[$(hostname)] ERROR: $*" "red" 1
 }
 
 # Log an info message to the console and publish it to Hipchat
 function info {
     # Set the following to have log statements print contextual information
-    print "$(script_ctx)[${BITBUCKET_URL}]  INFO: $*"
-    hc_announce "[${BITBUCKET_URL}]  INFO: $*" "gray"
+    print "$(script_ctx)[$(hostname)]  INFO: $*"
+    hc_announce "[$(hostname)]  INFO: $*" "gray"
 }
 
 # Checks if a variable is zero length, if so it prints the supplied error message and bails
@@ -142,8 +142,8 @@ function run {
 
 # Log a success message to the console and publish it to Hipchat
 function success {
-    print "[${BITBUCKET_URL}]  SUCC: $*"
-    hc_announce "[${BITBUCKET_URL}]  SUCC: $*" "green"
+    print "[$(hostname)]  SUCC: $*"
+    hc_announce "[$(hostname)]  SUCC: $*" "green"
 }
 
 # -------------------------------------------------------------------------------------

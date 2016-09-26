@@ -27,14 +27,12 @@ function backup_db {
 }
 
 function prepare_restore_db {
-    check_config_var "BITBUCKET_RESTORE_DB"
     check_config_var "POSTGRES_USERNAME"
     check_config_var "POSTGRES_HOST"
     check_config_var "POSTGRES_PORT"
-    check_config_var "BITBUCKET_DB"
+    check_var "BITBUCKET_RESTORE_DB"
 
-    local db_exists=$(! run psql -U "${POSTGRES_USERNAME}" -h "${POSTGRES_HOST}" --port=${POSTGRES_PORT} -lqt | cut -d \| -f 1 | grep -w "${BITBUCKET_DB}")
-    if [ -n "${db_exists}" ]; then
+    if run psql -U "${POSTGRES_USERNAME}" -h "${POSTGRES_HOST}" --port=${POSTGRES_PORT} -d "${BITBUCKET_DB}" -c "" 2>/dev/null; then
         local table_count=$(psql -U "${POSTGRES_USERNAME}" -h "${POSTGRES_HOST}" --port=${POSTGRES_PORT} -d "${BITBUCKET_DB}" -tqc '\dt' | grep -v "^$" | wc -l)
         if [ "${table_count}" -gt 0 ]; then
             error "Database '${BITBUCKET_DB}' already exists and contains ${table_count} tables"
@@ -46,8 +44,8 @@ function prepare_restore_db {
 }
 
 function restore_db {
-    run pg_restore -U "${POSTGRES_USERNAME}" -h "${POSTGRES_HOST}" --port=${POSTGRES_PORT} -d postgres -C -Fd \
-        ${PG_PARALLEL} "${BITBUCKET_RESTORE_DB}"
+    run pg_restore -U "${POSTGRES_USERNAME}" -h "${POSTGRES_HOST}" --port=${POSTGRES_PORT} ${PG_PARALLEL} \
+        -d postgres -C -Fd "${BITBUCKET_RESTORE_DB}"
 }
 
 function cleanup_db_backups {
