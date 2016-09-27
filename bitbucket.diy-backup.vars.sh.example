@@ -242,7 +242,7 @@ KEEP_BACKUPS=0
 ELASTICSEARCH_INDEX_NAME=bitbucket-search-v1
 # The hostname and port for the Elasticsearch server / Elasticsearch load balancer
 ELASTICSEARCH_HOST=localhost
-ELASTICSEARCH_PORT=7993
+ELASTICSEARCH_PORT=7992
 # Elasticsearch credentials in the format: -u "username:password"
 ELASTICSEARCH_CREDENTIALS=
 ELASTICSEARCH_REPOSITORY_NAME=bitbucket-snapshots
