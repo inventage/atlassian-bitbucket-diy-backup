@@ -225,7 +225,11 @@ function remount_device {
 function unmount_device {
     case ${FILESYSTEM_TYPE} in
     zfs)
-        run sudo zfs unshare "${ZFS_HOME_TANK_NAME}"
+        local shared=$(sudo zfs get -o value -H sharenfs "${ZFS_HOME_TANK_NAME}")
+
+        if [ "${shared}" = "on" ]; then
+            run sudo zfs unshare "${ZFS_HOME_TANK_NAME}"
+        fi
         run sudo zfs unmount "${ZFS_HOME_TANK_NAME}"
         run sudo zpool export tank
         ;;
