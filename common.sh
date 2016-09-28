@@ -174,7 +174,7 @@ function unlock_bitbucket {
 
 # Get the version of Bitbucket running on the Bitbucket instance
 function bitbucket_version {
-    run curl ${CURL_OPTIONS} "${BITBUCKET_URL}/rest/api/1.0/application-properties" | jq -r '.version' | \
+    run curl "${CURL_OPTIONS} -k" "${BITBUCKET_URL}/rest/api/1.0/application-properties" | jq -r '.version' | \
         sed -e 's/\./ /' -e 's/\..*//'
 }
 
