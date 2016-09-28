@@ -16,7 +16,7 @@ BITBUCKET_GID=atlbitbucket
 #  - amazon-ebs         - Amazon EBS snapshots of the volume containing the home directory
 #  - rsync              - "rsync" of the home directory contents to a temporary location. NOTE: This can NOT be used
 #                         with BACKUP_ZERO_DOWNTIME=true.
-#  - zfs                - Select the ZFS snapshot strategy for home directory backups.
+#  - zfs                - ZFS snapshot strategy for home directory backups.
 BACKUP_HOME_TYPE=rsync
 
 # Strategy for backing up the database:
