@@ -26,6 +26,8 @@ if [ -z "${BITBUCKET_UID}" -o -z "${BITBUCKET_GID}" ]; then
     bail "See 'bitbucket.diy-backup.vars.sh.example' for the defaults."
 fi
 
+check_command "jq"
+
 ##########################################################
 
 # Prepare for restore process
