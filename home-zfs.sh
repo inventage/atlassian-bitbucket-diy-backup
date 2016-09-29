@@ -57,7 +57,7 @@ function setup_home_replication {
 
     debug "Checking that we can ssh onto ${STANDBY_SSH_HOST}"
     if ! run ssh ${STANDBY_SSH_OPTIONS} ${STANDBY_SSH_USER}@${STANDBY_SSH_HOST} echo '' > /dev/null 2>&1; then
-        bail "Cannot SSH to '${STANDBY_SSH_HOST}'"
+        bail "Unable to SSH to '${STANDBY_SSH_HOST}'"
     fi
 
     debug "Checking that ZFS filesystem with name '${ZFS_HOME_TANK_NAME}' doesn't already exist on the standby file server '${STANDBY_SSH_HOST}'"
