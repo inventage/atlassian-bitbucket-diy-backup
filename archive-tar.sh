@@ -18,7 +18,7 @@ function prepare_restore_archive {
     BITBUCKET_BACKUP_ARCHIVE_NAME=$1
 
     if [ -z "${BITBUCKET_BACKUP_ARCHIVE_NAME}" ]; then
-        print "Usage: $0 <backup-identifier>"
+        print "Usage: $0 <backup-snapshot>"
         if [ ! -d "${BITBUCKET_BACKUP_ARCHIVE_ROOT}" ]; then
             error "'${BITBUCKET_BACKUP_ARCHIVE_ROOT}' does not exist!"
         else

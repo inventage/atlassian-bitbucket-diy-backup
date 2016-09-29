@@ -16,7 +16,7 @@ function prepare_restore_archive {
     BITBUCKET_BACKUP_ARCHIVE_NAME=$1
 
     if [ -z "${BITBUCKET_BACKUP_ARCHIVE_NAME}" ]; then
-        print "Usage: $0 <backup-identifier>.tar.gz.gpg"
+        print "Usage: $0 <backup-snapshot>"
         if [ ! -d "${BITBUCKET_BACKUP_ARCHIVE_ROOT}" ]; then
             error "'${BITBUCKET_BACKUP_ARCHIVE_ROOT}' does not exist!"
         else
@@ -45,11 +45,10 @@ function prepare_restore_archive {
 }
 
 function restore_archive {
-    local archive_to_restore="${BITBUCKET_BACKUP_ARCHIVE_NAME}"
-    if [ ! -f "${BITBUCKET_BACKUP_ARCHIVE_NAME}.tar.gz.gpg" ]; then
-        archive_to_restore="${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}"
-    fi
-    run gpg-zip --tar-args "-C ${BITBUCKET_RESTORE_ROOT}" --decrypt "${archive_to_restore}.tar.gz.gpg"
+    check_config_var "BITBUCKET_BACKUP_ARCHIVE_ROOT"
+    check_var "BITBUCKET_BACKUP_ARCHIVE_NAME"
+    check_var "BITBUCKET_RESTORE_ROOT"
+    run gpg-zip --tar-args "-C ${BITBUCKET_RESTORE_ROOT}" --decrypt "${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}.tar.gz.gpg"
 }
 
 function cleanup_old_archives {
