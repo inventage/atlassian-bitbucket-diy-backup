@@ -16,7 +16,7 @@ function prepare_restore_archive {
     BITBUCKET_BACKUP_ARCHIVE_NAME=$1
 
     if [ -z "${BITBUCKET_BACKUP_ARCHIVE_NAME}" ]; then
-        print "Usage: $0 <backup-file-name>.tar.gz.gpg"
+        print "Usage: $0 <backup-identifier>.tar.gz.gpg"
         if [ ! -d "${BITBUCKET_BACKUP_ARCHIVE_ROOT}" ]; then
             error "'${BITBUCKET_BACKUP_ARCHIVE_ROOT}' does not exist!"
         else
@@ -25,8 +25,8 @@ function prepare_restore_archive {
         exit 99
     fi
 
-    if [ ! -f "${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}" ]; then
-        error "'${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}' does not exist!"
+    if [ ! -f "${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}.tar.gz.gpg" ]; then
+        error "'${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}.tar.gz.gpg' does not exist!"
         print_available_backups
         exit 99
     fi
@@ -45,18 +45,20 @@ function prepare_restore_archive {
 }
 
 function restore_archive {
-    if [ ! -f "${BITBUCKET_BACKUP_ARCHIVE_NAME}" ]; then
-        BITBUCKET_BACKUP_ARCHIVE_NAME="${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}"
+    local archive_to_restore="${BITBUCKET_BACKUP_ARCHIVE_NAME}"
+    if [ ! -f "${BITBUCKET_BACKUP_ARCHIVE_NAME}.tar.gz.gpg" ]; then
+        archive_to_restore="${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}"
     fi
-    run gpg-zip --tar-args "-C ${BITBUCKET_RESTORE_ROOT}" --decrypt "${BITBUCKET_BACKUP_ARCHIVE_NAME}"
+    run gpg-zip --tar-args "-C ${BITBUCKET_RESTORE_ROOT}" --decrypt "${archive_to_restore}.tar.gz.gpg"
 }
 
-function bitbucket_cleanup {
+function cleanup_old_archives {
     # Cleanup of old backups is not currently implemented
     no_op
 }
 
 function print_available_backups {
     print "Available backups:"
-    ls "${BITBUCKET_BACKUP_ARCHIVE_ROOT}"
+    # Drop the .tar.gz.gpg extension, to make it a backup identifier
+    ls "${BITBUCKET_BACKUP_ARCHIVE_ROOT}" | sed -e 's/\.tar\.gz\.gpg$//g'
 }

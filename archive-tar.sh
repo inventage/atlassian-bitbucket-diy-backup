@@ -18,18 +18,13 @@ function prepare_restore_archive {
     BITBUCKET_BACKUP_ARCHIVE_NAME=$1
 
     if [ -z "${BITBUCKET_BACKUP_ARCHIVE_NAME}" ]; then
-        print "Usage: $0 <backup-file-name>.tar.gz"
+        print "Usage: $0 <backup-identifier>"
         if [ ! -d "${BITBUCKET_BACKUP_ARCHIVE_ROOT}" ]; then
             error "'${BITBUCKET_BACKUP_ARCHIVE_ROOT}' does not exist!"
         else
             available_backups
         fi
         exit 99
-    fi
-
-    if [ -f "${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}" ]; then
-        # Archive name includes .tar.gz extension. It must be trimmed to make the snapshot compatible with other strategies
-        BITBUCKET_BACKUP_ARCHIVE_NAME="$(echo "${BITBUCKET_BACKUP_ARCHIVE_NAME}" | sed -e 's/\.tar\.gz$//')"
     fi
 
     if [ ! -f "${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}.tar.gz" ]; then
@@ -70,5 +65,6 @@ function cleanup_old_archives {
 function available_backups {
     check_config_var "BITBUCKET_BACKUP_ARCHIVE_ROOT"
     print "Available backups:"
+    # Drop the .tar.gz extension, to make it a backup identifier
     ls "${BITBUCKET_BACKUP_ARCHIVE_ROOT}" | sed -e 's/\.tar\.gz$//g'
 }

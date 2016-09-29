@@ -5,7 +5,7 @@
 check_command "jq"
 check_command "curl"
 
-# Return a validated Elasticsearch snapshot name on stdout, or bail with an appropriate message
+# Validates whether a valid snapshot identifier has been specified
 function validate_es_snapshot {
     local snapshot_tag="$1"
 
@@ -26,8 +26,6 @@ function validate_es_snapshot {
         print "${snapshot_list}"
         bail "Please select a snapshot to restore"
     fi
-
-    echo "${snapshot_tag}"
 }
 
 # Check whether the Elasticsearch server has a snapshot repository configured

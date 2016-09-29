@@ -40,6 +40,8 @@ if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
     fi
 fi
 
+check_command "jq"
+
 ##########################################################
 
 info "Preparing for backup"
