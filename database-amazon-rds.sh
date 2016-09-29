@@ -33,8 +33,8 @@ function restore_db {
     fi
 
     debug "Checking if '${RDS_INSTANCE_ID}' is in MultiAz mode"
-    local isMultiAz=$(run aws rds describe-db-instances --db-instance-identifier "${RDS_INSTANCE_ID}" | jq -r '.DBInstances [0] .MultiAZ')
-    if [ "${isMultiAz}" == "true" ]; then
+    local is_multi_az=$(run aws rds describe-db-instances --db-instance-identifier "${RDS_INSTANCE_ID}" | jq -r '.DBInstances [0] .MultiAZ')
+    if [ "${is_multi_az}" == "true" ]; then
         optional_args="${optional_args} --multi-az"
     fi
 
