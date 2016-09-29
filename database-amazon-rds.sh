@@ -36,7 +36,7 @@ function restore_db {
     rename_rds_instance "${RDS_INSTANCE_ID}" "${renamed_rds_instance}"
 
     FINAL_MESSAGE+=$'RDS Instance '${RDS_INSTANCE_ID}$' has been renamed to '${renamed_rds_instance}$'\n'
-    FINAL_MESSAGE+=$'Note that if this instance was serving as a RDS Read master then you will need to re-provision the read replicas\n'
+    FINAL_MESSAGE+=$'Note that if '${renamed_rds_instance}$' has read replica(s), you probably want to delete them and re-create as read replica(s) of '${RDS_INSTANCE_ID}$'\n'
 
     info "Attempting to restore RDS snapshot '${RESTORE_RDS_SNAPSHOT_ID}' as RDS instance '${RDS_INSTANCE_ID}'"
 
