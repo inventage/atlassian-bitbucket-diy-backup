@@ -2,63 +2,58 @@
 
 This repository contains a set of example scripts that demonstrate best practices for backing up a Bitbucket Server/Data Center instance using a curated set of vendor technologies.
 
-The scripts contained within this repository enable two categories of backup
+The scripts contained within this repository enable two categories of backup:
 
-* Backups with downtime. This is the only type of backup available if your Bitbucket instance is older than 4.8 or if you
-are using the ``rsync`` strategy (described below)
+* Backups with downtime. This is the only type of backup available if your Bitbucket instance is older than 4.8 or if you are using the ``rsync`` strategy (described below)
 * Zero downtime backups. To enable Zero Downtime Backup, you will need to set the variable `BACKUP_ZERO_DOWNTIME` to `true`.
-If true, this variable will backup the filesystem and database **without** locking the application. **NOTE:** This is
-only available from version 4.8 of Bitbucket Server/Data Center, and requires a compatible strategy for taking atomic
+If true, this variable will backup the filesystem and database **without** locking the application.
+ **NOTE:** This is only available from version 4.8 of Bitbucket Server/Data Center, and requires a compatible strategy for taking atomic
 block level snapshots of the home directory.
 
-### Configuration ####
+### Strategies ###
 
-The following is a list of configuration options that should be set in `bitbucket.diy-backup.vars.sh`. **Note** that not
- all options need to be configured. The backup strategy you choose together with your vendor tools will determine
- which options should be set. See `bitbucket.diy-backup.vars.sh.example` for a complete set of all configuration options
+In order to use these example scripts you must specify a `BACKUP_HOME_TYPE` and `BACKUP_DATABASE_TYPE` strategy, and optionally a `BACKUP_ARCHIVE_TYPE` and/or `BACKUP_ELASTICSEARCH_TYPE` strategy.
+These strategies can be set within the `bitbucket.diy-backup.vars.sh`.
 
-`INSTANCE_NAME` Name used to identify the Bitbucket instance being backed up. This appears in archive names and AWS
-snapshot tags. It should not contain spaces and must be under 100 characters long.
-
-`BITBUCKET_URL` The base URL of the Bitbucket instance to be backed up. It cannot end on a '/'.
-
-`BITBUCKET_HOME` The path to the Bitbucket home directory (with trailing /).
-
-`BITBUCKET_UID` and `BITBUCKET_GID` Owner and group of `${BITBUCKET_HOME}`.
+For each `BACKUP_HOME_TYPE`, `BACKUP_DATABASE_TYPE`, `BACKUP_ARCHIVE_TYPE` and `BACKUP_ELASTICSEARCH_TYPE` strategy,
+additional variables need to be set in `bitbucket.diy-backup.vars.sh` to configure the details of your Bitbucket instance's home directory, database, and other options.
+Refer to `bitbucket.diy-backup.vars.sh.example` for a complete description of all the various variables and their definitions.
 
 `BACKUP_HOME_TYPE` Strategy for backing up the Bitbucket home directory, valid values are:
 
 * `amazon-ebs`          - Amazon EBS snapshots of the volume containing the home directory.
-* `rsync`               - "rsync" of the home directory contents to a temporary location. **NOTE:** This can NOT be used
-                           with `BACKUP_ZERO_DOWNTIME=true`.
+* `rsync`               - "rsync" of the home directory contents to a temporary location. **NOTE:** This can NOT be used with `BACKUP_ZERO_DOWNTIME=true`.
+* `zfs`                 - ZFS snapshot strategy for home directory backups.
 
 `BACKUP_DATABASE_TYPE` Strategy for backing up the database, valid values are:
 
 * `amazon-rds`           - Amazon RDS snapshots.
 * `mysql`                - MySQL using "mysqldump" to backup and "mysql" to restore.
 * `postgresql`           - PostgreSQL using "pg_dump" to backup and "pg_restore" to restore.
-* `postgresql93-fslevel` - PostgreSQL 9.3 with data directory located in the file system volume as home directory (so
-                            that it will be included implicitly in the home volume snapshot).
+* `postgresql-fslevel` - PostgreSQL with data directory located in the file system volume as home directory (so that it will be included implicitly in the home volume snapshot).
 
 `BACKUP_ARCHIVE_TYPE`  Strategy for archiving backups and/or copying them to an offsite location, valid values are:
 
+* `<leave-blank>`         - Do not use an archiving strategy.
 * `aws-snapshots`        - AWS EBS and/or RDS snapshots, with optional copy to another region.
 * `gpg-zip`              - "gpg-zip" archive
 * `tar`                  - Unix "tar" archive
 
+
+`BACKUP_ELASTICSEARCH_TYPE` Strategy for backing up Elasticsearch, valid values are:
+
+* `<leave blank>`        - No separate snapshot and restore of Elasticsearch state (default) 
+                         - recommended for Bitbucket Server instances configured to use the (default) bundled Elasticsearch instance. In this case all Elasticsearch state is stored under ${BITBUCKET_HOME}/shared and therefore already included in the home directory snapshot implicitly. NOTE: If Bitbucket is configured to use a remote Elasticsearch instance (which all Bitbucket Data Center instances must be), then its state is NOT included implictly in home directory backups, and may therefore take some to rebuild after a restore UNLESS one of the following strategies is used.
+* `s3`                  - Amazon S3 bucket - requires the Elasticsearch Cloud plugin to be installed. See https://www.elastic.co/guide/en/elasticsearch/plugins/2.3/cloud-aws.html
+* `fs`                  - Shared filesystem - requires all data and master nodes to mount a shared file system to the same mount point and that it is configured in the elasticsearch.yml file. See https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-snapshots.html
+
+### Configuration ####
+
+You will need to configure the script variables found in `bitbucket.diy-backup.vars.sh` based on your chosen strategies. **Note** that not all options need to be configured. The backup strategy you choose together with your vendor tools will determine which options should be set. See `bitbucket.diy-backup.vars.sh.example` for a complete set of all configuration options.
+
 `BACKUP_ZERO_DOWNTIME` If set to true, the home directory and database will be backed up **without** locking Bitbucket
-by placing it in maintenance mode. **NOTE:** This can NOT be used with Bitbucket Server versions older than 4.8. For
-more information, see [Zero downtime backup](https://confluence.atlassian.com/display/BitbucketServer/Using+Bitbucket+Zero+Downtime+Backup).
+by placing it in maintenance mode. **NOTE:** This can NOT be used with Bitbucket Server versions older than 4.8. For more information, see [Zero downtime backup](https://confluence.atlassian.com/display/BitbucketServer/Using+Bitbucket+Zero+Downtime+Backup).
 Make sure you read and understand this document before uncommenting this variable.
-
-`BITBUCKET_BACKUP_USER` and `BITBUCKET_BACKUP_PASS` The username and password to a user with the necessary permissions
-required to lock Bitbucket in maintenance mode. Only required when `BACKUP_ZERO_DOWNTIME=false`.
-
-For each `BACKUP_HOME_TYPE`, `BACKUP_DATABASE_TYPE`, and `BACKUP_ARCHIVE_TYPE` strategy,
-additional variables need to be defined in `bitbucket.diy-backup.vars.sh` to configure the
-details of your Bitbucket instance's home directory, database, and other options.  Refer
-to `bitbucket.diy-backup.vars.sh.example` for a complete description of all the various
-variables and their meanings.
 
 ### Further reading ###
 * [Zero Downtime Backup](https://confluence.atlassian.com/display/BitbucketServer/Using+Bitbucket+Zero+Downtime+Backup)

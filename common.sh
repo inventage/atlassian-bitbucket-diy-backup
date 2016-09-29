@@ -174,7 +174,7 @@ function unlock_bitbucket {
 
 # Get the version of Bitbucket running on the Bitbucket instance
 function bitbucket_version {
-    run curl ${CURL_OPTIONS} "${BITBUCKET_URL}/rest/api/1.0/application-properties" | jq -r '.version' | \
+    run curl ${CURL_OPTIONS} -k "${BITBUCKET_URL}/rest/api/1.0/application-properties" | jq -r '.version' | \
         sed -e 's/\./ /' -e 's/\..*//'
 }
 
@@ -225,7 +225,11 @@ function remount_device {
 function unmount_device {
     case ${FILESYSTEM_TYPE} in
     zfs)
-        run sudo zfs unshare "${ZFS_HOME_TANK_NAME}"
+        local shared=$(run sudo zfs get -o value -H sharenfs "${ZFS_HOME_TANK_NAME}")
+
+        if [ "${shared}" = "on" ]; then
+            run sudo zfs unshare "${ZFS_HOME_TANK_NAME}"
+        fi
         run sudo zfs unmount "${ZFS_HOME_TANK_NAME}"
         run sudo zpool export tank
         ;;
