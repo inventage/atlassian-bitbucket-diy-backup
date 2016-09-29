@@ -32,6 +32,12 @@ function restore_db {
         optional_args="${optional_args} --db-subnet-group-name ${RESTORE_RDS_SUBNET_GROUP_NAME}"
     fi
 
+    debug "Checking if '${RDS_INSTANCE_ID}' is in MultiAz mode"
+    local isMultiAz=$(run aws rds describe-db-instances --db-instance-identifier "${RDS_INSTANCE_ID}" | jq -r '.DBInstances [0] .MultiAZ')
+    if [ "${isMultiAz}" == "true" ]; then
+        optional_args="${optional_args} --multi-az"
+    fi
+
     local renamed_rds_instance="${RDS_INSTANCE_ID}-${TIMESTAMP}"
     rename_rds_instance "${RDS_INSTANCE_ID}" "${renamed_rds_instance}"
 
@@ -48,7 +54,7 @@ function restore_db {
     while [ $SECONDS -lt ${end_time} ]; do
         restore_result=$(aws rds restore-db-instance-from-db-snapshot \
             --db-instance-identifier "${RDS_INSTANCE_ID}" \
-            --db-snapshot-identifier "${RESTORE_RDS_SNAPSHOT_ID}" ${optional_args})
+            --db-snapshot-identifier "${RESTORE_RDS_SNAPSHOT_ID}" ${optional_args} > /dev/null 2>&1)
 
         case $? in
             0)
@@ -106,16 +112,19 @@ function cleanup_db_backups {
 # ----------------------------------------------------------------------------------------------------------------------
 
 function promote_db {
+    check_config_var "DR_RDS_READ_REPLICA"
+    check_config_var "AWS_REGION"
+
     info "Promoting RDS read replica '${DR_RDS_READ_REPLICA}'"
 
-    run aws --region=${AWS_REGION} rds promote-read-replica --db-instance-identifier "${DR_RDS_READ_REPLICA}" > /dev/null
-    run aws --region=${AWS_REGION} rds wait db-instance-available --db-instance-identifier "${DR_RDS_READ_REPLICA}"
+    run aws --region="${AWS_REGION}" rds promote-read-replica --db-instance-identifier "${DR_RDS_READ_REPLICA}" > /dev/null
+    run aws --region="${AWS_REGION}" rds wait db-instance-available --db-instance-identifier "${DR_RDS_READ_REPLICA}"
 
     success "Promoted RDS read replica '${DR_RDS_READ_REPLICA}'"
 }
 
 function setup_db_replication {
-    # Automatically configured when the standby DB has been launched as an Amazon RDS read replica of a primary
+    info "RDS replication is automatically configured when the standby DB has been launched as an Amazon RDS read replica of the primary"
     no_op
 }
 
