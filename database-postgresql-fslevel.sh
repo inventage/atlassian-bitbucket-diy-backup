@@ -27,9 +27,14 @@ function prepare_restore_db {
     # Since the whole database is restored implicitly as part of the file system volume, this function doesn't need
     # to do any work.  All we need to do is stop the service beforehand.
     run sudo service "${POSTGRESQL_SERVICE_NAME}" stop
+
+    # Add a clean up routine to ensure we always start the PostgreSQL service back up again
+    add_cleanup_routine restore_db
 }
 
 function restore_db {
+    remove_cleanup_routine restore_db
+
     # Since the whole database is restored implicitly as part of the file system volume, this function doesn't need
     # to do any work.  All we need to do is start the service back up again.
     run sudo service "${POSTGRESQL_SERVICE_NAME}" start

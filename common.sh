@@ -9,6 +9,13 @@ BACKUP_VARS_FILE=${BACKUP_VARS_FILE:-"${SCRIPT_DIR}"/bitbucket.diy-backup.vars.s
 PATH=$PATH:/sbin:/usr/sbin:/usr/local/bin
 TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
 
+# If "psql" is installed, get its version number
+if which psql > /dev/null 2>&1; then
+    psql_version="$(psql --version | awk '{print $3}')"
+    psql_majorminor="$(printf "%d%03d" $(echo "${psql_version}" | tr "." "\n" | sed 2q))"
+    psql_major="$(echo ${psql_version} | tr -d '.' | cut -c 1-2)"
+fi
+
 if [ -f "${BACKUP_VARS_FILE}" ]; then
     source "${BACKUP_VARS_FILE}"
     debug "Using vars file: '${BACKUP_VARS_FILE}'"
@@ -20,13 +27,6 @@ fi
 # Note that this prefix is used to delete old backups and if set improperly will delete incorrect backups on cleanup.
 SNAPSHOT_TAG_PREFIX="${INSTANCE_NAME}-"
 SNAPSHOT_TAG_VALUE="${SNAPSHOT_TAG_PREFIX}${TIMESTAMP}"
-
-# If "psql" is installed, get its version number
-if which psql > /dev/null 2>&1; then
-    psql_version="$(psql --version | awk '{print $3}')"
-    psql_majorminor="$(printf "%d%03d" $(echo "${psql_version}" | tr "." "\n" | sed 2q))"
-    psql_major="$(echo ${psql_version} | tr -d '.' | cut -c 1-2)"
-fi
 
 # Lock a Bitbucket instance for maintenance
 function lock_bitbucket {
