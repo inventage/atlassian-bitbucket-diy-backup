@@ -120,6 +120,8 @@ case ${BACKUP_DATABASE_TYPE} in
 
         # The instance class to use when restoring the database
         RESTORE_RDS_INSTANCE_CLASS=
+        # Whether or not to restore the database as a Multi-AZ deployment
+        RESTORE_RDS_MULTI_AZ=true
         # The subnet in which the database will be restored
         RESTORE_RDS_SUBNET_GROUP_NAME=
         # The security group to assign to the restored instance

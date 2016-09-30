@@ -32,17 +32,12 @@ function restore_db {
         optional_args="${optional_args} --db-subnet-group-name ${RESTORE_RDS_SUBNET_GROUP_NAME}"
     fi
 
-    debug "Checking if '${RDS_INSTANCE_ID}' is in MultiAz mode"
-    local is_multi_az=$(run aws rds describe-db-instances --db-instance-identifier "${RDS_INSTANCE_ID}" | jq -r '.DBInstances [0] .MultiAZ')
-    if [ "${is_multi_az}" == "true" ]; then
+    if [ "${RESTORE_RDS_MULTI_AZ}" = "true" ]; then
         optional_args="${optional_args} --multi-az"
     fi
 
     local renamed_rds_instance="${RDS_INSTANCE_ID}-${TIMESTAMP}"
     rename_rds_instance "${RDS_INSTANCE_ID}" "${renamed_rds_instance}"
-
-    FINAL_MESSAGE+=$'RDS Instance '${RDS_INSTANCE_ID}$' has been renamed to '${renamed_rds_instance}$'\n'
-    FINAL_MESSAGE+=$'Note that if '${renamed_rds_instance}$' has read replica(s), you probably want to delete them and re-create as read replica(s) of '${RDS_INSTANCE_ID}$'\n'
 
     info "Attempting to restore RDS snapshot '${RESTORE_RDS_SNAPSHOT_ID}' as RDS instance '${RDS_INSTANCE_ID}'"
 
@@ -54,18 +49,21 @@ function restore_db {
     while [ $SECONDS -lt ${end_time} ]; do
         restore_result=$(aws rds restore-db-instance-from-db-snapshot \
             --db-instance-identifier "${RDS_INSTANCE_ID}" \
-            --db-snapshot-identifier "${RESTORE_RDS_SNAPSHOT_ID}" ${optional_args} > /dev/null 2>&1)
+            --db-snapshot-identifier "${RESTORE_RDS_SNAPSHOT_ID}" ${optional_args} 2>&1)
 
-        case $? in
-            0)
-                # Restore successful
-                info "Restored RDS snapshot '${RESTORE_RDS_SNAPSHOT_ID}' as RDS instance '${RDS_INSTANCE_ID}'"
-                break
-                ;;
-            *)
-                # Non-zero indicates the AWS command failed
-                sleep 10
-                ;;
+        case ${restore_result} in
+        *"\"DBInstanceStatus\": \"creating\""*)
+            info "Restored RDS snapshot '${RESTORE_RDS_SNAPSHOT_ID}' as RDS instance '${RDS_INSTANCE_ID}'"
+            break
+            ;;
+        *DBInstanceAlreadyExists*)
+            debug "Returned: ${restore_result}, retrying..."
+            sleep 10
+            ;;
+        *)
+            bail "Returned: ${restore_result}"
+            break
+            ;;
         esac
     done
     set -e
@@ -91,11 +89,15 @@ function rename_rds_instance {
     local source_rds_instance="$1"
     local dest_rds_instance="$2"
 
-    info "Renaming RDS instance '${source_rds_instance}' to '${dest_rds_instance}'"
+    info "Attempting to rename any existing RDS instance '${source_rds_instance}' to '${dest_rds_instance}'"
 
     # Rename existing rds instance
-    run aws rds modify-db-instance --db-instance-identifier "${source_rds_instance}" \
-        --new-db-instance-identifier "${dest_rds_instance}" --apply-immediately > /dev/null
+    if run aws rds modify-db-instance --db-instance-identifier "${source_rds_instance}" \
+        --new-db-instance-identifier "${dest_rds_instance}" --apply-immediately > /dev/null; then
+        debug "RDS Instance ${source_rds_instance} has been renamed to '${dest_rds_instance}"
+        FINAL_MESSAGE+=$'RDS Instance '${source_rds_instance}$' has been renamed to '${dest_rds_instance}$'\n'
+        FINAL_MESSAGE+=$'Note that if this DB has any read replica(s), you probably want to delete them and re-create as read replica(s) of '${source_rds_instance}$'\n'
+    fi
 }
 
 function cleanup_db_backups {
