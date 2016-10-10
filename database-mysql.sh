@@ -21,7 +21,7 @@ function prepare_backup_db {
 
 function backup_db {
     rm -r "${BITBUCKET_BACKUP_DB}"
-    run mysqldump "${MYSQL_HOST_CMD}" "${MYSQL_BACKUP_OPTIONS}" -u "${MYSQL_USERNAME}" -p"${MYSQL_PASSWORD}" \
+    run mysqldump ${MYSQL_HOST_CMD} ${MYSQL_BACKUP_OPTIONS} -u "${MYSQL_USERNAME}" -p"${MYSQL_PASSWORD}" \
         --databases "${BITBUCKET_DB}" > "${BITBUCKET_BACKUP_DB}"
 }
 
