@@ -55,6 +55,12 @@ You will need to configure the script variables found in `bitbucket.diy-backup.v
 by placing it in maintenance mode. **NOTE:** This can NOT be used with Bitbucket Server versions older than 4.8. For more information, see [Zero downtime backup](https://confluence.atlassian.com/display/BitbucketServer/Using+Bitbucket+Zero+Downtime+Backup).
 Make sure you read and understand this document before uncommenting this variable.
 
+### Bugs and Suggestions ###
+
+Please report any bugs through [normal support channels](https://support.atlassian.com).
+
+Report suggestions in the [Bitbucket Server issue tracker](https://jira.atlassian.com/browse/BSERV).
+
 ### Further reading ###
 * [Zero Downtime Backup](https://confluence.atlassian.com/display/BitbucketServer/Using+Bitbucket+Zero+Downtime+Backup)
 * [Using Bitbucket Server DIY Backup](https://confluence.atlassian.com/display/BitbucketServer/Using+Bitbucket+Server+DIY+Backup)
