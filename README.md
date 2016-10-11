@@ -57,9 +57,11 @@ Make sure you read and understand this document before uncommenting this variabl
 
 ### Bugs and Suggestions ###
 
-Please report any bugs through [normal support channels](https://support.atlassian.com).
+Please report any bugs through [normal support channels](https://support.atlassian.com/servicedesk/customer/portal/24).
 
 Report suggestions in the [Bitbucket Server issue tracker](https://jira.atlassian.com/browse/BSERV).
+
+Please note that DIY Backup is intended as a jumping off point for your to create your _own_ back up strategy, and we don't intend to create a solution for all potential configurations of Bitbucket Server.
 
 ### Further reading ###
 * [Zero Downtime Backup](https://confluence.atlassian.com/display/BitbucketServer/Using+Bitbucket+Zero+Downtime+Backup)
