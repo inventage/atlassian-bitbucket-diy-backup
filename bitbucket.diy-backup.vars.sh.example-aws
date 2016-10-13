@@ -21,13 +21,14 @@ BACKUP_ARCHIVE_TYPE=
 BACKUP_ZERO_DOWNTIME=true
 
 HOME_DIRECTORY_MOUNT_POINT=/media/atl
-HOME_DIRECTORY_DEVICE_NAME=/dev/xvdf
+HOME_DIRECTORY_DEVICE_NAME=/dev/sdf
 
 RESTORE_HOME_DIRECTORY_VOLUME_TYPE=gp2
 
 CURL_OPTIONS="-L -s -f"
 
 AWS_INFO=$(curl ${CURL_OPTIONS} http://169.254.169.254/latest/dynamic/instance-identity/document)
+AWS_ACCOUNT_ID=$(echo "${AWS_INFO}" | jq -r .accountId)
 AWS_AVAILABILITY_ZONE=$(echo "${AWS_INFO}" | jq -r .availabilityZone)
 AWS_REGION=$(echo "${AWS_INFO}" | jq -r .region)
 AWS_EC2_INSTANCE_ID=$(echo "${AWS_INFO}" | jq -r .instanceId)

@@ -12,6 +12,10 @@
 check_command "aws"
 check_command "jq"
 
+if [ "${BACKUP_HOME_TYPE}" != "amazon-ebs" ] && [ "${BACKUP_DATABASE_TYPE}" != "amazon-rds" ]; then
+    bail "BACKUP_ARCHIVE_TYPE=aws-snapshots can only be used with 'BACKUP_HOME_TYPE=amazon-ebs' OR 'BACKUP_DATABASE_TYPE=amazon-rds'"
+fi
+
 function archive_backup {
     # AWS snapshots reside in AWS and do not need to be archived.
 
@@ -86,38 +90,58 @@ function copy_ebs_snapshot {
     local source_ebs_snapshot_id="$1"
     local source_region="$2"
 
+    debug "Attempting to copy EBS snapshot '${source_ebs_snapshot_id}' to '${source_region}'"
+
     info "Waiting for EBS snapshot '${source_ebs_snapshot_id}' to become available in '${source_region}' \
         before copying to '${BACKUP_DEST_REGION}'"
     run aws ec2 wait snapshot-completed --region "${source_region}" --snapshot-ids "${source_ebs_snapshot_id}"
 
     # Copy snapshot to BACKUP_DEST_REGION
-    local dest_snapshot_id=$(run aws ec2 copy-snapshot --region "${BACKUP_DEST_REGION}" --source-region "${source_region}" \
-         --source-snapshot-id "${source_ebs_snapshot_id}" | jq -r '.SnapshotId')
+    local result=$(run aws ec2 copy-snapshot --region "${BACKUP_DEST_REGION}" --source-region "${source_region}" \
+         --source-snapshot-id "${source_ebs_snapshot_id}")
+    local dest_snapshot_id=$(echo "${result}" | jq -r '.SnapshotId')
+
+    if [ -z "${dest_snapshot_id}" ]; then
+        bail "Failed to retrieve copied EBS snapshot ID. Result: '${result}'"
+    fi
+
     info "Copied EBS snapshot '${source_ebs_snapshot_id}' from '${source_region}' to '${BACKUP_DEST_REGION}'." \
         "Snapshot copy ID: '${dest_snapshot_id}'"
 
     info "Waiting for EBS snapshot '${dest_snapshot_id}' to become available in '${BACKUP_DEST_REGION}' before tagging"
     run aws ec2 wait snapshot-completed --region "${BACKUP_DEST_REGION}" --snapshot-ids "${dest_snapshot_id}"
 
+    if [ -n "${AWS_ADDITIONAL_TAGS}" ]; then
+        comma=', '
+    fi
+    local aws_tags="[{\"Key\":\"${SNAPSHOT_TAG_KEY}\",\"Value\":\"${SNAPSHOT_TAG_VALUE}\"}${comma}${AWS_ADDITIONAL_TAGS}]"
+
     # Add tags to copied snapshot
-    run aws ec2 create-tags --region "${BACKUP_DEST_REGION}" --resources "${dest_snapshot_id}" \
-        --tags Key=Name,Value="${SNAPSHOT_TAG_VALUE}"
-    info "Tagged EBS snapshot '${dest_snapshot_id}' with '{Name: ${SNAPSHOT_TAG_VALUE}}'"
+    run aws ec2 create-tags --region "${BACKUP_DEST_REGION}" --resources "${dest_snapshot_id}" --tags "${aws_tags}"
+    info "Tagged EBS snapshot '${dest_snapshot_id}' with '${aws_tags}'"
 }
 
 function copy_rds_snapshot {
     local source_rds_snapshot_id="$1"
-    local source_aws_account_id=$(get_aws_account_id)
 
     info "Waiting for RDS snapshot '${source_rds_snapshot_id}' to become available before copying to another region." \
         "This could take some time."
     run aws rds wait db-snapshot-completed --db-snapshot-identifier "${source_rds_snapshot_id}"
 
     # Copy RDS snapshot to BACKUP_DEST_REGION
-    local source_rds_snapshot_arn="arn:aws:rds:${AWS_REGION}:${source_aws_account_id}:snapshot:${source_rds_snapshot_id}"
+    local source_rds_snapshot_arn="arn:aws:rds:${AWS_REGION}:${AWS_ACCOUNT_ID}:snapshot:${source_rds_snapshot_id}"
     run aws rds copy-db-snapshot --region "${BACKUP_DEST_REGION}" --source-db-snapshot-identifier "${source_rds_snapshot_arn}" \
       --target-db-snapshot-identifier "${source_rds_snapshot_id}" > /dev/null
     info "Copied RDS Snapshot '${source_rds_snapshot_arn}' as '${source_rds_snapshot_id}' to '${BACKUP_DEST_REGION}'"
+
+    if [ -n "${AWS_ADDITIONAL_TAGS}" ]; then
+        comma=', '
+    fi
+    local aws_tags="[{\"Key\":\"${SNAPSHOT_TAG_KEY}\",\"Value\":\"${SNAPSHOT_TAG_VALUE}\"}${comma}${AWS_ADDITIONAL_TAGS}]"
+
+    local rds_snapshot_arn="arn:aws:rds:${BACKUP_DEST_REGION}:${AWS_ACCOUNT_ID}:snapshot:${source_rds_snapshot_id}"
+    run aws rds --region "${BACKUP_DEST_REGION}" add-tags-to-resource --resource-name "${rds_snapshot_arn}" --tags "${aws_tags}"
+    debug "Tagged RDS snapshot '${rds_snapshot_id}' with '${aws_tags}'"
 }
 
 function cleanup_old_offsite_ebs_snapshots {
@@ -172,17 +196,21 @@ function copy_and_share_ebs_snapshot {
     local secret_access_key=$(echo "${credentials}" | jq -r .Credentials.SecretAccessKey)
     local session_token=$(echo "${credentials}" | jq -r .Credentials.SessionToken)
 
+    if [ -n "${AWS_ADDITIONAL_TAGS}" ]; then
+        comma=', '
+    fi
+    local aws_tags="[{\"Key\":\"${SNAPSHOT_TAG_KEY}\",\"Value\":\"${SNAPSHOT_TAG_VALUE}\"}${comma}${AWS_ADDITIONAL_TAGS}]"
+
     # Add tag to copied snapshot, used to find EBS & RDS snapshot pairs for restoration
     AWS_ACCESS_KEY_ID="${access_key_id}" AWS_SECRET_ACCESS_KEY="${secret_access_key}" \
         AWS_SESSION_TOKEN="${session_token}" run aws ec2 create-tags --region "${BACKUP_DEST_REGION}" \
-        --resources "${dest_snapshot_id}" --tags Key=Name,Value="${SNAPSHOT_TAG_VALUE}"
+        --resources "${dest_snapshot_id}" --tags "$aws_tags"
 
-    info "Tagged EBS snapshot ${dest_snapshot_id} with {Name: ${SNAPSHOT_TAG_VALUE}}"
+    info "Tagged EBS snapshot ${dest_snapshot_id} with: ${aws_tags}"
 }
 
 function share_and_copy_rds_snapshot {
     local rds_snapshot_id="$1"
-    local source_aws_account_id=$(get_aws_account_id)
 
     info "Waiting for RDS snapshot copy '${rds_snapshot_id}' to become available before giving AWS account: \
         '${BACKUP_DEST_AWS_ACCOUNT_ID}' permissions."
@@ -201,11 +229,22 @@ function share_and_copy_rds_snapshot {
     local aws_session_token=$(echo ${credentials} | jq -r .Credentials.SessionToken)
 
     # Copy RDS snapshot to BACKUP_DEST_REGION in BACKUP_DEST_AWS_ACCOUNT_ID
-    local source_rds_snapshot_arn="arn:aws:rds:${AWS_REGION}:${source_aws_account_id}:snapshot:${rds_snapshot_id}"
+    local source_rds_snapshot_arn="arn:aws:rds:${AWS_REGION}:${AWS_ACCOUNT_ID}:snapshot:${rds_snapshot_id}"
     AWS_ACCESS_KEY_ID="${aws_access_key_id}" AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}" \
         AWS_SESSION_TOKEN="${aws_session_token}" run aws rds copy-db-snapshot --region "${BACKUP_DEST_REGION}" \
         --source-db-snapshot-identifier "${source_rds_snapshot_arn}" --target-db-snapshot-identifier "${rds_snapshot_id}" > /dev/null
     info "Copied RDS Snapshot '${source_rds_snapshot_arn}' as '${rds_snapshot_id}' to '${BACKUP_DEST_REGION}'"
+
+    if [ -n "${AWS_ADDITIONAL_TAGS}" ]; then
+        comma=', '
+    fi
+    local aws_tags="[{\"Key\":\"${SNAPSHOT_TAG_KEY}\",\"Value\":\"${SNAPSHOT_TAG_VALUE}\"}${comma}${AWS_ADDITIONAL_TAGS}]"
+    local rds_snapshot_arn="arn:aws:rds:${BACKUP_DEST_REGION}:${AWS_ACCOUNT_ID}:snapshot:${rds_snapshot_id}"
+
+    AWS_ACCESS_KEY_ID="${aws_access_key_id}" AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}" \
+        AWS_SESSION_TOKEN="${aws_session_token}" run aws rds add-tags-to-resource \
+        --resource-name "${rds_snapshot_arn}" --tags "${aws_tags}"
+    debug "Tagged RDS snapshot '${rds_snapshot_id}' with '${aws_tags}'"
 }
 
 function cleanup_old_offsite_ebs_snapshots_in_backup_account {
