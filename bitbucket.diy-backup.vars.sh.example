@@ -118,7 +118,7 @@ case ${BACKUP_DATABASE_TYPE} in
 
         # === Optionals ===
 
-        # The instance class to use when restoring the database
+        # The instance class to use when restoring the database, if not set AWS will use the instance class that was used when creating the snapshot
         RESTORE_RDS_INSTANCE_CLASS=
         # Whether or not to restore the database as a Multi-AZ deployment
         RESTORE_RDS_MULTI_AZ=true
@@ -224,7 +224,7 @@ if [ "amazon-ebs" = "${BACKUP_HOME_TYPE}" -o "amazon-rds" = "${BACKUP_DATABASE_T
     AWS_EC2_INSTANCE_ID=$(echo "${AWS_INFO}" | jq -r .instanceId)
 
     # Additional AWS tags for EBS and RDS snapshot, tags needs to be in JSON format without enclosing square brackets:
-    # Example: AWS_ADDITIONAL_TAGS='{"Key":"key", "Value":"value"}'
+    # Example: AWS_ADDITIONAL_TAGS='{"Key":"example_key", "Value":"example_value"}'
     AWS_ADDITIONAL_TAGS=
 fi
 
