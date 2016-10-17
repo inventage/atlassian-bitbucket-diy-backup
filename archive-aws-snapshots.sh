@@ -12,10 +12,6 @@
 check_command "aws"
 check_command "jq"
 
-if [ "${BACKUP_HOME_TYPE}" != "amazon-ebs" ] && [ "${BACKUP_DATABASE_TYPE}" != "amazon-rds" ]; then
-    bail "BACKUP_ARCHIVE_TYPE=aws-snapshots can only be used with 'BACKUP_HOME_TYPE=amazon-ebs' OR 'BACKUP_DATABASE_TYPE=amazon-rds'"
-fi
-
 function archive_backup {
     # AWS snapshots reside in AWS and do not need to be archived.
 
