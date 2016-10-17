@@ -21,7 +21,7 @@ function archive_backup {
 
     # Optionally copy/share the EBS snapshot to another region and/or account.
     # This is useful to retain a cross region/account copy of the backup.
-    if [ -n "${BACKUP_DEST_REGION}" ]; then
+    if [ "${BACKUP_HOME_TYPE}" = "amazon-ebs" ] && [ -n "${BACKUP_DEST_REGION}" ]; then
         local backup_ebs_snapshot_id=$(run aws ec2 describe-snapshots --filters Name=tag-key,Values="${SNAPSHOT_TAG_KEY}" \
             Name=tag-value,Values="${SNAPSHOT_TAG_VALUE}" --query 'Snapshots[0].SnapshotId' --output text)
 
@@ -34,7 +34,7 @@ function archive_backup {
         fi
     fi
 
-    if [ -n "${BACKUP_DEST_REGION}" ]; then
+    if [ "${BACKUP_DATABASE_TYPE}" = "amazon-rds" ] && [ -n "${BACKUP_DEST_REGION}" ]; then
         local backup_rds_snapshot_id=$(run aws rds describe-db-snapshots --db-snapshot-identifier "${SNAPSHOT_TAG_VALUE}" \
             --query 'DBSnapshots[*].DBSnapshotIdentifier' --output text)
 
