@@ -61,10 +61,13 @@ function snapshot_ebs_volume {
         bail "Unable to create EBS snapshot of volume '${volume_id}'"
     fi
 
-    run aws ec2 create-tags --resources "${ebs_snapshot_id}" --tags Key="${SNAPSHOT_TAG_KEY}",Value="${SNAPSHOT_TAG_VALUE}" > /dev/null
     if [ -n "${AWS_ADDITIONAL_TAGS}" ]; then
-        run aws ec2 create-tags --resources "${ebs_snapshot_id}" --tags "[ ${AWS_ADDITIONAL_TAGS} ]" > /dev/null
+        comma=', '
     fi
+    local aws_tags="[{\"Key\":\"${SNAPSHOT_TAG_KEY}\",\"Value\":\"${SNAPSHOT_TAG_VALUE}\"}${comma}${AWS_ADDITIONAL_TAGS}]"
+
+    run aws ec2 create-tags --resources "${ebs_snapshot_id}" --tags "$aws_tags" > /dev/null
+    debug "Tagged EBS snapshot '${ebs_snapshot_id}' with '${aws_tags}'"
 }
 
 # Create a EBS volume from a snapshot
@@ -329,17 +332,4 @@ function list_old_ebs_snapshot_ids {
     local region=$1
     run aws ec2 describe-snapshots --region="${region}" --filters "Name=tag:Name,Values=${SNAPSHOT_TAG_PREFIX}*" | \
         jq -r ".Snapshots | sort_by(.StartTime) | reverse | .[${KEEP_BACKUPS}:] | map(.SnapshotId)[]"
-}
-
-# Return the ID of the AWS account that this instance is running in
-function get_aws_account_id {
-    local instance_info=$(run curl ${CURL_OPTIONS} http://169.254.169.254/latest/dynamic/instance-identity/document)
-
-    local account_id=$(echo "${instance_info}" | jq -r '.accountId')
-    if [ -z "${account_id}" ]; then
-        error "Could not find 'accountId' in response '${instance_info}'"
-        bail "Unable to determine account id"
-    fi
-
-    echo "${account_id}"
 }
