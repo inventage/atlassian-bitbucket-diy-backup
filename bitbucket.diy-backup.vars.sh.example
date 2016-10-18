@@ -6,7 +6,7 @@ INSTANCE_NAME=bitbucket
 BITBUCKET_URL=http://localhost:7990
 
 # The path to the Bitbucket home directory (with trailing /)
-BITBUCKET_HOME=/media/atl/bitbucket/
+BITBUCKET_HOME=/var/atlassian/application-data/bitbucket/
 
 # Owner and group of ${BITBUCKET_HOME}:
 BITBUCKET_UID=atlbitbucket
@@ -51,7 +51,7 @@ BACKUP_ARCHIVE_TYPE=tar
 #  - s3                 - Amazon S3 bucket - requires the Elasticsearch Cloud plugin to be installed. See
 #                         https://www.elastic.co/guide/en/elasticsearch/plugins/2.3/cloud-aws.html
 #
-#  - aws                - Amazon Elasticsearch Service - uses s3 to store snapshots
+#  - aws                - Amazon Elasticsearch Service - uses an S3 bucket as a snapshot repository
 BACKUP_ELASTICSEARCH_TYPE=
 
 # If BACKUP_ZERO_DOWNTIME is set to true, the home directory and database will be backed up WITHOUT locking Bitbucket
@@ -242,21 +242,21 @@ KEEP_BACKUPS=0
 
 # The Bitbucket search index (default is bitbucket-search-v1). Most users will NOT need to change this.
 ELASTICSEARCH_INDEX_NAME=bitbucket-search-v1
-# The hostname and port for the Elasticsearch server / Elasticsearch load balancer/ Elasticsearch Domain
+# The hostname (and port, if required) for the Elasticsearch instance
 ELASTICSEARCH_HOST=localhost:7992
 ELASTICSEARCH_REPOSITORY_NAME=bitbucket-snapshots
 
 case ${BACKUP_ELASTICSEARCH_TYPE} in
     aws)
         # Configuration for the Amazon Elasticsearch Service
-        ELASTICSEARCH_S3_BUCKET=bitbucket-search-snapshots
+        ELASTICSEARCH_S3_BUCKET=
         ELASTICSEARCH_S3_BUCKET_REGION=us-east-1
         # The IAM role that can be used to snapshot AWS Elasticsearch, used to configure the S3 snapshot repository
         ELASTICSEARCH_SNAPSHOT_IAM_ROLE=
         ;;
     s3)
         # Configuration for the Amazon S3 snapshot repository (s3)
-        ELASTICSEARCH_S3_BUCKET=bitbucket-search-snapshots
+        ELASTICSEARCH_S3_BUCKET=
         ELASTICSEARCH_S3_BUCKET_REGION=us-east-1
         # Elasticsearch credentials in the format: -u "username:password"
         ELASTICSEARCH_CREDENTIALS=
