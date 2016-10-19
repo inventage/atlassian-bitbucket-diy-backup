@@ -5,12 +5,18 @@
 check_command "jq"
 check_command "curl"
 
-# Return a validated Elasticsearch snapshot name on stdout, or bail with an appropriate message
+check_config_var "ELASTICSEARCH_HOST"
+
+if [ "${BACKUP_ELASTICSEARCH_TYPE}" = "aws" ]; then
+    check_command "python"
+fi
+
+# Validate that the input is a snapshot that exists on the Elasticsearch instance
 function validate_es_snapshot {
     local snapshot_tag="$1"
 
-    debug "Getting snapshot list from Elasticsearch server '${ELASTICSEARCH_HOST}'"
-    local snapshot_list=$(get_es_snapshots "${ELASTICSEARCH_HOST}")
+    debug "Getting snapshot list from Elasticsearch instance '${ELASTICSEARCH_HOST}'"
+    local snapshot_list=$(get_es_snapshots)
 
     if [ -z "${snapshot_tag}" ]; then
         info "Available Snapshots:"
@@ -26,49 +32,74 @@ function validate_es_snapshot {
         print "${snapshot_list}"
         bail "Please select a snapshot to restore"
     fi
-
-    echo "${snapshot_tag}"
 }
 
-# Check whether the Elasticsearch server has a snapshot repository configured
+# Check whether the Elasticsearch instance has a index named $ELASTICSEARCH_INDEX_NAME
 function check_es_index_exists {
-    local server="$1"
-    local index="$2"
+    info "Checking whether index with name '${ELASTICSEARCH_INDEX_NAME}' exists on instance '${ELASTICSEARCH_HOST}'"
 
-    info "Checking whether index with name '${index}' exists on server '${server}'"
+    local es_response=$(curl_elasticsearch "GET" "/${ELASTICSEARCH_INDEX_NAME}")
 
-    local es_url="http://${server}:${ELASTICSEARCH_PORT}/${index}"
-
-    if run curl ${CURL_OPTIONS} ${ELASTICSEARCH_CREDENTIALS} -X GET "${es_url}" > /dev/null 2>&1; then
-        bail "An index with name '${index}' exists on server '${server}', please remove it before restoring"
+    if [ "$(echo ${es_response} | jq -r '.error .type')" != "index_not_found_exception" ]; then
+        debug "Elasticsearch response: ${es_response}"
+        bail "An index with name '${ELASTICSEARCH_INDEX_NAME}' exists on instance '${ELASTICSEARCH_HOST}', please remove it before restoring"
     fi
 }
 
-# Check whether the Elasticsearch server has a snapshot repository configured
+# Check whether the Elasticsearch instance has a snapshot repository configured
 function check_es_needs_configuration {
-    local server="$1"
+    info "Checking if snapshot repository with name '${ELASTICSEARCH_REPOSITORY_NAME}' exists on instance '${ELASTICSEARCH_HOST}'"
 
-    info "Checking if snapshot repository with name '${ELASTICSEARCH_REPOSITORY_NAME}' exists on server '${server}'"
-
-    local es_url="http://${server}:${ELASTICSEARCH_PORT}/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}"
-    if run curl ${CURL_OPTIONS} ${ELASTICSEARCH_CREDENTIALS} -X GET "${es_url}" > /dev/null 2>&1; then
-        debug "The snapshot repository '${ELASTICSEARCH_REPOSITORY_NAME}' already exists on server '${server}'"
-    else
+    local es_response=$(curl_elasticsearch "GET" "/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}")
+    if [ "$(echo ${es_response} | jq -r '.error .type')" = "repository_missing_exception" ]; then
         case "${BACKUP_ELASTICSEARCH_TYPE}" in
+        aws)
+            configure_aws_es_snapshot_repository
+            ;;
         s3)
-            configure_aws_s3_snapshot_repository "${server}"
+            configure_aws_s3_snapshot_repository
             ;;
         fs)
-            configure_shared_fs_snapshot_repository "${server}"
+            configure_shared_fs_snapshot_repository
             ;;
         esac
+    elif [[ "${es_response}" == *"${ELASTICSEARCH_REPOSITORY_NAME}"* ]]; then
+        debug "The snapshot repository '${ELASTICSEARCH_REPOSITORY_NAME}' already exists on server '${ELASTICSEARCH_HOST}'"
+    else
+        bail "Elasticsearch snapshot repository configuration failed with '${es_response}'"
     fi
 }
 
-# Configure a S3 based snapshot repository
-function configure_aws_s3_snapshot_repository {
-    local server="$1"
+# Configures the AWS Elasticsearch domain to use the specified S3 bucket as the snapshot repository
+function configure_aws_es_snapshot_repository {
+    check_config_var "ELASTICSEARCH_S3_BUCKET"
+    check_config_var "ELASTICSEARCH_S3_BUCKET_REGION"
+    check_config_var "ELASTICSEARCH_SNAPSHOT_IAM_ROLE"
 
+    local data=$(cat << EOF
+{
+    "type": "s3",
+    "settings": {
+        "bucket": "${ELASTICSEARCH_S3_BUCKET}",
+        "region": "${ELASTICSEARCH_S3_BUCKET_REGION}",
+        "role_arn": "${ELASTICSEARCH_SNAPSHOT_IAM_ROLE}"
+    }
+}
+EOF
+)
+    info "Creating Elasticsearch S3 snapshot repository with name '${ELASTICSEARCH_REPOSITORY_NAME}' on instance '${ELASTICSEARCH_HOST}'"
+
+    local es_response=$(curl_elasticsearch "POST" "/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}" "${data}")
+
+    if [ "$(echo ${es_response} | jq -r '.acknowledged')" != "true" ]; then
+        bail "Failed to create S3 snapshot repository, '${ELASTICSEARCH_HOST}' responded with ${es_response}"
+    fi
+
+    success "Created Elasticsearch S3 snapshot repository '${ELASTICSEARCH_REPOSITORY_NAME}' on instance '${ELASTICSEARCH_HOST}'"
+}
+
+# Configures a S3 based snapshot repository
+function configure_aws_s3_snapshot_repository {
     check_config_var "ELASTICSEARCH_S3_BUCKET"
     check_config_var "ELASTICSEARCH_S3_BUCKET_REGION"
 
@@ -83,26 +114,22 @@ function configure_aws_s3_snapshot_repository {
 }
 EOF
 )
-    info "Creating Elasticsearch S3 snapshot repository with name '${ELASTICSEARCH_REPOSITORY_NAME}' on server '${server}'"
+    info "Creating Elasticsearch S3 snapshot repository with name '${ELASTICSEARCH_REPOSITORY_NAME}' on instance '${ELASTICSEARCH_HOST}'"
 
-    local es_url="http://${server}:${ELASTICSEARCH_PORT}/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}"
-    local es_response=$(run curl -s ${ELASTICSEARCH_CREDENTIALS} -X PUT "${es_url}" -d "${create_s3_repository}")
+    local es_response=$(curl_elasticsearch "PUT" "/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}" "${create_s3_repository}")
 
     if [ "$(echo ${es_response} | jq -r '.acknowledged')" != "true" ]; then
         error "Please ensure that the Amazon S3 plugin is correctly installed on Elasticsearch: sudo bin/plugin install cloud-aws"
-        bail "Unable to create snapshot repository on server '${server}'. Elasticsearch returned: ${es_response}"
+        bail "Unable to create snapshot repository on server '${ELASTICSEARCH_HOST}'. Elasticsearch returned: ${es_response}"
     fi
 
-    success "Created Elasticsearch S3 snapshot repository '${ELASTICSEARCH_REPOSITORY_NAME}' on server '${server}'."
+    success "Created Elasticsearch S3 snapshot repository '${ELASTICSEARCH_REPOSITORY_NAME}' on instance '${ELASTICSEARCH_HOST}'."
 }
 
 # Configure a shared filesystem based snapshot repository
 function configure_shared_fs_snapshot_repository {
-    local server="$1"
-
     check_config_var "ELASTICSEARCH_REPOSITORY_LOCATION"
 
-    # Configure the document to configure the FS repository
     local create_fs_repository=$(cat << EOF
 {
     "type": "fs",
@@ -114,23 +141,23 @@ function configure_shared_fs_snapshot_repository {
 }
 EOF
 )
-    info "Creating Elasticsearch shared filesystem snapshot repository with name '${ELASTICSEARCH_REPOSITORY_NAME}' on server '${server}'"
+    info "Creating Elasticsearch shared filesystem snapshot repository with name '${ELASTICSEARCH_REPOSITORY_NAME}' on instance '${ELASTICSEARCH_HOST}'"
 
-    local es_url="http://${server}:${ELASTICSEARCH_PORT}/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}"
-    local es_response=$(run curl -s ${ELASTICSEARCH_CREDENTIALS} -X PUT "${es_url}" -d "${create_fs_repository}")
+    local es_response=$(curl_elasticsearch "PUT" "/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}" "${create_fs_repository}")
 
     if [ "$(echo ${es_response} | jq -r '.acknowledged')" != "true" ]; then
         error "Please ensure that Elasticsearch is correctly configured to access shared filesystem '${ELASTICSEARCH_REPOSITORY_LOCATION}'"
         error "To do this the 'elasticsearch.yml' entry 'path.repo: /media/${ELASTICSEARCH_REPOSITORY_LOCATION}' must exist"
-        bail "Unable to create snapshot repository on server '${server}'. Elasticsearch returned: ${es_response}"
+        bail "Unable to create snapshot repository on instance '${ELASTICSEARCH_HOST}'. Elasticsearch returned: ${es_response}"
     fi
 
-    success "Created Elasticsearch shared filesystem snapshot repository '${ELASTICSEARCH_REPOSITORY_NAME}' on server '${server}'."
+    success "Created Elasticsearch shared filesystem snapshot repository '${ELASTICSEARCH_REPOSITORY_NAME}' on instance '${ELASTICSEARCH_HOST}'."
 }
 
-# Creates a Elasticsearch snapshot
+# Creates an Elasticsearch snapshot
 function create_es_snapshot {
-    local server="$1"
+    check_var "SNAPSHOT_TAG_VALUE"
+    check_config_var "ELASTICSEARCH_INDEX_NAME"
 
     # Configure the snapshot body
     local snapshot_body=$(cat << EOF
@@ -142,37 +169,36 @@ function create_es_snapshot {
 EOF
 )
     local snapshot_name="${SNAPSHOT_TAG_VALUE}"
-    local es_url="http://${server}:${ELASTICSEARCH_PORT}/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}/${snapshot_name}"
 
-    debug "Creating Elasticsearch snapshot '${snapshot_name}' on server '${server}'"
+    debug "Creating Elasticsearch snapshot '${snapshot_name}' on instance '${ELASTICSEARCH_HOST}'"
 
-    local es_response=$(run curl -s ${ELASTICSEARCH_CREDENTIALS} -X PUT "${es_url}" -d "${snapshot_body}")
+    local es_response=$(curl_elasticsearch "PUT" "/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}/${snapshot_name}" "${snapshot_body}")
     if [ "$(echo ${es_response} | jq -r '.accepted')" != "true" ]; then
-        bail "Unable to create snapshot '${snapshot_name}' on server '${server}'. Elasticsearch returned: ${es_response}"
+        bail "Unable to create snapshot '${snapshot_name}' on instance '${ELASTICSEARCH_HOST}'. Elasticsearch returned: ${es_response}"
     fi
 
     success "Elasticsearch snapshot '${snapshot_name}' created"
 }
 
-# Deletes a Elasticsearch snapshot
+# Deletes an Elasticsearch snapshot
 function delete_es_snapshot {
-    local server="$1"
-    local snapshot_name="$2"
+    local snapshot_name="$1"
 
-    debug "Deleting Elasticsearch snapshot '${snapshot_name}' on server '${server}'"
+    debug "Deleting Elasticsearch snapshot '${snapshot_name}' on instance '${ELASTICSEARCH_HOST}'"
 
-    local delete_url="http://${server}:${ELASTICSEARCH_PORT}/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}/${snapshot_name}"
-    if ! run curl -s ${ELASTICSEARCH_CREDENTIALS} -X DELETE "${delete_url}" > /dev/null 2>&1; then
-        bail "Unable to delete snapshot '${snapshot_name}' on server '${server}'"
+    local es_response=$(curl_elasticsearch "DELETE" "/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}/${snapshot_name}")
+    if [ "$(echo ${es_response} | jq -r '.acknowledged')" = "true" ]; then
+        debug "Successfully deleted snapshot '${snapshot_name}'"
+    else
+        info "Failed to delete snapshot '${snapshot_name}', Elasticsearch responded with ${ES_RESPONSE}"
     fi
 
     success "Elasticsearch snapshot '${snapshot_name}' deleted"
 }
 
-# Restore a Elasticsearch instance from the specified snapshot
+# Restores an Elasticsearch instance from the specified snapshot
 function restore_es_snapshot {
-    local server="$1"
-    local snapshot_name="$2"
+    local snapshot_name="$1"
 
     local snapshot_body=$(cat << EOF
 {
@@ -183,54 +209,63 @@ function restore_es_snapshot {
 }
 EOF
 )
-    debug "Restoring Elasticsearch snapshot '${snapshot_name}' on server '${server}'"
+    debug "Restoring Elasticsearch snapshot '${snapshot_name}' on instance '${ELASTICSEARCH_HOST}'"
 
-    # Begin the restore
-    local restore_url="http://${server}:${ELASTICSEARCH_PORT}/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}/${snapshot_name}/_restore"
-    local es_response=$(run curl -s ${ELASTICSEARCH_CREDENTIALS} -X POST "${restore_url}" -d "${snapshot_body}")
+    local es_response=$(curl_elasticsearch "POST" "/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}/${snapshot_name}/_restore" "${snapshot_body}")
     if [ "$(echo ${es_response} | jq -r '.snapshot.snapshot')" != "${snapshot_name}" ]; then
         if [ "$(echo ${es_response} | jq -r '.accepted')" != "true" ]; then
-            bail "Unable to restore snapshot '${snapshot_name}' on ${server_type} server '${server}'. Elasticsearch returned: ${es_response}"
+            bail "Unable to restore snapshot '${snapshot_name}' on instance '${ELASTICSEARCH_HOST}'. Elasticsearch returned: ${es_response}"
         fi
     fi
 
-    success "Elasticsearch index '${ELASTICSEARCH_INDEX_NAME}' has been restored from snapshot '${snapshot_name}' on server '${server}'."
+    success "Elasticsearch index '${ELASTICSEARCH_INDEX_NAME}' has been restored from snapshot '${snapshot_name}' on instance '${ELASTICSEARCH_HOST}'."
     info "The index will be available as soon as index recovery completes, it might take a little while."
 }
 
-# Get a list of snapshots available
+# Queries the Elasticsearch instance and returns a list of available snapshots
 function get_es_snapshots {
-    local server="$1"
+    local data='{"ignore_unavailable": "true"}'
+    local es_response=$(curl_elasticsearch "GET" "/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}/_all" ${data})
 
-    local snapshots_url="http://${server}:${ELASTICSEARCH_PORT}/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}/_all"
-    local es_response=$(run curl -s ${ELASTICSEARCH_CREDENTIALS} -X GET "${snapshots_url}")
-    local snapshots=$(echo ${es_response} | jq -r '.[] | sort_by(.start_time_in_millis) | .[]  | .snapshot')
-
+    local snapshots=$(echo ${es_response} | jq -r '.[] | sort_by(.start_time_in_millis) | reverse | .[]  | .snapshot')
     if [  -z "${snapshots}" ]; then
-        bail "No snapshots were found on server '${server}'. Elasticsearch returned: ${es_response}"
+        bail "No snapshots were found on instance '${ELASTICSEARCH_HOST}'. Elasticsearch returned: ${es_response}"
     fi
 
     echo "${snapshots}"
 }
 
-# Clean up old Elasticsearch snapshots leaving the configured KEEP_BACKUPS number of snapshots
+# Clean up old Elasticsearch snapshots leaving the configured $KEEP_BACKUPS number of snapshots
 function cleanup_es_snapshots {
-    local server="$1"
+    if [ "${KEEP_BACKUPS}" -gt 0 ]; then
+        local snapshots=$(get_es_snapshots)
+        local no_of_snapshots=$(echo "${snapshots}" | wc -l)
+        local no_of_snapshots_to_delete=$((no_of_snapshots-${KEEP_BACKUPS}))
 
-    local snapshots=$(get_es_snapshots "${server}")
-    local no_of_snapshots=$(echo "${snapshots}" | wc -l)
-    local no_of_snapshots_to_delete=$((no_of_snapshots-${KEEP_BACKUPS}))
+        if [ ${no_of_snapshots_to_delete} -gt 0 ]; then
+            debug "There are '${no_of_snapshots}' Elasticsearch snapshots, '${no_of_snapshots_to_delete}' need to be cleaned up"
+            local snapshots_to_clean=$(echo "${snapshots}" | tail -${no_of_snapshots_to_delete})
+            for snapshot in ${snapshots_to_clean}; do
+                delete_es_snapshot "${snapshot}"
+            done
+        else
+            debug "There are '${no_of_snapshots}' Elasticsearch snapshots, nothing to clean up"
+        fi
 
-    if [ ${no_of_snapshots_to_delete} -gt 0 ]; then
-        debug "There are '${no_of_snapshots}' Elasticsearch snapshots, '${no_of_snapshots_to_delete}' need to be cleaned up"
-        local snapshots_to_clean=$(echo "${snapshots}" | head -${no_of_snapshots_to_delete})
-        for snapshot in ${snapshots_to_clean}; do
-            delete_es_snapshot "${server}" "${snapshot}"
-        done
-    else
-        debug "There are '${no_of_snapshots}' Elasticsearch snapshots, nothing to clean up"
+        success "Elasticsearch snapshot cleanup successful"
     fi
-
-    success "Elasticsearch snapshot cleanup successful"
 }
 
+function curl_elasticsearch {
+    local http_method=$1
+    local path=$2
+    local data=$3
+
+    if [ "${BACKUP_ELASTICSEARCH_TYPE}" = "aws" ]; then
+        local es_response=$(python ./aws_request_signer.py "es" "${AWS_REGION}" "${ELASTICSEARCH_HOST}" "${http_method}" "${path}" "${data}")
+    else
+        local es_response=$(run curl -s -u ${ELASTICSEARCH_CREDENTIALS} -X ${http_method} "http://${ELASTICSEARCH_HOST}${path}" -d "${data}")
+    fi
+
+    echo "${es_response}"
+}

@@ -199,13 +199,13 @@ function mount_zfs_filesystem {
 function cleanup_home_backups {
     if [ "${KEEP_BACKUPS}" -gt 0 ]; then
         # Cleanup all ZFS snapshots except latest ${KEEP_BACKUPS}
-        debug "Getting a list of snapshots to delete"
+        debug "Getting a list of ZFS snapshots to delete"
         local old_snapshots=$(run sudo zfs list -H -t snapshot -o name -S creation | grep ${ZFS_HOME_TANK_NAME} | tail -n +${KEEP_BACKUPS})
         if [ -n "${old_snapshots}" ]; then
             debug "Destroying snapshots: ${old_snapshots}"
             echo "${old_snapshots}" | xargs -n 1 sudo zfs destroy
         else
-            debug "No snapshots to clean"
+            debug "No ZFS snapshots to clean"
         fi
     fi
 }
