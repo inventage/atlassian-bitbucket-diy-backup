@@ -9,6 +9,13 @@ BACKUP_VARS_FILE=${BACKUP_VARS_FILE:-"${SCRIPT_DIR}"/bitbucket.diy-backup.vars.s
 PATH=$PATH:/sbin:/usr/sbin:/usr/local/bin
 TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
 
+# If "psql" is installed, get its version number
+if which psql > /dev/null 2>&1; then
+    psql_version="$(psql --version | awk '{print $3}')"
+    psql_majorminor="$(printf "%d%03d" $(echo "${psql_version}" | tr "." "\n" | sed 2q))"
+    psql_major="$(echo ${psql_version} | tr -d '.' | cut -c 1-2)"
+fi
+
 if [ -f "${BACKUP_VARS_FILE}" ]; then
     source "${BACKUP_VARS_FILE}"
     debug "Using vars file: '${BACKUP_VARS_FILE}'"
@@ -20,13 +27,6 @@ fi
 # Note that this prefix is used to delete old backups and if set improperly will delete incorrect backups on cleanup.
 SNAPSHOT_TAG_PREFIX="${INSTANCE_NAME}-"
 SNAPSHOT_TAG_VALUE="${SNAPSHOT_TAG_PREFIX}${TIMESTAMP}"
-
-# If "psql" is installed, get its version number
-if which psql > /dev/null 2>&1; then
-    psql_version="$(psql --version | awk '{print $3}')"
-    psql_majorminor="$(printf "%d%03d" $(echo "${psql_version}" | tr "." "\n" | sed 2q))"
-    psql_major="$(echo ${psql_version} | tr -d '.' | cut -c 1-2)"
-fi
 
 # Lock a Bitbucket instance for maintenance
 function lock_bitbucket {
@@ -174,7 +174,7 @@ function unlock_bitbucket {
 
 # Get the version of Bitbucket running on the Bitbucket instance
 function bitbucket_version {
-    run curl ${CURL_OPTIONS} "${BITBUCKET_URL}/rest/api/1.0/application-properties" | jq -r '.version' | \
+    run curl ${CURL_OPTIONS} -k "${BITBUCKET_URL}/rest/api/1.0/application-properties" | jq -r '.version' | \
         sed -e 's/\./ /' -e 's/\..*//'
 }
 
@@ -225,7 +225,11 @@ function remount_device {
 function unmount_device {
     case ${FILESYSTEM_TYPE} in
     zfs)
-        run sudo zfs unshare "${ZFS_HOME_TANK_NAME}"
+        local shared=$(run sudo zfs get -o value -H sharenfs "${ZFS_HOME_TANK_NAME}")
+
+        if [ "${shared}" = "on" ]; then
+            run sudo zfs unshare "${ZFS_HOME_TANK_NAME}"
+        fi
         run sudo zfs unmount "${ZFS_HOME_TANK_NAME}"
         run sudo zpool export tank
         ;;

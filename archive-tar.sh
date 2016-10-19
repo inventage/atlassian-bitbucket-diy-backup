@@ -18,7 +18,7 @@ function prepare_restore_archive {
     BITBUCKET_BACKUP_ARCHIVE_NAME=$1
 
     if [ -z "${BITBUCKET_BACKUP_ARCHIVE_NAME}" ]; then
-        print "Usage: $0 <backup-file-name>.tar.gz"
+        print "Usage: $0 <backup-snapshot>"
         if [ ! -d "${BITBUCKET_BACKUP_ARCHIVE_ROOT}" ]; then
             error "'${BITBUCKET_BACKUP_ARCHIVE_ROOT}' does not exist!"
         else
@@ -27,8 +27,8 @@ function prepare_restore_archive {
         exit 99
     fi
 
-    if [ ! -f "${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}" ]; then
-        error "'${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}' does not exist!"
+    if [ ! -f "${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}.tar.gz" ]; then
+        error "'${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}.tar.gz' does not exist!"
         available_backups
         exit 99
     fi
@@ -54,7 +54,7 @@ function restore_archive {
     check_config_var "BITBUCKET_BACKUP_ARCHIVE_ROOT"
     check_var "BITBUCKET_BACKUP_ARCHIVE_NAME"
     check_var "BITBUCKET_RESTORE_ROOT"
-    run tar -xzf "${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}" -C "${BITBUCKET_RESTORE_ROOT}"
+    run tar -xzf "${BITBUCKET_BACKUP_ARCHIVE_ROOT}/${BITBUCKET_BACKUP_ARCHIVE_NAME}.tar.gz" -C "${BITBUCKET_RESTORE_ROOT}"
 }
 
 function cleanup_old_archives {
@@ -65,5 +65,6 @@ function cleanup_old_archives {
 function available_backups {
     check_config_var "BITBUCKET_BACKUP_ARCHIVE_ROOT"
     print "Available backups:"
-    ls "${BITBUCKET_BACKUP_ARCHIVE_ROOT}"
+    # Drop the .tar.gz extension, to make it a backup identifier
+    ls "${BITBUCKET_BACKUP_ARCHIVE_ROOT}" | sed -e 's/\.tar\.gz$//g'
 }

@@ -21,7 +21,7 @@ function prepare_backup_db {
 
 function backup_db {
     rm -r "${BITBUCKET_BACKUP_DB}"
-    run mysqldump "${MYSQL_HOST_CMD}" "${MYSQL_BACKUP_OPTIONS}" -u "${MYSQL_USERNAME}" -p"${MYSQL_PASSWORD}" \
+    run mysqldump ${MYSQL_HOST_CMD} ${MYSQL_BACKUP_OPTIONS} -u "${MYSQL_USERNAME}" -p"${MYSQL_PASSWORD}" \
         --databases "${BITBUCKET_DB}" > "${BITBUCKET_BACKUP_DB}"
 }
 
@@ -30,11 +30,11 @@ function prepare_restore_db {
     check_var "BITBUCKET_RESTORE_DB"
     check_config_var "MYSQL_USERNAME"
     check_config_var "MYSQL_PASSWORD"
-    run mysqlshow "${MYSQL_HOST_CMD}" -u "${MYSQL_USERNAME}" -p"${MYSQL_PASSWORD}" "${BITBUCKET_DB}"
+    run mysqlshow ${MYSQL_HOST_CMD} -u "${MYSQL_USERNAME}" -p"${MYSQL_PASSWORD}" "${BITBUCKET_DB}"
 }
 
 function restore_db {
-    run mysql "${MYSQL_HOST_CMD}" -u "${MYSQL_USERNAME}" -p"${MYSQL_PASSWORD}" < "${BITBUCKET_RESTORE_DB}"
+    run mysql ${MYSQL_HOST_CMD} -u "${MYSQL_USERNAME}" -p"${MYSQL_PASSWORD}" < "${BITBUCKET_RESTORE_DB}"
 }
 
 function cleanup_db_backups {

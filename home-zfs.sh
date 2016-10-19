@@ -7,9 +7,9 @@
 # -------------------------------------------------------------------------------------
 
 check_command "zfs"
+check_config_var "ZFS_HOME_TANK_NAME"
 
 function prepare_backup_home {
-    check_config_var "ZFS_HOME_TANK_NAME"
     debug "Validating ZFS_HOME_TANK_NAME=${ZFS_HOME_TANK_NAME}"
     run sudo zfs list -H -o name "${ZFS_HOME_TANK_NAME}"
 }
@@ -46,9 +46,41 @@ function restore_home {
 # Disaster recovery functions
 # ----------------------------------------------------------------------------------------------------------------------
 
-function replicate_home {
-    check_config_var "ZFS_HOME_TANK_NAME"
+function setup_home_replication {
+    check_config_var "STANDBY_SSH_USER"
+    check_config_var "STANDBY_SSH_HOST"
 
+    info "Checking primary instance's ZFS configuration"
+
+    debug "Checking if filesystem with name '${ZFS_HOME_TANK_NAME}' exists on the primary file server"
+    print_filesystem_information "$(run sudo zfs list -H -o avail,used,mountpoint -t filesystem "${ZFS_HOME_TANK_NAME}")"
+
+    debug "Checking that we can ssh onto ${STANDBY_SSH_HOST}"
+    if ! run ssh ${STANDBY_SSH_OPTIONS} ${STANDBY_SSH_USER}@${STANDBY_SSH_HOST} echo '' > /dev/null 2>&1; then
+        bail "Unable to SSH to '${STANDBY_SSH_HOST}'"
+    fi
+
+    debug "Checking that ZFS filesystem with name '${ZFS_HOME_TANK_NAME}' doesn't already exist on the standby file server '${STANDBY_SSH_HOST}'"
+    if run ssh ${STANDBY_SSH_OPTIONS} ${STANDBY_SSH_USER}@${STANDBY_SSH_HOST} "sudo zfs list -H -o name -t filesystem \
+            ${ZFS_HOME_TANK_NAME} > /dev/null 2>&1"; then
+        error "A ZFS filesystem with name '${ZFS_HOME_TANK_NAME}' exists on the standby"
+        bail "Destroy ZFS filesystem on standby and re-run setup"
+    fi
+
+    send_initial_snapshot_to_standby
+    mount_zfs_filesystem
+
+    success "Home replication has been set up successfully."
+    print
+    print "To continuously replicate from the primary to the standby you can configure a"
+    print "crontab entry to run 'replicate-home.sh' every minute. For example:"
+    print "    MAILTO=\"administrator@company.com\""
+    print "    * * * * * BITBUCKET_VERBOSE_BACKUP=false ${SCRIPT_DIR}/replicate-home.sh"
+    print "To test the replication manually, just run"
+    print "    ${SCRIPT_DIR}/replicate-home.sh"
+}
+
+function replicate_home {
     debug "Getting the latest ZFS snapshot on the standby instance '${STANDBY_SSH_HOST}'"
     local standby_last_snapshot=$(run ssh ${STANDBY_SSH_OPTIONS} "${STANDBY_SSH_USER}@${STANDBY_SSH_HOST}" \
         "sudo zfs list -H -t snapshot -o name -S creation | grep -m1 '${ZFS_HOME_TANK_NAME}'")
@@ -85,7 +117,7 @@ function promote_home {
 
     local settings=$(cat << EOF
 
-# The following properties were appended during the promote-standby-home.sh script.
+# The following properties were appended during the promote-home.sh script.
 #
 jdbc.url=${STANDBY_JDBC_URL}
 disaster.recovery=true
@@ -106,32 +138,6 @@ EOF
     fi
 
     success "Successfully promoted standby home"
-}
-
-function setup_home_replication {
-    info "Checking primary instance's ZFS configuration"
-
-    debug "Checking if filesystem with name '${ZFS_HOME_TANK_NAME}' exists on the primary file server"
-    print_filesystem_information "$(run sudo zfs list -H -o avail,used,mountpoint -t filesystem "${ZFS_HOME_TANK_NAME}")"
-
-    debug "Checking that ZFS filesystem with name '${ZFS_HOME_TANK_NAME}' doesn't already exist on the standby file server '${STANDBY_SSH_HOST}'"
-    if run ssh ${STANDBY_SSH_OPTIONS} ${STANDBY_SSH_USER}@${STANDBY_SSH_HOST} \
-            "sudo zfs list -H -o name -t filesystem ${ZFS_HOME_TANK_NAME} > /dev/null 2>&1"; then
-        error "A ZFS filesystem with name '${ZFS_HOME_TANK_NAME}' exists on the standby"
-        bail "Destroy ZFS filesystem on standby and re-run setup"
-    fi
-
-    send_initial_snapshot_to_standby
-    mount_zfs_filesystem
-
-    success "Home replication has been set up successfully."
-    print
-    print "To continuously replicate from the primary to the standby you can configure a"
-    print "crontab entry to run 'replicate-home.sh' every minute. For example:"
-    print "    MAILTO=\"administrator@company.com\""
-    print "    * * * * * BITBUCKET_VERBOSE_BACKUP=false ${SCRIPT_DIR}/replicate-home.sh"
-    print "To test the replication manually, just run"
-    print "    ${SCRIPT_DIR}/replicate-home.sh"
 }
 
 # ----------------------------------------------------------------------------------------------------------------------

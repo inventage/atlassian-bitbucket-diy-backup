@@ -18,9 +18,13 @@ function cleanup_elasticsearch_backups {
 }
 
 function prepare_restore_elasticsearch {
+    local requested_snapshot="$1"
+
     check_es_index_exists "${ELASTICSEARCH_HOST}" "${ELASTICSEARCH_INDEX_NAME}"
     check_es_needs_configuration "${ELASTICSEARCH_HOST}"
-    RESTORE_ELASTICSEARCH_SNAPSHOT="$(validate_es_snapshot "$1")"
+
+    validate_es_snapshot "${requested_snapshot}"
+    RESTORE_ELASTICSEARCH_SNAPSHOT="${requested_snapshot}"
 }
 
 function restore_elasticsearch {
