@@ -9,8 +9,6 @@ check_config_var "ELASTICSEARCH_HOST"
 check_config_var "ELASTICSEARCH_INDEX_NAME"
 check_config_var "ELASTICSEARCH_REPOSITORY_NAME"
 
-SCRIPT_DIR=$(dirname "$0")
-
 # Validate that the input is a snapshot that exists on the Elasticsearch instance
 function validate_es_snapshot {
     local snapshot_tag="$1"
@@ -34,7 +32,7 @@ function validate_es_snapshot {
     fi
 }
 
-# Check whether the Elasticsearch instance has a index named $ELASTICSEARCH_INDEX_NAME
+# Check whether the Elasticsearch instance has an index named $ELASTICSEARCH_INDEX_NAME
 function check_es_index_exists {
     info "Checking whether index with name '${ELASTICSEARCH_INDEX_NAME}' exists on instance '${ELASTICSEARCH_HOST}'"
 
@@ -261,7 +259,7 @@ function curl_elasticsearch {
     local data=$3
 
     if [ "${BACKUP_ELASTICSEARCH_TYPE}" = "amazon-es" ]; then
-        local es_response=$(python ${SCRIPT_DIR}/aws_request_signer.py "es" "${AWS_REGION}" "${ELASTICSEARCH_HOST}" "${http_method}" "${path}" "${data}")
+        local es_response=$(run python ${SCRIPT_DIR}/aws_request_signer.py "es" "${AWS_REGION}" "${ELASTICSEARCH_HOST}" "${http_method}" "${path}" "${data}")
     else
         local es_response=$(run curl -s -u "${ELASTICSEARCH_USERNAME}:${ELASTICSEARCH_PASSWORD}" -X ${http_method} "http://${ELASTICSEARCH_HOST}${path}" -d "${data}")
     fi

@@ -47,7 +47,6 @@ check_command "jq"
 info "Preparing for backup"
 prepare_backup_db
 prepare_backup_home
-prepare_backup_elasticsearch
 
 # If necessary, lock Bitbucket, start an external backup and wait for instance readiness
 lock_bitbucket
@@ -74,6 +73,7 @@ success "Successfully completed the backup of your ${PRODUCT} instance"
 # Cleanup backups retaining the latest $KEEP_BACKUPS
 cleanup_db_backups
 cleanup_home_backups
+cleanup_elasticsearch_backups
 
 if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then
     info "Archiving backups and cleaning up old archives"

@@ -17,9 +17,7 @@ function backup_elasticsearch {
 }
 
 function cleanup_elasticsearch_backups {
-    check_config_var "ELASTICSEARCH_HOST"
-
-    cleanup_es_snapshots "${ELASTICSEARCH_HOST}"
+    cleanup_es_snapshots
 }
 
 function prepare_restore_elasticsearch {

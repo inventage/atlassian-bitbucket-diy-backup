@@ -51,7 +51,8 @@ BACKUP_ARCHIVE_TYPE=tar
 #  - s3                 - Amazon S3 bucket - requires the Elasticsearch Cloud plugin to be installed. See
 #                         https://www.elastic.co/guide/en/elasticsearch/plugins/2.3/cloud-aws.html
 #
-#  - amazon-es          - Amazon Elasticsearch Service - uses an S3 bucket as a snapshot repository
+#  - amazon-es          - Amazon Elasticsearch Service - uses an S3 bucket as a snapshot repository. Requires both
+#                         python and the python boto package to be installed, in order to sign the requests to AWS ES.
 BACKUP_ELASTICSEARCH_TYPE=
 
 # If BACKUP_ZERO_DOWNTIME is set to true, the home directory and database will be backed up WITHOUT locking Bitbucket

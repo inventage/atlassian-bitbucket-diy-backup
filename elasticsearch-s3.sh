@@ -9,19 +9,19 @@ source "${SCRIPT_DIR}/es-common.sh"
 # ----------------------------------------------------------------------------------------------------------------------
 
 function backup_elasticsearch {
-    check_es_needs_configuration "${ELASTICSEARCH_HOST}"
-    create_es_snapshot "${ELASTICSEARCH_HOST}"
+    check_es_needs_configuration
+    create_es_snapshot
 }
 
 function cleanup_elasticsearch_backups {
-    cleanup_es_snapshots "${ELASTICSEARCH_HOST}"
+    cleanup_es_snapshots
 }
 
 function prepare_restore_elasticsearch {
     local requested_snapshot="$1"
 
-    check_es_index_exists "${ELASTICSEARCH_HOST}" "${ELASTICSEARCH_INDEX_NAME}"
-    check_es_needs_configuration "${ELASTICSEARCH_HOST}"
+    check_es_index_exists
+    check_es_needs_configuration
 
     validate_es_snapshot "${requested_snapshot}"
     RESTORE_ELASTICSEARCH_SNAPSHOT="${requested_snapshot}"
@@ -30,5 +30,5 @@ function prepare_restore_elasticsearch {
 function restore_elasticsearch {
     check_var "RESTORE_ELASTICSEARCH_SNAPSHOT"
 
-    restore_es_snapshot "${ELASTICSEARCH_HOST}" "${RESTORE_ELASTICSEARCH_SNAPSHOT}"
+    restore_es_snapshot "${RESTORE_ELASTICSEARCH_SNAPSHOT}"
 }
