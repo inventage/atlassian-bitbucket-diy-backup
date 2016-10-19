@@ -6,10 +6,10 @@ check_command "jq"
 check_command "curl"
 
 check_config_var "ELASTICSEARCH_HOST"
+check_config_var "ELASTICSEARCH_INDEX_NAME"
+check_config_var "ELASTICSEARCH_REPOSITORY_NAME"
 
-if [ "${BACKUP_ELASTICSEARCH_TYPE}" = "aws" ]; then
-    check_command "python"
-fi
+SCRIPT_DIR=$(dirname "$0")
 
 # Validate that the input is a snapshot that exists on the Elasticsearch instance
 function validate_es_snapshot {
@@ -53,7 +53,7 @@ function check_es_needs_configuration {
     local es_response=$(curl_elasticsearch "GET" "/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}")
     if [ "$(echo ${es_response} | jq -r '.error .type')" = "repository_missing_exception" ]; then
         case "${BACKUP_ELASTICSEARCH_TYPE}" in
-        aws)
+        amazon-es)
             configure_aws_es_snapshot_repository
             ;;
         s3)
@@ -157,7 +157,6 @@ EOF
 # Creates an Elasticsearch snapshot
 function create_es_snapshot {
     check_var "SNAPSHOT_TAG_VALUE"
-    check_config_var "ELASTICSEARCH_INDEX_NAME"
 
     # Configure the snapshot body
     local snapshot_body=$(cat << EOF
@@ -261,10 +260,10 @@ function curl_elasticsearch {
     local path=$2
     local data=$3
 
-    if [ "${BACKUP_ELASTICSEARCH_TYPE}" = "aws" ]; then
-        local es_response=$(python ./aws_request_signer.py "es" "${AWS_REGION}" "${ELASTICSEARCH_HOST}" "${http_method}" "${path}" "${data}")
+    if [ "${BACKUP_ELASTICSEARCH_TYPE}" = "amazon-es" ]; then
+        local es_response=$(python ${SCRIPT_DIR}/aws_request_signer.py "es" "${AWS_REGION}" "${ELASTICSEARCH_HOST}" "${http_method}" "${path}" "${data}")
     else
-        local es_response=$(run curl -s -u ${ELASTICSEARCH_CREDENTIALS} -X ${http_method} "http://${ELASTICSEARCH_HOST}${path}" -d "${data}")
+        local es_response=$(run curl -s -u "${ELASTICSEARCH_USERNAME}:${ELASTICSEARCH_PASSWORD}" -X ${http_method} "http://${ELASTICSEARCH_HOST}${path}" -d "${data}")
     fi
 
     echo "${es_response}"

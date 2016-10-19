@@ -4,9 +4,13 @@
 
 source "${SCRIPT_DIR}/es-common.sh"
 
+# Required to run the python script that will sign each curl request to AWS ES
+check_command "python"
+
 # ----------------------------------------------------------------------------------------------------------------------
 # Backup and restore functions
 # ----------------------------------------------------------------------------------------------------------------------
+
 function backup_elasticsearch {
     check_es_needs_configuration "${ELASTICSEARCH_HOST}"
     create_es_snapshot "${ELASTICSEARCH_HOST}"
