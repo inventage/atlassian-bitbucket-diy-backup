@@ -12,8 +12,8 @@ check_command "python"
 # ----------------------------------------------------------------------------------------------------------------------
 
 function backup_elasticsearch {
-    check_es_needs_configuration "${ELASTICSEARCH_HOST}"
-    create_es_snapshot "${ELASTICSEARCH_HOST}"
+    check_es_needs_configuration
+    create_es_snapshot
 }
 
 function cleanup_elasticsearch_backups {

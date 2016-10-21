@@ -187,7 +187,7 @@ function delete_es_snapshot {
     if [ "$(echo ${es_response} | jq -r '.acknowledged')" = "true" ]; then
         debug "Successfully deleted snapshot '${snapshot_name}'"
     else
-        info "Failed to delete snapshot '${snapshot_name}', Elasticsearch responded with ${ES_RESPONSE}"
+        info "Failed to delete snapshot '${snapshot_name}', Elasticsearch responded with '${es_response}'"
     fi
 
     success "Elasticsearch snapshot '${snapshot_name}' deleted"

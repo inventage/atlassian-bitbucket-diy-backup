@@ -30,5 +30,5 @@ function prepare_restore_elasticsearch {
 function restore_elasticsearch {
     check_var "RESTORE_ELASTICSEARCH_SNAPSHOT"
 
-    restore_es_snapshot "${ELASTICSEARCH_HOST}" "${RESTORE_ELASTICSEARCH_SNAPSHOT}"
+    restore_es_snapshot "${RESTORE_ELASTICSEARCH_SNAPSHOT}"
 }
