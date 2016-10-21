@@ -38,7 +38,7 @@ function check_es_index_exists {
 
     local es_response=$(curl_elasticsearch "GET" "/${ELASTICSEARCH_INDEX_NAME}")
 
-    if [ "$(echo ${es_response} | jq -r '.error .type')" != "index_not_found_exception" ]; then
+    if [ "$(echo "${es_response}" | jq -r '.error .type')" != "index_not_found_exception" ]; then
         debug "Elasticsearch response: ${es_response}"
         bail "An index with name '${ELASTICSEARCH_INDEX_NAME}' exists on instance '${ELASTICSEARCH_HOST}', please remove it before restoring"
     fi
@@ -49,7 +49,7 @@ function check_es_needs_configuration {
     info "Checking if snapshot repository with name '${ELASTICSEARCH_REPOSITORY_NAME}' exists on instance '${ELASTICSEARCH_HOST}'"
 
     local es_response=$(curl_elasticsearch "GET" "/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}")
-    if [ "$(echo ${es_response} | jq -r '.error .type')" = "repository_missing_exception" ]; then
+    if [ "$(echo "${es_response}" | jq -r '.error .type')" = "repository_missing_exception" ]; then
         case "${BACKUP_ELASTICSEARCH_TYPE}" in
         amazon-es)
             configure_aws_es_snapshot_repository
@@ -89,7 +89,7 @@ EOF
 
     local es_response=$(curl_elasticsearch "POST" "/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}" "${data}")
 
-    if [ "$(echo ${es_response} | jq -r '.acknowledged')" != "true" ]; then
+    if [ "$(echo "${es_response}" | jq -r '.acknowledged')" != "true" ]; then
         bail "Failed to create S3 snapshot repository, '${ELASTICSEARCH_HOST}' responded with ${es_response}"
     fi
 
@@ -116,7 +116,7 @@ EOF
 
     local es_response=$(curl_elasticsearch "PUT" "/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}" "${create_s3_repository}")
 
-    if [ "$(echo ${es_response} | jq -r '.acknowledged')" != "true" ]; then
+    if [ "$(echo "${es_response}" | jq -r '.acknowledged')" != "true" ]; then
         error "Please ensure that the Amazon S3 plugin is correctly installed on Elasticsearch: sudo bin/plugin install cloud-aws"
         bail "Unable to create snapshot repository on server '${ELASTICSEARCH_HOST}'. Elasticsearch returned: ${es_response}"
     fi
@@ -143,7 +143,7 @@ EOF
 
     local es_response=$(curl_elasticsearch "PUT" "/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}" "${create_fs_repository}")
 
-    if [ "$(echo ${es_response} | jq -r '.acknowledged')" != "true" ]; then
+    if [ "$(echo "${es_response}" | jq -r '.acknowledged')" != "true" ]; then
         error "Please ensure that Elasticsearch is correctly configured to access shared filesystem '${ELASTICSEARCH_REPOSITORY_LOCATION}'"
         error "To do this the 'elasticsearch.yml' entry 'path.repo: /media/${ELASTICSEARCH_REPOSITORY_LOCATION}' must exist"
         bail "Unable to create snapshot repository on instance '${ELASTICSEARCH_HOST}'. Elasticsearch returned: ${es_response}"
@@ -170,7 +170,7 @@ EOF
     debug "Creating Elasticsearch snapshot '${snapshot_name}' on instance '${ELASTICSEARCH_HOST}'"
 
     local es_response=$(curl_elasticsearch "PUT" "/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}/${snapshot_name}" "${snapshot_body}")
-    if [ "$(echo ${es_response} | jq -r '.accepted')" != "true" ]; then
+    if [ "$(echo "${es_response}" | jq -r '.accepted')" != "true" ]; then
         bail "Unable to create snapshot '${snapshot_name}' on instance '${ELASTICSEARCH_HOST}'. Elasticsearch returned: ${es_response}"
     fi
 
@@ -184,7 +184,7 @@ function delete_es_snapshot {
     debug "Deleting Elasticsearch snapshot '${snapshot_name}' on instance '${ELASTICSEARCH_HOST}'"
 
     local es_response=$(curl_elasticsearch "DELETE" "/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}/${snapshot_name}")
-    if [ "$(echo ${es_response} | jq -r '.acknowledged')" = "true" ]; then
+    if [ "$(echo "${es_response}" | jq -r '.acknowledged')" = "true" ]; then
         debug "Successfully deleted snapshot '${snapshot_name}'"
     else
         info "Failed to delete snapshot '${snapshot_name}', Elasticsearch responded with '${es_response}'"
@@ -209,8 +209,8 @@ EOF
     debug "Restoring Elasticsearch snapshot '${snapshot_name}' on instance '${ELASTICSEARCH_HOST}'"
 
     local es_response=$(curl_elasticsearch "POST" "/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}/${snapshot_name}/_restore" "${snapshot_body}")
-    if [ "$(echo ${es_response} | jq -r '.snapshot.snapshot')" != "${snapshot_name}" ]; then
-        if [ "$(echo ${es_response} | jq -r '.accepted')" != "true" ]; then
+    if [ "$(echo "${es_response}" | jq -r '.snapshot.snapshot')" != "${snapshot_name}" ]; then
+        if [ "$(echo "${es_response}" | jq -r '.accepted')" != "true" ]; then
             bail "Unable to restore snapshot '${snapshot_name}' on instance '${ELASTICSEARCH_HOST}'. Elasticsearch returned: ${es_response}"
         fi
     fi
@@ -224,7 +224,7 @@ function get_es_snapshots {
     local data='{"ignore_unavailable": "true"}'
     local es_response=$(curl_elasticsearch "GET" "/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}/_all" ${data})
 
-    local snapshots=$(echo ${es_response} | jq -r '.[] | sort_by(.start_time_in_millis) | reverse | .[]  | .snapshot')
+    local snapshots=$(echo "${es_response}" | jq -r '.[] | sort_by(.start_time_in_millis) | reverse | .[]  | .snapshot')
     if [  -z "${snapshots}" ]; then
         bail "No snapshots were found on instance '${ELASTICSEARCH_HOST}'. Elasticsearch returned: ${es_response}"
     fi
