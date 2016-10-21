@@ -1,8 +1,11 @@
 # ----------------------------------------------------------------------------------------------------------------------
-# The Amazon S3 based Elasticsearch strategy for Backup and restore
+# The AWS Elasticsearch service strategy for Backup and restore
 # ----------------------------------------------------------------------------------------------------------------------
 
 source "${SCRIPT_DIR}/es-common.sh"
+
+# Required to run the python script that will sign each curl request to AWS ES
+check_command "python"
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Backup and restore functions
@@ -22,7 +25,6 @@ function prepare_restore_elasticsearch {
 
     check_es_index_exists
     check_es_needs_configuration
-
     validate_es_snapshot "${requested_snapshot}"
     RESTORE_ELASTICSEARCH_SNAPSHOT="${requested_snapshot}"
 }

@@ -70,8 +70,10 @@ unlock_bitbucket
 
 success "Successfully completed the backup of your ${PRODUCT} instance"
 
+# Cleanup backups retaining the latest $KEEP_BACKUPS
 cleanup_db_backups
 cleanup_home_backups
+cleanup_elasticsearch_backups
 
 if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then
     info "Archiving backups and cleaning up old archives"
