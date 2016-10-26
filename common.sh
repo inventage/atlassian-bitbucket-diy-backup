@@ -128,10 +128,10 @@ function source_database_strategy {
 }
 
 function source_elasticsearch_strategy {
-    if [ -e "${SCRIPT_DIR}/elasticsearch-${BACKUP_ELASTICSEARCH_TYPE:-no_op}.sh" ]; then
-        source "${SCRIPT_DIR}/elasticsearch-${BACKUP_ELASTICSEARCH_TYPE:-no_op}.sh"
+    if [ -e "${SCRIPT_DIR}/elasticsearch-${BACKUP_ELASTICSEARCH_TYPE:-none}.sh" ]; then
+        source "${SCRIPT_DIR}/elasticsearch-${BACKUP_ELASTICSEARCH_TYPE:-none}.sh"
     else
-        error "BACKUP_ELASTICSEARCH_TYPE=${BACKUP_ELASTICSEARCH_TYPE} is not implemented, '${SCRIPT_DIR}/elasticsearch-${BACKUP_ELASTICSEARCH_TYPE:-no_op}.sh' does not exist"
+        error "BACKUP_ELASTICSEARCH_TYPE=${BACKUP_ELASTICSEARCH_TYPE} is not implemented, '${SCRIPT_DIR}/elasticsearch-${BACKUP_ELASTICSEARCH_TYPE:-none}.sh' does not exist"
         bail "Please update BACKUP_DATABASE_TYPE in '${BACKUP_VARS_FILE}'"
     fi
 }
