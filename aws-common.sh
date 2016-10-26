@@ -61,20 +61,19 @@ function snapshot_ebs_volume {
     set +e
     while [ $SECONDS -lt ${end_time} ]; do
         local create_snapshot_response=$(run aws ec2 create-snapshot --volume-id "${volume_id}" --description "${description}")
-        local ebs_snapshot_id=$(echo "${create_snapshot_response}" | jq -r '.SnapshotId')
 
-        case "${ebs_snapshot_id}" in
-            "" | "null")
+        if [ "${create_snapshot_response}" = *"SnapshotCreationPerVolumeRateExceeded"* ]; then
+            debug "Snapshot creation per volume rate exceeded. AWS returned: ${create_snapshot_response}"
+        else
+            local ebs_snapshot_id=$(echo "${create_snapshot_response}" | jq -r '.SnapshotId')
+
+            if [ -z "${ebs_snapshot_id}" -o  "${ebs_snapshot_id}" = "null" ]; then
                 error "Could not find 'SnapshotId' in response '${create_snapshot_response}'"
                 bail "Unable to create EBS snapshot of volume '${volume_id}'"
-                ;;
-            *"SnapshotCreationPerVolumeRateExceeded"*)
-                debug "Snapshot creation per volume rate exceeded. AWS returned: ${create_snapshot_response}"
-                ;;
-            *)
+            else
                 break
-                ;;
-        esac
+            fi
+        fi
         sleep 10
     done
     set -e
