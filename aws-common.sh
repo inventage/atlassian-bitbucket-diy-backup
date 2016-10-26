@@ -226,7 +226,43 @@ function snapshot_rds_instance {
 
     # Wait until the database has completed the backup
     info "Waiting for instance '${instance_id}' to complete backup. This could take some time"
-    run aws rds wait db-instance-available --db-instance-identifier "${instance_id}"
+    wait_for_available_rds_instance "${instance_id}"
+}
+
+# Waits for a RDS instance to become available
+#
+# instance_id = The RDS instance to query
+#
+function wait_for_available_rds_instance {
+    local instance_id=$1
+
+    # Bail after 10 Minutes
+    local max_wait_time=600
+    local end_time=$(($SECONDS + max_wait_time))
+
+    set +e
+    while [ $SECONDS -lt ${end_time} ]; do
+        local instance_description=$(run aws rds describe-db-instances --db-instance-identifier "${instance_id}")
+        local db_instance_status=$(echo "${instance_description}" | jq -r '.DBInstances[0].DBInstanceStatus')
+
+        case "${db_instance_status}" in
+            "" | "null")
+                error "Could not find a 'DBInstance' with 'DBInstanceStatus' in response '${instance_description}'"
+                bail "Please make sure you have selected an existing RDS instance"
+                ;;
+            "available")
+                break
+                ;;
+            *)
+                debug "The RDS instance '${instance_id}' status is '${db_instance_status}', expected 'available'"
+                ;;
+        esac
+    done
+    set -e
+
+    if [ "${db_instance_status}" != "available" ]; then
+        bail "RDS instance '${instance_id}' did not become available after '${max_wait_time}' seconds"
+    fi
 }
 
 # Output the id of the currently attached EBS Volume
@@ -245,29 +281,6 @@ function find_attached_ebs_volume {
     fi
 
     echo "${ebs_volume}"
-}
-
-# Verify the existence of a RDS instance
-#
-# instance_id = The id of the RDS instance
-#
-function validate_rds_instance_id {
-    local instance_id="$1"
-    local instance_description=$(run aws rds describe-db-instances --db-instance-identifier "${instance_id}")
-
-    local db_instance_status=$(echo "${instance_description}" | jq -r '.DBInstances[0].DBInstanceStatus')
-    case "${db_instance_status}" in
-        "" | "null")
-            error "Could not find a 'DBInstance' with 'DBInstanceStatus' in response '${instance_description}'"
-            bail "Please make sure you have selected an existing RDS instance"
-            ;;
-        "available")
-            ;;
-        *)
-            error "The RDS instance '${instance_id}' status is '${db_instance_status}', expected 'available'"
-            bail "The RDS instance must be 'available' before the backup can be started."
-            ;;
-    esac
 }
 
 # Verify the existence of a RDS snapshot

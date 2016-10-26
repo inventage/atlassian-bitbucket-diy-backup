@@ -7,7 +7,7 @@ source "${SCRIPT_DIR}/aws-common.sh"
 # Validate that the RDS_INSTANCE_ID variable has been set to a valid Amazon RDS instance
 function prepare_backup_db {
     check_config_var "RDS_INSTANCE_ID"
-    validate_rds_instance_id "${RDS_INSTANCE_ID}"
+    run aws rds describe-db-instances --db-instance-identifier "${RDS_INSTANCE_ID}"
 }
 
 # Backup the Bitbucket database
