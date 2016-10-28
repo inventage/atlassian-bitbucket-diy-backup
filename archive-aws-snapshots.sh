@@ -17,6 +17,7 @@ function archive_backup {
 
     # Optionally copy/share the EBS snapshot to another region and/or account.
     # This is useful to retain a cross region/account copy of the backup.
+    (
     if [ "${BACKUP_HOME_TYPE}" = "amazon-ebs" ] && [ -n "${BACKUP_DEST_REGION}" ]; then
         local backup_ebs_snapshot_id=$(run aws ec2 describe-snapshots --filters Name=tag-key,Values="${SNAPSHOT_TAG_KEY}" \
             Name=tag-value,Values="${SNAPSHOT_TAG_VALUE}" --query 'Snapshots[0].SnapshotId' --output text)
@@ -29,7 +30,10 @@ function archive_backup {
             copy_ebs_snapshot "${backup_ebs_snapshot_id}" "${AWS_REGION}"
         fi
     fi
+    ) &
 
+    # Optionally copy/share the RDS snapshot to another region and/or account.
+    (
     if [ "${BACKUP_DATABASE_TYPE}" = "amazon-rds" ] && [ -n "${BACKUP_DEST_REGION}" ]; then
         local backup_rds_snapshot_id=$(run aws rds describe-db-snapshots --db-snapshot-identifier "${SNAPSHOT_TAG_VALUE}" \
             --query 'DBSnapshots[*].DBSnapshotIdentifier' --output text)
@@ -42,6 +46,7 @@ function archive_backup {
             copy_rds_snapshot "${backup_rds_snapshot_id}"
         fi
     fi
+    )
 }
 
 function prepare_restore_archive {
@@ -60,20 +65,28 @@ function cleanup_old_archives {
         if [ -n "${BACKUP_DEST_REGION}" ]; then
             if [ -n "${BACKUP_DEST_AWS_ACCOUNT_ID}" -a -n "${BACKUP_DEST_AWS_ROLE}" ]; then
                 # Cleanup snapshots in BACKUP_DEST_AWS_ACCOUNT_ID
+                (
                 if [ "${BACKUP_DATABASE_TYPE}" = "amazon-rds" ]; then
                     cleanup_old_offsite_rds_snapshots_in_backup_account
                 fi
+                ) &
+                (
                 if [ "${BACKUP_HOME_TYPE}" = "amazon-ebs" ]; then
                     cleanup_old_offsite_ebs_snapshots_in_backup_account
                 fi
+                )
             else
                 # Cleanup snapshots in BACKUP_DEST_REGION
+                (
                 if [ "${BACKUP_DATABASE_TYPE}" = "rds" ]; then
                     cleanup_old_offsite_rds_snapshots
                 fi
+                ) &
+                (
                 if [ "${BACKUP_HOME_TYPE}" = "ebs-home" ]; then
                     cleanup_old_offsite_ebs_snapshots
                 fi
+                )
             fi
         fi
     fi
@@ -238,9 +251,9 @@ function share_and_copy_rds_snapshot {
     local rds_snapshot_arn="arn:aws:rds:${BACKUP_DEST_REGION}:${BACKUP_DEST_AWS_ACCOUNT_ID}:snapshot:${rds_snapshot_id}"
 
     AWS_ACCESS_KEY_ID="${aws_access_key_id}" AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}" \
-        AWS_SESSION_TOKEN="${aws_session_token}" run aws rds add-tags-to-resource \
+        AWS_SESSION_TOKEN="${aws_session_token}" run aws --region "${BACKUP_DEST_REGION}" rds add-tags-to-resource \
         --resource-name "${rds_snapshot_arn}" --tags "${aws_tags}"
-    debug "Tagged RDS snapshot '${rds_snapshot_id}' with '${aws_tags}'"
+    debug "Tagged RDS snapshot '${rds_snapshot_arn}' with '${aws_tags}'"
 }
 
 function cleanup_old_offsite_ebs_snapshots_in_backup_account {
@@ -275,9 +288,9 @@ function cleanup_old_offsite_rds_snapshots_in_backup_account {
     local aws_session_token=$(echo ${credentials} | jq -r .Credentials.SessionToken)
 
     # Query for RDS snapshots using the assumed credentials
-    local old_backup_account_rds_snapshots=$(AWS_ACCESS_KEY_ID="${aws_access_key_id}" \AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}" \
-        AWS_SESSION_TOKEN="${aws_session_token}" run aws --output=text rds describe-db-snapshots \
-        --region "${BACKUP_DEST_REGION}" --snapshot-type manual \
+    local old_backup_account_rds_snapshots=$(AWS_ACCESS_KEY_ID="${aws_access_key_id}" \
+        AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}" AWS_SESSION_TOKEN="${aws_session_token}" \
+         run aws --output=text rds describe-db-snapshots --region "${BACKUP_DEST_REGION}" --snapshot-type manual \
         --query "reverse(sort_by(DBSnapshots[?starts_with(DBSnapshotIdentifier,\
         \`${SNAPSHOT_TAG_PREFIX}\`)]|[?Status==\`available\`], &SnapshotCreateTime))[${KEEP_BACKUPS}:].DBSnapshotIdentifier")
 
