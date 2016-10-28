@@ -260,7 +260,6 @@ function wait_for_available_rds_instance {
     local max_wait_time=600
     local end_time=$(($SECONDS + max_wait_time))
 
-    set +e
     while [ $SECONDS -lt ${end_time} ]; do
         local instance_description=$(run aws rds describe-db-instances --db-instance-identifier "${instance_id}")
         local db_instance_status=$(echo "${instance_description}" | jq -r '.DBInstances[0].DBInstanceStatus')
@@ -279,7 +278,6 @@ function wait_for_available_rds_instance {
         esac
         sleep 10
     done
-    set -e
 
     if [ "${db_instance_status}" != "available" ]; then
         bail "RDS instance '${instance_id}' did not become available after '${max_wait_time}' seconds"

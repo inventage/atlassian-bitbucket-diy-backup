@@ -17,7 +17,6 @@ function archive_backup {
 
     # Optionally copy/share the EBS snapshot to another region and/or account.
     # This is useful to retain a cross region/account copy of the backup.
-    (
     if [ "${BACKUP_HOME_TYPE}" = "amazon-ebs" ] && [ -n "${BACKUP_DEST_REGION}" ]; then
         local backup_ebs_snapshot_id=$(run aws ec2 describe-snapshots --filters Name=tag-key,Values="${SNAPSHOT_TAG_KEY}" \
             Name=tag-value,Values="${SNAPSHOT_TAG_VALUE}" --query 'Snapshots[0].SnapshotId' --output text)
@@ -30,10 +29,8 @@ function archive_backup {
             copy_ebs_snapshot "${backup_ebs_snapshot_id}" "${AWS_REGION}"
         fi
     fi
-    ) &
 
     # Optionally copy/share the RDS snapshot to another region and/or account.
-    (
     if [ "${BACKUP_DATABASE_TYPE}" = "amazon-rds" ] && [ -n "${BACKUP_DEST_REGION}" ]; then
         local backup_rds_snapshot_id=$(run aws rds describe-db-snapshots --db-snapshot-identifier "${SNAPSHOT_TAG_VALUE}" \
             --query 'DBSnapshots[*].DBSnapshotIdentifier' --output text)
@@ -46,7 +43,6 @@ function archive_backup {
             copy_rds_snapshot "${backup_rds_snapshot_id}"
         fi
     fi
-    )
 }
 
 function prepare_restore_archive {
@@ -65,28 +61,20 @@ function cleanup_old_archives {
         if [ -n "${BACKUP_DEST_REGION}" ]; then
             if [ -n "${BACKUP_DEST_AWS_ACCOUNT_ID}" -a -n "${BACKUP_DEST_AWS_ROLE}" ]; then
                 # Cleanup snapshots in BACKUP_DEST_AWS_ACCOUNT_ID
-                (
                 if [ "${BACKUP_DATABASE_TYPE}" = "amazon-rds" ]; then
                     cleanup_old_offsite_rds_snapshots_in_backup_account
                 fi
-                ) &
-                (
                 if [ "${BACKUP_HOME_TYPE}" = "amazon-ebs" ]; then
                     cleanup_old_offsite_ebs_snapshots_in_backup_account
                 fi
-                )
             else
                 # Cleanup snapshots in BACKUP_DEST_REGION
-                (
                 if [ "${BACKUP_DATABASE_TYPE}" = "rds" ]; then
                     cleanup_old_offsite_rds_snapshots
                 fi
-                ) &
-                (
                 if [ "${BACKUP_HOME_TYPE}" = "ebs-home" ]; then
                     cleanup_old_offsite_ebs_snapshots
                 fi
-                )
             fi
         fi
     fi
