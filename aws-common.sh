@@ -53,13 +53,28 @@ SNAPSHOT_TAG_KEY="Name"
 function snapshot_ebs_volume {
     local volume_id="$1"
     local description="$2"
-    local create_snapshot_response=$(run aws ec2 create-snapshot --volume-id "${volume_id}" --description "${description}")
 
-    local ebs_snapshot_id=$(echo "${create_snapshot_response}" | jq -r '.SnapshotId')
-    if [ -z "${ebs_snapshot_id}" -o "${ebs_snapshot_id}" = "null" ]; then
-        error "Could not find 'SnapshotId' in response '${create_snapshot_response}'"
-        bail "Unable to create EBS snapshot of volume '${volume_id}'"
-    fi
+    # Bail after 10 Minutes
+    local max_wait_time=600
+    local end_time=$(($SECONDS + max_wait_time))
+
+    while [ $SECONDS -lt ${end_time} ]; do
+        local create_snapshot_response=$(run aws ec2 create-snapshot --volume-id "${volume_id}" --description "${description}")
+
+        if [ "${create_snapshot_response}" = *"SnapshotCreationPerVolumeRateExceeded"* ]; then
+            debug "Snapshot creation per volume rate exceeded. AWS returned: ${create_snapshot_response}"
+        else
+            local ebs_snapshot_id=$(echo "${create_snapshot_response}" | jq -r '.SnapshotId')
+
+            if [ -z "${ebs_snapshot_id}" -o  "${ebs_snapshot_id}" = "null" ]; then
+                error "Could not find 'SnapshotId' in response '${create_snapshot_response}'"
+                bail "Unable to create EBS snapshot of volume '${volume_id}'"
+            else
+                break
+            fi
+        fi
+        sleep 10
+    done
 
     if [ -n "${AWS_ADDITIONAL_TAGS}" ]; then
         comma=', '
@@ -220,13 +235,51 @@ function snapshot_rds_instance {
 
     local aws_tags="[{\"Key\":\"${SNAPSHOT_TAG_KEY}\",\"Value\":\"${SNAPSHOT_TAG_VALUE}\"}${comma}${AWS_ADDITIONAL_TAGS}]"
 
+    # Ensure RDS instance is available before attempting to snapshot
+    wait_for_available_rds_instance "${instance_id}"
+
     # We use SNAPSHOT_TAG_VALUE as the snapshot identifier because it is unique and allows pairing of an EBS snapshot to an RDS snapshot by tag
     run aws rds create-db-snapshot --db-instance-identifier "${instance_id}" \
         --db-snapshot-identifier "${SNAPSHOT_TAG_VALUE}" --tags "${aws_tags}" > /dev/null
 
     # Wait until the database has completed the backup
     info "Waiting for instance '${instance_id}' to complete backup. This could take some time"
-    run aws rds wait db-instance-available --db-instance-identifier "${instance_id}"
+    wait_for_available_rds_instance "${instance_id}"
+}
+
+# Waits for a RDS instance to become available
+#
+# instance_id = The RDS instance to query
+#
+function wait_for_available_rds_instance {
+    local instance_id=$1
+
+    # Bail after 10 Minutes
+    local max_wait_time=600
+    local end_time=$(($SECONDS + max_wait_time))
+
+    while [ $SECONDS -lt ${end_time} ]; do
+        local instance_description=$(run aws rds describe-db-instances --db-instance-identifier "${instance_id}")
+        local db_instance_status=$(echo "${instance_description}" | jq -r '.DBInstances[0].DBInstanceStatus')
+
+        case "${db_instance_status}" in
+            "" | "null")
+                error "Could not find a 'DBInstance' with 'DBInstanceStatus' in response '${instance_description}'"
+                bail "Please make sure you have selected an existing RDS instance"
+                ;;
+            "available")
+                break
+                ;;
+            *)
+                debug "The RDS instance '${instance_id}' status is '${db_instance_status}', expected 'available'"
+                ;;
+        esac
+        sleep 10
+    done
+
+    if [ "${db_instance_status}" != "available" ]; then
+        bail "RDS instance '${instance_id}' did not become available after '${max_wait_time}' seconds"
+    fi
 }
 
 # Output the id of the currently attached EBS Volume
@@ -245,29 +298,6 @@ function find_attached_ebs_volume {
     fi
 
     echo "${ebs_volume}"
-}
-
-# Verify the existence of a RDS instance
-#
-# instance_id = The id of the RDS instance
-#
-function validate_rds_instance_id {
-    local instance_id="$1"
-    local instance_description=$(run aws rds describe-db-instances --db-instance-identifier "${instance_id}")
-
-    local db_instance_status=$(echo "${instance_description}" | jq -r '.DBInstances[0].DBInstanceStatus')
-    case "${db_instance_status}" in
-        "" | "null")
-            error "Could not find a 'DBInstance' with 'DBInstanceStatus' in response '${instance_description}'"
-            bail "Please make sure you have selected an existing RDS instance"
-            ;;
-        "available")
-            ;;
-        *)
-            error "The RDS instance '${instance_id}' status is '${db_instance_status}', expected 'available'"
-            bail "The RDS instance must be 'available' before the backup can be started."
-            ;;
-    esac
 }
 
 # Verify the existence of a RDS snapshot

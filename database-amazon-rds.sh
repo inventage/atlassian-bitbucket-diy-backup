@@ -7,7 +7,7 @@ source "${SCRIPT_DIR}/aws-common.sh"
 # Validate that the RDS_INSTANCE_ID variable has been set to a valid Amazon RDS instance
 function prepare_backup_db {
     check_config_var "RDS_INSTANCE_ID"
-    validate_rds_instance_id "${RDS_INSTANCE_ID}"
+    run aws rds describe-db-instances --db-instance-identifier "${RDS_INSTANCE_ID}" > /dev/null
 }
 
 # Backup the Bitbucket database
@@ -45,9 +45,8 @@ function restore_db {
     local max_wait_time=600
     local end_time=$(($SECONDS + max_wait_time))
 
-    set +e
     while [ $SECONDS -lt ${end_time} ]; do
-        restore_result=$(aws rds restore-db-instance-from-db-snapshot \
+        local restore_result=$(aws rds restore-db-instance-from-db-snapshot \
             --db-instance-identifier "${RDS_INSTANCE_ID}" \
             --db-snapshot-identifier "${RESTORE_RDS_SNAPSHOT_ID}" ${optional_args} 2>&1)
 
@@ -66,7 +65,6 @@ function restore_db {
             ;;
         esac
     done
-    set -e
 
     if [ $? != 0 ]; then
         bail "Failed to restore snapshot '${RESTORE_RDS_SNAPSHOT_ID}' as '${RDS_INSTANCE_ID}'"

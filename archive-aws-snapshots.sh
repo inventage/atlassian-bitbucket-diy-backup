@@ -30,6 +30,7 @@ function archive_backup {
         fi
     fi
 
+    # Optionally copy/share the RDS snapshot to another region and/or account.
     if [ "${BACKUP_DATABASE_TYPE}" = "amazon-rds" ] && [ -n "${BACKUP_DEST_REGION}" ]; then
         local backup_rds_snapshot_id=$(run aws rds describe-db-snapshots --db-snapshot-identifier "${SNAPSHOT_TAG_VALUE}" \
             --query 'DBSnapshots[*].DBSnapshotIdentifier' --output text)
@@ -235,12 +236,12 @@ function share_and_copy_rds_snapshot {
         comma=', '
     fi
     local aws_tags="[{\"Key\":\"${SNAPSHOT_TAG_KEY}\",\"Value\":\"${SNAPSHOT_TAG_VALUE}\"}${comma}${AWS_ADDITIONAL_TAGS}]"
-    local rds_snapshot_arn="arn:aws:rds:${BACKUP_DEST_REGION}:${AWS_ACCOUNT_ID}:snapshot:${rds_snapshot_id}"
+    local rds_snapshot_arn="arn:aws:rds:${BACKUP_DEST_REGION}:${BACKUP_DEST_AWS_ACCOUNT_ID}:snapshot:${rds_snapshot_id}"
 
     AWS_ACCESS_KEY_ID="${aws_access_key_id}" AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}" \
-        AWS_SESSION_TOKEN="${aws_session_token}" run aws rds add-tags-to-resource \
+        AWS_SESSION_TOKEN="${aws_session_token}" run aws --region "${BACKUP_DEST_REGION}" rds add-tags-to-resource \
         --resource-name "${rds_snapshot_arn}" --tags "${aws_tags}"
-    debug "Tagged RDS snapshot '${rds_snapshot_id}' with '${aws_tags}'"
+    debug "Tagged RDS snapshot '${rds_snapshot_arn}' with '${aws_tags}'"
 }
 
 function cleanup_old_offsite_ebs_snapshots_in_backup_account {
@@ -275,9 +276,9 @@ function cleanup_old_offsite_rds_snapshots_in_backup_account {
     local aws_session_token=$(echo ${credentials} | jq -r .Credentials.SessionToken)
 
     # Query for RDS snapshots using the assumed credentials
-    local old_backup_account_rds_snapshots=$(AWS_ACCESS_KEY_ID="${aws_access_key_id}" \AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}" \
-        AWS_SESSION_TOKEN="${aws_session_token}" run aws --output=text rds describe-db-snapshots \
-        --region "${BACKUP_DEST_REGION}" --snapshot-type manual \
+    local old_backup_account_rds_snapshots=$(AWS_ACCESS_KEY_ID="${aws_access_key_id}" \
+        AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}" AWS_SESSION_TOKEN="${aws_session_token}" \
+         run aws --output=text rds describe-db-snapshots --region "${BACKUP_DEST_REGION}" --snapshot-type manual \
         --query "reverse(sort_by(DBSnapshots[?starts_with(DBSnapshotIdentifier,\
         \`${SNAPSHOT_TAG_PREFIX}\`)]|[?Status==\`available\`], &SnapshotCreateTime))[${KEEP_BACKUPS}:].DBSnapshotIdentifier")
 
