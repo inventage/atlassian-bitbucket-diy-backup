@@ -235,7 +235,7 @@ function share_and_copy_rds_snapshot {
         comma=', '
     fi
     local aws_tags="[{\"Key\":\"${SNAPSHOT_TAG_KEY}\",\"Value\":\"${SNAPSHOT_TAG_VALUE}\"}${comma}${AWS_ADDITIONAL_TAGS}]"
-    local rds_snapshot_arn="arn:aws:rds:${BACKUP_DEST_REGION}:${AWS_ACCOUNT_ID}:snapshot:${rds_snapshot_id}"
+    local rds_snapshot_arn="arn:aws:rds:${BACKUP_DEST_REGION}:${BACKUP_DEST_AWS_ACCOUNT_ID}:snapshot:${rds_snapshot_id}"
 
     AWS_ACCESS_KEY_ID="${aws_access_key_id}" AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}" \
         AWS_SESSION_TOKEN="${aws_session_token}" run aws rds add-tags-to-resource \
