@@ -72,7 +72,7 @@ function cleanup_old_archives {
                 if [ "${BACKUP_DATABASE_TYPE}" = "rds" ]; then
                     cleanup_old_offsite_rds_snapshots
                 fi
-                if [ "${BACKUP_HOME_TYPE}" = "ebs-home" ]; then
+                if [ "${BACKUP_HOME_TYPE}" = "amazon-ebs" ]; then
                     cleanup_old_offsite_ebs_snapshots
                 fi
             fi
