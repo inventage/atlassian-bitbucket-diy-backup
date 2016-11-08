@@ -87,7 +87,7 @@ EOF
 )
     info "Creating Elasticsearch S3 snapshot repository with name '${ELASTICSEARCH_REPOSITORY_NAME}' on instance '${ELASTICSEARCH_HOST}'"
 
-    local es_response=$(curl_elasticsearch "POST" "/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}" "${data}")
+    local es_response=$(curl_elasticsearch "PUT" "/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}" "${data}")
 
     if [ "$(echo "${es_response}" | jq -r '.acknowledged' 2>/dev/null)" != "true" ]; then
         bail "Failed to create S3 snapshot repository, '${ELASTICSEARCH_HOST}' responded with ${es_response}"
