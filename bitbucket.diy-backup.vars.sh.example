@@ -17,6 +17,7 @@ BITBUCKET_GID=atlbitbucket
 #  - rsync              - "rsync" of the home directory contents to a temporary location. NOTE: This can NOT be used
 #                         with BACKUP_ZERO_DOWNTIME=true.
 #  - zfs                - ZFS snapshot strategy for home directory backups.
+#  - none               - Do not attempt to backup the home directory.
 BACKUP_HOME_TYPE=rsync
 
 # Strategy for backing up the database:
@@ -25,6 +26,7 @@ BACKUP_HOME_TYPE=rsync
 #  - postgresql         - PostgreSQL using "pg_dump" to backup and "pg_restore" to restore
 #  - postgresql-fslevel - PostgreSQL with data directory located in the file system volume as home directory (so
 #                         that it will be included implicitly in the home volume snapshot)
+#  - none               - Do not attempt to backup the database.
 BACKUP_DATABASE_TYPE=postgresql
 
 # Strategy for archiving backups and/or copying them to an offsite location:
