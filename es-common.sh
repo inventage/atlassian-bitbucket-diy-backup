@@ -11,7 +11,7 @@ check_config_var "ELASTICSEARCH_REPOSITORY_NAME"
 
 # Validate that the input is a snapshot that exists on the Elasticsearch instance
 function validate_es_snapshot {
-    local snapshot_tag="$1"
+    local snapshot_tag=$(echo "$1" | tr '[:upper:]' '[:lower:]')
 
     debug "Getting snapshot list from Elasticsearch instance '${ELASTICSEARCH_HOST}'"
     local snapshot_list=$(get_es_snapshots)
@@ -87,7 +87,7 @@ EOF
 )
     info "Creating Elasticsearch S3 snapshot repository with name '${ELASTICSEARCH_REPOSITORY_NAME}' on instance '${ELASTICSEARCH_HOST}'"
 
-    local es_response=$(curl_elasticsearch "POST" "/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}" "${data}")
+    local es_response=$(curl_elasticsearch "PUT" "/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}" "${data}")
 
     if [ "$(echo "${es_response}" | jq -r '.acknowledged' 2>/dev/null)" != "true" ]; then
         bail "Failed to create S3 snapshot repository, '${ELASTICSEARCH_HOST}' responded with ${es_response}"
@@ -165,7 +165,7 @@ function create_es_snapshot {
 }
 EOF
 )
-    local snapshot_name="${SNAPSHOT_TAG_VALUE}"
+    local snapshot_name=$(echo "${SNAPSHOT_TAG_VALUE}" | tr '[:upper:]' '[:lower:]')
 
     debug "Creating Elasticsearch snapshot '${snapshot_name}' on instance '${ELASTICSEARCH_HOST}'"
 
@@ -195,7 +195,7 @@ function delete_es_snapshot {
 
 # Restores an Elasticsearch instance from the specified snapshot
 function restore_es_snapshot {
-    local snapshot_name="$1"
+    local snapshot_name=$(echo "$1" | tr '[:upper:]' '[:lower:]')
 
     local snapshot_body=$(cat << EOF
 {
