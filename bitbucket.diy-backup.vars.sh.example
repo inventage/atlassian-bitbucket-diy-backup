@@ -57,6 +57,21 @@ BACKUP_ARCHIVE_TYPE=tar
 #                         python and the python boto package to be installed, in order to sign the requests to AWS ES.
 BACKUP_ELASTICSEARCH_TYPE=
 
+# Strategy for Bitbucket home directory disaster recovery:
+#  - amazon-ebs         - Not implemented
+#  - rsync              - Not implemented
+#  - zfs                - ZFS snapshot strategy for home directory replication.
+#  - none               - Do not attempt to replicate the home directory.
+DR_HOME_TYPE=zfs
+
+# Strategy for replicating the database:
+#  - amazon-rds         - Amazon RDS Read replica
+#  - mysql              - Not implemented
+#  - postgresql         - PostgreSQL replication
+#  - postgresql-fslevel - Not implemented
+#  - none               - Do not attempt to replicate the database.
+DR_DATABASE_TYPE=postgresql
+
 # If BACKUP_ZERO_DOWNTIME is set to true, the home directory and database will be backed up WITHOUT locking Bitbucket
 # in maintenance mode. NOTE: This can NOT be used with Bitbucket Server versions older than 4.8. For more information,
 # see https://confluence.atlassian.com/display/BitbucketServer/Using+Bitbucket+Zero+Downtime+Backup.
