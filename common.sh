@@ -26,7 +26,7 @@ fi
 
 # Note that this prefix is used to delete old backups and if set improperly will delete incorrect backups on cleanup.
 SNAPSHOT_TAG_PREFIX="${INSTANCE_NAME}-"
-SNAPSHOT_TAG_VALUE="${SNAPSHOT_TAG_PREFIX}${TIMESTAMP}"
+SNAPSHOT_TAG_VALUE=${SNAPSHOT_TAG_VALUE:-${SNAPSHOT_TAG_PREFIX}${TIMESTAMP}}
 
 # Lock a Bitbucket instance for maintenance
 function lock_bitbucket {
