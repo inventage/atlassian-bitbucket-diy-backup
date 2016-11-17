@@ -42,7 +42,7 @@ BACKUP_ARCHIVE_TYPE=tar
 #                         included in the home directory snapshot implicitly.
 #
 #                         NOTE: If Bitbucket is configured to use a remote Elasticsearch instance (which all Bitbucket
-#                         Data Center instances must be), then its state is NOT included implictly in home directory
+#                         Data Center instances must be), then its state is NOT included implicitly in home directory
 #                         backups, and may therefore take some to rebuild after a restore UNLESS one of the following
 #                         strategies is used.
 #
@@ -58,19 +58,15 @@ BACKUP_ARCHIVE_TYPE=tar
 BACKUP_ELASTICSEARCH_TYPE=
 
 # Strategy for Bitbucket home directory disaster recovery:
-#  - amazon-ebs         - Not implemented
-#  - rsync              - Not implemented
 #  - zfs                - ZFS snapshot strategy for home directory replication.
 #  - none               - Do not attempt to replicate the home directory.
-DR_HOME_TYPE=zfs
+STANDBY_HOME_TYPE=zfs
 
 # Strategy for replicating the database:
 #  - amazon-rds         - Amazon RDS Read replica
-#  - mysql              - Not implemented
 #  - postgresql         - PostgreSQL replication
-#  - postgresql-fslevel - Not implemented
 #  - none               - Do not attempt to replicate the database.
-DR_DATABASE_TYPE=postgresql
+STANDBY_DATABASE_TYPE=postgresql
 
 # If BACKUP_ZERO_DOWNTIME is set to true, the home directory and database will be backed up WITHOUT locking Bitbucket
 # in maintenance mode. NOTE: This can NOT be used with Bitbucket Server versions older than 4.8. For more information,
