@@ -211,7 +211,7 @@ esac
 # Options to pass to every "curl" command
 CURL_OPTIONS="-L -s -f"
 
-# Ensure we run fsfreeze when not using BACKUP_ZERO_DOWNTIME=true
+# Ensure we run fsfreeze
 FSFREEZE=true
 
 # === AWS Variables ===
