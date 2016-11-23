@@ -224,9 +224,9 @@ function get_es_snapshots {
     local data='{"ignore_unavailable": "true"}'
     local es_response=$(curl_elasticsearch "GET" "/_snapshot/${ELASTICSEARCH_REPOSITORY_NAME}/_all" ${data})
 
-    local snapshots=$(echo "${es_response}" | jq -r '.[] | sort_by(.start_time_in_millis) | reverse | .[]  | .snapshot' 2>/dev/null)
+    local snapshots=$(echo "${es_response}" | jq -r ".[] | sort_by(.start_time_in_millis) | reverse | .[]  | .snapshot | select ( startswith(\"${SNAPSHOT_TAG_PREFIX}\") ) " 2>/dev/null)
     if [  -z "${snapshots}" ]; then
-        bail "No snapshots were found on instance '${ELASTICSEARCH_HOST}'. Elasticsearch returned: ${es_response}"
+        bail "No snapshots with prefix ${SNAPSHOT_TAG_PREFIX} were found on instance '${ELASTICSEARCH_HOST}'. Elasticsearch returned: ${es_response}"
     fi
 
     echo "${snapshots}"
