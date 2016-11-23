@@ -25,7 +25,7 @@ else
 fi
 
 # Note that this prefix is used to delete old backups and if set improperly will delete incorrect backups on cleanup.
-SNAPSHOT_TAG_PREFIX="${INSTANCE_NAME}-"
+SNAPSHOT_TAG_PREFIX=${SNAPSHOT_TAG_PREFIX:-${INSTANCE_NAME}-}
 SNAPSHOT_TAG_VALUE=${SNAPSHOT_TAG_VALUE:-${SNAPSHOT_TAG_PREFIX}${TIMESTAMP}}
 
 # Lock a Bitbucket instance for maintenance
@@ -33,6 +33,10 @@ function lock_bitbucket {
     if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
         return
     fi
+
+    check_config_var "BITBUCKET_BACKUP_USER"
+    check_config_var "BITBUCKET_BACKUP_PASS"
+    check_config_var "BITBUCKET_URL"
 
     local lock_response=$(run curl ${CURL_OPTIONS} -u "${BITBUCKET_BACKUP_USER}:${BITBUCKET_BACKUP_PASS}" -X POST -H "Content-type: application/json" \
         "${BITBUCKET_URL}/mvc/maintenance/lock")
@@ -207,7 +211,9 @@ function freeze_mount_point {
         # A ZFS filesystem doesn't require a fsfreeze
         ;;
     *)
-        run sudo fsfreeze -f "${1}"
+        if [ "${FSFREEZE}" = "true" ]; then
+            run sudo fsfreeze -f "${1}"
+        fi
         ;;
     esac
 }
