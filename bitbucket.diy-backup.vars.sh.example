@@ -211,6 +211,9 @@ esac
 # Options to pass to every "curl" command
 CURL_OPTIONS="-L -s -f"
 
+# Ensure we run fsfreeze when not using BACKUP_ZERO_DOWNTIME=true
+FSFREEZE=true
+
 # === AWS Variables ===
 if [ "amazon-ebs" = "${BACKUP_HOME_TYPE}" -o "amazon-rds" = "${BACKUP_DATABASE_TYPE}" ]; then
 

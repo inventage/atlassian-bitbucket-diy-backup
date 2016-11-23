@@ -34,6 +34,10 @@ function lock_bitbucket {
         return
     fi
 
+    check_config_var "BITBUCKET_BACKUP_USER"
+    check_config_var "BITBUCKET_BACKUP_PASS"
+    check_config_var "BITBUCKET_URL"
+
     local lock_response=$(run curl ${CURL_OPTIONS} -u "${BITBUCKET_BACKUP_USER}:${BITBUCKET_BACKUP_PASS}" -X POST -H "Content-type: application/json" \
         "${BITBUCKET_URL}/mvc/maintenance/lock")
     if [ -z "${lock_response}" ]; then
@@ -189,7 +193,9 @@ function freeze_mount_point {
         # A ZFS filesystem doesn't require a fsfreeze
         ;;
     *)
-        run sudo fsfreeze -f "${1}"
+        if [ "${FSFREEZE}" = "true" ]; then
+            run sudo fsfreeze -f "${1}"
+        fi
         ;;
     esac
 }
