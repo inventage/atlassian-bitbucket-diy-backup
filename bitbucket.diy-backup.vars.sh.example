@@ -211,8 +211,6 @@ esac
 # Options to pass to every "curl" command
 CURL_OPTIONS="-L -s -f"
 
-# Ensure we run fsfreeze
-FSFREEZE=true
 
 # === AWS Variables ===
 if [ "amazon-ebs" = "${BACKUP_HOME_TYPE}" -o "amazon-rds" = "${BACKUP_DATABASE_TYPE}" ]; then
@@ -234,6 +232,9 @@ if [ "amazon-ebs" = "${BACKUP_HOME_TYPE}" -o "amazon-rds" = "${BACKUP_DATABASE_T
     # Additional AWS tags for EBS and RDS snapshot, tags needs to be in JSON format without enclosing square brackets:
     # Example: AWS_ADDITIONAL_TAGS='{"Key":"example_key", "Value":"example_value"}'
     AWS_ADDITIONAL_TAGS=
+
+    # Ensure we fsfreeze while snapshots of the home volume are taken
+    FSFREEZE=true
 fi
 
 # Used by the scripts for verbose logging. If not true only errors will be shown.
