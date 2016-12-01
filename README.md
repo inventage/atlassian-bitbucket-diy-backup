@@ -51,7 +51,7 @@ Refer to `bitbucket.diy-backup.vars.sh.example` for a complete description of al
 `STANDBY_HOME_TYPE` Strategy for Bitbucket home directory disaster recovery, valid values are:
 *  `zfs`                - ZFS snapshot strategy for home directory replication.
 
-`STANDBY_DATABASE_TYPE` Strategy for replicating the database:
+`STANDBY_DATABASE_TYPE` Strategy for replicating the database, valid values are:
 *  `amazon-rds`         - Amazon RDS Read replica
 *  `postgresql`         - PostgreSQL replication
 
