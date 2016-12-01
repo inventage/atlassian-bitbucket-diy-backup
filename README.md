@@ -48,6 +48,13 @@ Refer to `bitbucket.diy-backup.vars.sh.example` for a complete description of al
 * `s3`                  - Amazon S3 bucket - requires the Elasticsearch Cloud plugin to be installed. See https://www.elastic.co/guide/en/elasticsearch/plugins/2.3/cloud-aws.html
 * `fs`                  - Shared filesystem - requires all data and master nodes to mount a shared file system to the same mount point and that it is configured in the elasticsearch.yml file. See https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-snapshots.html
 
+`STANDBY_HOME_TYPE` Strategy for Bitbucket home directory disaster recovery, valid values are:
+*  `zfs`                - ZFS snapshot strategy for home directory replication.
+
+`STANDBY_DATABASE_TYPE` Strategy for replicating the database:
+*  `amazon-rds`         - Amazon RDS Read replica
+*  `postgresql`         - PostgreSQL replication
+
 ### Configuration ####
 
 You will need to configure the script variables found in `bitbucket.diy-backup.vars.sh` based on your chosen strategies. **Note** that not all options need to be configured. The backup strategy you choose together with your vendor tools will determine which options should be set. See `bitbucket.diy-backup.vars.sh.example` for a complete set of all configuration options.
