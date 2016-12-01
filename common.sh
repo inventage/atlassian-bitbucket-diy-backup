@@ -159,11 +159,11 @@ function source_disaster_recovery_home_strategy {
 }
 
 function source_disaster_recovery_database_strategy {
-    if [ -e "${SCRIPT_DIR}/home-${STANDBY_DATABASE_TYPE}.sh" ]; then
-        source "${SCRIPT_DIR}/home-${STANDBY_DATABASE_TYPE}.sh"
+    if [ -e "${SCRIPT_DIR}/database-${STANDBY_DATABASE_TYPE}.sh" ]; then
+        source "${SCRIPT_DIR}/database-${STANDBY_DATABASE_TYPE}.sh"
     else
-        error "STANDBY_DATABASE_TYPE=${STANDBY_DATABASE_TYPE} is not implemented, '${SCRIPT_DIR}/home-${STANDBY_DATABASE_TYPE}.sh' does not exist"
-        bail "Please update DR_HOME_TYPE in '${BACKUP_VARS_FILE}'"
+        error "STANDBY_DATABASE_TYPE=${STANDBY_DATABASE_TYPE} is not implemented, '${SCRIPT_DIR}/database-${STANDBY_DATABASE_TYPE}.sh' does not exist"
+        bail "Please update STANDBY_DATABASE_TYPE in '${BACKUP_VARS_FILE}'"
     fi
 }
 
