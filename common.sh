@@ -149,6 +149,24 @@ function source_home_strategy {
     fi
 }
 
+function source_disaster_recovery_home_strategy {
+    if [ -e "${SCRIPT_DIR}/home-${STANDBY_HOME_TYPE}.sh" ]; then
+        source "${SCRIPT_DIR}/home-${STANDBY_HOME_TYPE}.sh"
+    else
+        error "STANDBY_HOME_TYPE=${STANDBY_HOME_TYPE} is not implemented, '${SCRIPT_DIR}/home-${STANDBY_HOME_TYPE}.sh' does not exist"
+        bail "Please update DR_HOME_TYPE in '${BACKUP_VARS_FILE}'"
+    fi
+}
+
+function source_disaster_recovery_database_strategy {
+    if [ -e "${SCRIPT_DIR}/database-${STANDBY_DATABASE_TYPE}.sh" ]; then
+        source "${SCRIPT_DIR}/database-${STANDBY_DATABASE_TYPE}.sh"
+    else
+        error "STANDBY_DATABASE_TYPE=${STANDBY_DATABASE_TYPE} is not implemented, '${SCRIPT_DIR}/database-${STANDBY_DATABASE_TYPE}.sh' does not exist"
+        bail "Please update STANDBY_DATABASE_TYPE in '${BACKUP_VARS_FILE}'"
+    fi
+}
+
 # Instruct Bitbucket to update the progress of a backup
 #
 # backup_progress = The percentage completion
