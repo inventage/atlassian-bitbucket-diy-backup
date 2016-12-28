@@ -67,14 +67,14 @@ function cleanup_old_archives {
                 if [ "${BACKUP_HOME_TYPE}" = "amazon-ebs" ]; then
                     cleanup_old_offsite_ebs_snapshots_in_backup_account
                 fi
-            else
-                # Cleanup snapshots in BACKUP_DEST_REGION
-                if [ "${BACKUP_DATABASE_TYPE}" = "rds" ]; then
-                    cleanup_old_offsite_rds_snapshots
-                fi
-                if [ "${BACKUP_HOME_TYPE}" = "amazon-ebs" ]; then
-                    cleanup_old_offsite_ebs_snapshots
-                fi
+            fi
+
+            # Cleanup snapshots in BACKUP_DEST_REGION
+            if [ "${BACKUP_DATABASE_TYPE}" = "rds" ]; then
+                cleanup_old_offsite_rds_snapshots
+            fi
+            if [ "${BACKUP_HOME_TYPE}" = "amazon-ebs" ]; then
+                cleanup_old_offsite_ebs_snapshots
             fi
         fi
     fi
@@ -186,6 +186,14 @@ function copy_and_share_ebs_snapshot {
     info "Waiting for EBS snapshot '${dest_snapshot_id}' to become available in '${BACKUP_DEST_REGION}' before tagging"
     run aws ec2 wait snapshot-completed --region "${BACKUP_DEST_REGION}" --snapshot-ids "${dest_snapshot_id}"
 
+    # Tag intermediate snapshot
+    if [ -n "${AWS_ADDITIONAL_TAGS}" ]; then
+        comma=', '
+    fi
+    local aws_tags="[{\"Key\":\"${SNAPSHOT_TAG_KEY}\",\"Value\":\"${SNAPSHOT_TAG_VALUE}\"}${comma}${AWS_ADDITIONAL_TAGS}]"
+    run aws ec2 create-tags --region "${BACKUP_DEST_REGION}" --resources "${dest_snapshot_id}" --tags "$aws_tags"
+
+    # Assume destination AWS account role
     info "Assuming AWS role '${BACKUP_DEST_AWS_ROLE}' to tag copied snapshot"
     local credentials=$(run aws sts assume-role --role-arn "${BACKUP_DEST_AWS_ROLE}" \
         --role-session-name "BitbucketServerDIYBackup")
@@ -193,12 +201,7 @@ function copy_and_share_ebs_snapshot {
     local secret_access_key=$(echo "${credentials}" | jq -r .Credentials.SecretAccessKey)
     local session_token=$(echo "${credentials}" | jq -r .Credentials.SessionToken)
 
-    if [ -n "${AWS_ADDITIONAL_TAGS}" ]; then
-        comma=', '
-    fi
-    local aws_tags="[{\"Key\":\"${SNAPSHOT_TAG_KEY}\",\"Value\":\"${SNAPSHOT_TAG_VALUE}\"}${comma}${AWS_ADDITIONAL_TAGS}]"
-
-    # Add tag to copied snapshot, used to find EBS & RDS snapshot pairs for restoration
+    # Add tags to copied snapshot in destination AWS account, used to find EBS & RDS snapshot pairs for restoration
     AWS_ACCESS_KEY_ID="${access_key_id}" AWS_SECRET_ACCESS_KEY="${secret_access_key}" \
         AWS_SESSION_TOKEN="${session_token}" run aws ec2 create-tags --region "${BACKUP_DEST_REGION}" \
         --resources "${dest_snapshot_id}" --tags "$aws_tags"
