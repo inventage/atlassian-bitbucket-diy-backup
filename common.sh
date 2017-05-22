@@ -75,8 +75,9 @@ function backup_start {
         bail "Unable to enter backup mode. Could not find 'cancelToken' in response '${backup_response}'"
     fi
 
-    info "Backup started. It can be cancelled with:"
-    info "    curl -u ... -X DELETE -H 'Content-type:application/json' '${BITBUCKET_URL}/mvc/admin/backups/${BITBUCKET_BACKUP_TOKEN}'"
+    info "Bitbucket server is now preparing for backup. If the backup task is cancelled, Bitbucket Server should be notified that backup was terminated by executing the following command:"
+    info "    curl -u ... -X POST -H 'Content-type:application/json' '${BITBUCKET_URL}/mvc/maintenance?token=${BITBUCKET_BACKUP_TOKEN}'"
+    info "This will also terminate the backup process in Bitbucket Server. Note that this will not unlock Bitbucket Server from maintenance mode."
 }
 
 # Wait for database and SCM to drain to ensure a consistent backup
