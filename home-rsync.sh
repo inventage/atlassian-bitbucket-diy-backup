@@ -38,7 +38,7 @@ function perform_rsync {
     done
 
     local rsync_quiet=-q
-    if [ "${BITBUCKET_VERBOSE_BACKUP}" = true ]; then
+    if [ "${BITBUCKET_VERBOSE_BACKUP}" = "true" ]; then
         rsync_quiet=
     fi
 
