@@ -24,7 +24,7 @@ function debug {
 # Log an error message to the console and publish it to Hipchat
 function error {
     # Set the following to have log statements print contextual information
-    echo "$(script_ctx)[$(hostname)] ERROR: $*" > /dev/stderr
+    echo "$(script_ctx)[$(hostname)] ERROR: $*" 1>&2
     hc_announce "[$(hostname)] ERROR: $*" "red" 1
 }
 
@@ -98,13 +98,13 @@ function print_stack_trace {
     if [ -n "${BASH_VERSION}" ]; then
         local idx=0
         local depth=" "
-        echo "Stack trace:" > /dev/stderr
+        echo "Stack trace:" 1>&2
         for func in ${FUNCNAME[@]}; do
             case "${func}" in
                 debug|info|error|bail|check_config_var|check_var|run|script_ctx|print_stack_trace)
                 ;;
             *)
-                echo "${depth}[${BASH_SOURCE[${idx}]}:${BASH_LINENO[${idx}]} -> ${FUNCNAME[${idx}]}]" > /dev/stderr
+                echo "${depth}[${BASH_SOURCE[${idx}]}:${BASH_LINENO[${idx}]} -> ${FUNCNAME[${idx}]}]" 1>&2
                 ;;
             esac
             depth="${depth} "
@@ -135,7 +135,7 @@ function run {
                 cmdline=$(echo "${cmdline}" | sed -e 's/PGPASSWORD=".*" /PGPASSWORD="**********" /g')
                 ;;
         esac
-        debug "Running${cmdline}" > /dev/stderr
+        debug "Running${cmdline}" 1>&2
     fi
     "$@"
 }
