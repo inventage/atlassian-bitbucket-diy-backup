@@ -33,7 +33,7 @@ function archive_backup {
     # Optionally copy/share the RDS snapshot to another region and/or account.
     if [ "${BACKUP_DATABASE_TYPE}" = "amazon-rds" ] && [ -n "${BACKUP_DEST_REGION}" ]; then
         local backup_rds_snapshot_id=$(run aws rds describe-db-snapshots --db-snapshot-identifier "${SNAPSHOT_TAG_VALUE}" \
-            --query 'DBSnapshots[*].DBSnapshotIdentifier' --output text)
+            --query 'DBSnapshots[*].DBSnapshotIdentifier' | jq -r '.[]')
 
         if [ -n "${BACKUP_DEST_AWS_ACCOUNT_ID}" -a -n "${BACKUP_DEST_AWS_ROLE}" ]; then
             # Copy to BACKUP_DEST_REGION & share with BACKUP_DEST_AWS_ACCOUNT_ID
@@ -281,9 +281,9 @@ function cleanup_old_offsite_rds_snapshots_in_backup_account {
     # Query for RDS snapshots using the assumed credentials
     local old_backup_account_rds_snapshots=$(AWS_ACCESS_KEY_ID="${aws_access_key_id}" \
         AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}" AWS_SESSION_TOKEN="${aws_session_token}" \
-         run aws --output=text rds describe-db-snapshots --region "${BACKUP_DEST_REGION}" --snapshot-type manual \
-        --query "reverse(sort_by(DBSnapshots[?starts_with(DBSnapshotIdentifier,\
-        \`${SNAPSHOT_TAG_PREFIX}\`)]|[?Status==\`available\`], &SnapshotCreateTime))[${KEEP_BACKUPS}:].DBSnapshotIdentifier")
+         run aws rds describe-db-snapshots --region "${BACKUP_DEST_REGION}" --snapshot-type manual \
+        --query "reverse(sort_by(DBSnapshots[?starts_with(DBSnapshotIdentifier,\`${SNAPSHOT_TAG_PREFIX}\`)]\
+        |[?Status==\`available\`], &SnapshotCreateTime))[${KEEP_BACKUPS}:].DBSnapshotIdentifier" | jq -r '.[]')
 
     # Delete old RDS snapshots from BACKUP_DEST_AWS_ACCOUNT_ID in region BACKUP_DEST_REGION
     for rds_snapshot_id in ${old_backup_account_rds_snapshots}; do
