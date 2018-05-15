@@ -30,7 +30,8 @@ Refer to `bitbucket.diy-backup.vars.sh.example` for a complete description of al
 * `amazon-rds`           - Amazon RDS snapshots.
 * `mysql`                - MySQL using "mysqldump" to backup and "mysql" to restore.
 * `postgresql`           - PostgreSQL using "pg_dump" to backup and "pg_restore" to restore.
-* `postgresql-fslevel` - PostgreSQL with data directory located in the file system volume as home directory (so that it will be included implicitly in the home volume snapshot).
+* `postgresql-fslevel`   - PostgreSQL with data directory located in the file system volume as home directory (so that it will be included implicitly in the home volume snapshot).
+* `postgresql-docker`    - PostgreSQL running in a Docker container, using "pg_dump" to backup and "pg_restore" to restore
 
 `BACKUP_ARCHIVE_TYPE`  Strategy for archiving backups and/or copying them to an offsite location, valid values are:
 
@@ -42,7 +43,7 @@ Refer to `bitbucket.diy-backup.vars.sh.example` for a complete description of al
 
 `BACKUP_ELASTICSEARCH_TYPE` Strategy for backing up Elasticsearch, valid values are:
 
-* `<leave blank>`        - No separate snapshot and restore of Elasticsearch state (default) 
+* `<leave blank>`        - No separate snapshot and restore of Elasticsearch state (default)
                          - recommended for Bitbucket Server instances configured to use the (default) bundled Elasticsearch instance. In this case all Elasticsearch state is stored under ${BITBUCKET_HOME}/shared and therefore already included in the home directory snapshot implicitly. NOTE: If Bitbucket is configured to use a remote Elasticsearch instance (which all Bitbucket Data Center instances must be), then its state is NOT included implictly in home directory backups, and may therefore take some to rebuild after a restore UNLESS one of the following strategies is used.
 * `amazon-es`           - Amazon Elasticsearch Service - uses an S3 bucket as a snapshot repository. Requires both python and the python package 'boto' to be installed in order to sign the requests to AWS ES. Once python has been installed run 'sudo pip install boto' to install the python boto package.
 * `s3`                  - Amazon S3 bucket - requires the Elasticsearch Cloud plugin to be installed. See https://www.elastic.co/guide/en/elasticsearch/plugins/2.3/cloud-aws.html
