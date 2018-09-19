@@ -17,7 +17,7 @@ set -e
 SCRIPT_DIR=$(dirname "$0")
 source "${SCRIPT_DIR}/utils.sh"
 source "${SCRIPT_DIR}/common.sh"
-source_disaster_recovery_home_strategy
+source_disaster_recovery_disk_strategy
 
 ##########################################################
 promote_home

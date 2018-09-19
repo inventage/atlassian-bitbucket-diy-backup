@@ -4,34 +4,67 @@
 
 check_command "rsync"
 
-function prepare_backup_home {
+function prepare_backup_disk {
     check_config_var "BITBUCKET_BACKUP_HOME"
     check_config_var "BITBUCKET_HOME"
 
-    perform_rsync
+    # BITBUCKET_RESTORE_DATA_STORES needs to be set if any data stores are configured
+    if [ -n "${BITBUCKET_DATA_STORES}" ]; then
+        check_var "BITBUCKET_BACKUP_DATA_STORES"
+    fi
+
+    perform_rsync_home_directory
+    perform_rsync_data_stores
 }
 
-function backup_home {
-    perform_rsync
+function backup_disk {
+    perform_rsync_home_directory
+    perform_rsync_data_stores
 }
 
-function prepare_restore_home {
+function prepare_restore_disk {
     check_var "BITBUCKET_RESTORE_HOME"
     check_config_var "BITBUCKET_HOME"
 
-    no_op
+    # BITBUCKET_RESTORE_DATA_STORES needs to be set if any data stores are configured
+    if [ -n "${BITBUCKET_DATA_STORES}" ]; then
+        check_var "BITBUCKET_RESTORE_DATA_STORES"
+    fi
 }
 
-function restore_home {
+function restore_disk {
     local rsync_quiet=-q
     if [ "${BITBUCKET_VERBOSE_BACKUP}" = "true" ]; then
         rsync_quiet=
     fi
 
     run rsync -av ${rsync_quiet} "${BITBUCKET_RESTORE_HOME}/" "${BITBUCKET_HOME}/"
+
+    for data_store in "${BITBUCKET_DATA_STORES[@]}"; do
+        run rsync -av ${rsync_quiet} "${BITBUCKET_RESTORE_DATA_STORES}/${data_store}" "${data_store}/"
+    done
 }
 
-function perform_rsync {
+function perform_rsync_data_stores {
+    local rsync_exclude_repos=
+    for repo_id in ${BITBUCKET_BACKUP_EXCLUDE_REPOS[@]}; do
+        rsync_exclude_repos="${rsync_exclude_repos} --exclude=/repositories/*/*/${repo_id}"
+    done
+
+    local rsync_quiet=-q
+    if [ "${BITBUCKET_VERBOSE_BACKUP}" = "true" ]; then
+        rsync_quiet=
+    fi
+
+    for data_store in "${BITBUCKET_DATA_STORES[@]}"; do
+        mkdir -p "${BITBUCKET_BACKUP_DATA_STORES}/${data_store}"
+        run rsync -avh ${rsync_quiet} --delete --delete-excluded \
+            ${rsync_exclude_repos} \
+            "${data_store}" "${BITBUCKET_BACKUP_DATA_STORES}/${data_store}"
+    done
+}
+
+function perform_rsync_home_directory {
     local rsync_exclude_repos=
     for repo_id in ${BITBUCKET_BACKUP_EXCLUDE_REPOS[@]}; do
         rsync_exclude_repos="${rsync_exclude_repos} --exclude=/shared/data/repositories/${repo_id}"
@@ -59,7 +92,7 @@ function perform_rsync {
         "${BITBUCKET_HOME}" "${BITBUCKET_BACKUP_HOME}"
 }
 
-function cleanup_home_backups {
+function cleanup_disk_backups {
      # Not required as old backups with this strategy are typically cleaned up in the archiving strategy.
     no_op
 }
@@ -69,13 +102,13 @@ function cleanup_home_backups {
 # ----------------------------------------------------------------------------------------------------------------------
 
 function promote_home {
-    bail "Disaster recovery is not available with this home strategy"
+    bail "Disaster recovery is not available with this disk strategy"
 }
 
-function replicate_home {
-    bail "Disaster recovery is not available with this home strategy"
+function replicate_disk {
+    bail "Disaster recovery is not available with this disk strategy"
 }
 
-function setup_home_replication {
-    bail "Disaster recovery is not available with this home strategy"
+function setup_disk_replication {
+    bail "Disaster recovery is not available with this disk strategy"
 }

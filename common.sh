@@ -120,6 +120,7 @@ function source_archive_strategy {
         # Only the "latest snapshot" (i.e., the working folder used by the backup process) is available.
         BITBUCKET_RESTORE_DB="${BITBUCKET_BACKUP_DB}"
         BITBUCKET_RESTORE_HOME="${BITBUCKET_BACKUP_HOME}"
+        BITBUCKET_RESTORE_DATA_STORES="${BITBUCKET_BACKUP_DATA_STORES}"
     fi
 }
 
@@ -141,21 +142,27 @@ function source_elasticsearch_strategy {
     fi
 }
 
-function source_home_strategy {
-    if [ -e "${SCRIPT_DIR}/home-${BACKUP_HOME_TYPE}.sh" ]; then
-        source "${SCRIPT_DIR}/home-${BACKUP_HOME_TYPE}.sh"
+function source_disk_strategy {
+    # Fail if it looks like the scripts are being run with an old backup vars file.
+    if [ -n "${BACKUP_HOME_TYPE}" ]; then
+        error "Configuration is out of date."
+        bail "Please update the configuration in '${BACKUP_VARS_FILE}'"
+    fi
+
+    if [ -e "${SCRIPT_DIR}/home-${BACKUP_DISK_TYPE}.sh" ]; then
+        source "${SCRIPT_DIR}/home-${BACKUP_DISK_TYPE}.sh"
     else
-        error "BACKUP_HOME_TYPE=${BACKUP_HOME_TYPE} is not implemented, '${SCRIPT_DIR}/home-${BACKUP_HOME_TYPE}.sh' does not exist"
-        bail "Please update BACKUP_HOME_TYPE in '${BACKUP_VARS_FILE}'"
+        error "BACKUP_DISK_TYPE=${BACKUP_DISK_TYPE} is not implemented, '${SCRIPT_DIR}/home-${BACKUP_DISK_TYPE}.sh' does not exist"
+        bail "Please update BACKUP_DISK_TYPE in '${BACKUP_VARS_FILE}'"
     fi
 }
 
-function source_disaster_recovery_home_strategy {
-    if [ -e "${SCRIPT_DIR}/home-${STANDBY_HOME_TYPE}.sh" ]; then
-        source "${SCRIPT_DIR}/home-${STANDBY_HOME_TYPE}.sh"
+function source_disaster_recovery_disk_strategy {
+    if [ -e "${SCRIPT_DIR}/disk-${STANDBY_DISK_TYPE}.sh" ]; then
+        source "${SCRIPT_DIR}/disk-${STANDBY_DISK_TYPE}.sh"
     else
-        error "STANDBY_HOME_TYPE=${STANDBY_HOME_TYPE} is not implemented, '${SCRIPT_DIR}/home-${STANDBY_HOME_TYPE}.sh' does not exist"
-        bail "Please update DR_HOME_TYPE in '${BACKUP_VARS_FILE}'"
+        error "STANDBY_DISK_TYPE=${STANDBY_DISK_TYPE} is not implemented, '${SCRIPT_DIR}/disk-${STANDBY_DISK_TYPE}.sh' does not exist"
+        bail "Please update STANDBY_DISK_TYPE in '${BACKUP_VARS_FILE}'"
     fi
 }
 
@@ -230,9 +237,9 @@ function unfreeze_mount_point {
     fi
 }
 
-# Remount the previously mounted home directory
-function remount_device {
-    remove_cleanup_routine remount_device
+# Remount the previously mounted ebs volumes
+function remount_ebs_volumes {
+    remove_cleanup_routine remount_ebs_volumes
 
     case ${FILESYSTEM_TYPE} in
     zfs)
@@ -241,29 +248,41 @@ function remount_device {
         run sudo zfs share -a
         ;;
     *)
-        run sudo mount "${HOME_DIRECTORY_DEVICE_NAME}" "${HOME_DIRECTORY_MOUNT_POINT}"
+        local mount_point=
+        local device_name=
+        for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
+            mount_point="$(echo "${store}" | cut -d ":" -f1)"
+            device_name="$(echo "${store}" | cut -d ":" -f2)"
+            run sudo mount "${device_name}" "${mount_point}"
+        done
         ;;
     esac
 }
 
-# Unmount the currently mounted home directory
-function unmount_device {
+# Unmount the currently mounted ebs volumes
+function unmount_ebs_volumes {
     case ${FILESYSTEM_TYPE} in
     zfs)
-        local shared=$(run sudo zfs get -o value -H sharenfs "${ZFS_HOME_TANK_NAME}")
-
-        if [ "${shared}" = "on" ]; then
-            run sudo zfs unshare "${ZFS_HOME_TANK_NAME}"
-        fi
-        run sudo zfs unmount "${ZFS_HOME_TANK_NAME}"
+        local shared=
+        for fs_name in "${ZFS_FILESYSTEM_NAMES[@]}"; do
+            shared=$(run sudo zfs get -o value -H sharenfs "${fs_name}")
+            if [ "${shared}" = "on" ]; then
+                run sudo zfs unshare "${fs_name}"
+            fi
+            run sudo zfs unmount "${fs_name}"
+        done
         run sudo zpool export tank
         ;;
     *)
-        run sudo umount "${HOME_DIRECTORY_MOUNT_POINT}"
+        local mount_point=
+        for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
+            mount_point="$(echo "${store}" | cut -d ":" -f1)"
+            run sudo umount "${mount_point}"
+        done
         ;;
     esac
 
-    add_cleanup_routine remount_device
+    add_cleanup_routine remount_ebs_volumes
 }
 
 # Add a argument-less callback to the list of cleanup routines.
@@ -294,11 +313,11 @@ function run_cleanup {
     done
 }
 
-# Remove files like config.lock, index.lock, gc.pid, and refs/heads/*.lock from the provided directory
+# Remove files like config.lock, index.lock, gc.pid, and refs/heads/*.lock from the provided home directory
 #
 # $1 = the home directory to clean
 #
-function cleanup_locks {
+function cleanup_home_locks {
     local home_directory="$1"
 
     # From the shopt man page:
@@ -312,4 +331,24 @@ function cleanup_locks {
     run sudo -u "${BITBUCKET_UID}" rm -f "${home_directory}/shared/data/repositories/*/refs/**/*.lock"
     run sudo -u "${BITBUCKET_UID}" rm -f "${home_directory}/shared/data/repositories/*/stash-refs/**/*.lock"
     run sudo -u "${BITBUCKET_UID}" rm -f "${home_directory}/shared/data/repositories/*/logs/**/*.lock"
+}
+
+# Remove files like config.lock, index.lock, gc.pid, and refs/heads/*.lock from the provided data store directory
+#
+# $1 = the data store directory to clean
+#
+function cleanup_data_store_locks {
+    local data_store="$1"
+
+    # From the shopt man page:
+    # globstar
+    #           If set, the pattern ‘**’ used in a filename expansion context will match all files and zero or
+    #           more directories and subdirectories. If the pattern is followed by a ‘/’, only directories and subdirectories match.
+    shopt -s globstar
+
+    # Remove lock files in the repositories
+    run sudo -u "${BITBUCKET_UID}" rm -f "${data_store}/repositories/*/*/*/{HEAD,config,index,gc,packed-refs,stash-packed-refs}.{pid,lock}"
+    run sudo -u "${BITBUCKET_UID}" rm -f "${data_store}/repositories/*/*/*/refs/**/*.lock"
+    run sudo -u "${BITBUCKET_UID}" rm -f "${data_store}/repositories/*/*/*/stash-refs/**/*.lock"
+    run sudo -u "${BITBUCKET_UID}" rm -f "${data_store}/repositories/*/*/*/logs/**/*.lock"
 }

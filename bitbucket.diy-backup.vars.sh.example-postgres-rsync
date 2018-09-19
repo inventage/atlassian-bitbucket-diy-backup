@@ -19,7 +19,7 @@ BITBUCKET_HOME=/var/atlassian/application-data/bitbucket/
 BITBUCKET_UID=atlbitbucket
 BITBUCKET_GID=atlbitbucket
 
-BACKUP_HOME_TYPE=rsync
+BACKUP_DISK_TYPE=rsync
 BACKUP_DATABASE_TYPE=postgresql
 BACKUP_ARCHIVE_TYPE=tar
 

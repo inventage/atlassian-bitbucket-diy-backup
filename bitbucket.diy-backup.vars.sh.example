@@ -8,17 +8,22 @@ BITBUCKET_URL=http://localhost:7990
 # The path to the Bitbucket home directory (with trailing /)
 BITBUCKET_HOME=/var/atlassian/application-data/bitbucket/
 
+# Paths to all configured data stores (with trailing /)
+# Only required if one or more data stores is attached to the instance.
+BITBUCKET_DATA_STORES=()
+
 # Owner and group of ${BITBUCKET_HOME}:
 BITBUCKET_UID=atlbitbucket
 BITBUCKET_GID=atlbitbucket
 
-# Strategy for backing up the Bitbucket home directory:
-#  - amazon-ebs         - Amazon EBS snapshots of the volume containing the home directory
-#  - rsync              - "rsync" of the home directory contents to a temporary location. NOTE: This can NOT be used
+# Strategy for backing up the Bitbucket home directory and data stores (if configured):
+#  - amazon-ebs         - Amazon EBS snapshots of the volumes containing data for Bitbucket Server
+#  - rsync              - "rsync" of the disk contents to a temporary location. NOTE: This can NOT be used
 #                         with BACKUP_ZERO_DOWNTIME=true.
-#  - zfs                - ZFS snapshot strategy for home directory backups.
-#  - none               - Do not attempt to backup the home directory.
-BACKUP_HOME_TYPE=rsync
+#  - zfs                - ZFS snapshot strategy for disk backups.
+#  - none               - Do not attempt to backup the home directory or data stores.
+# Note: this config var was previously named BACKUP_HOME_TYPE
+BACKUP_DISK_TYPE=rsync
 
 # Strategy for backing up the database:
 #  - amazon-rds         - Amazon RDS snapshots
@@ -57,10 +62,10 @@ BACKUP_ARCHIVE_TYPE=tar
 #                         python and the python boto package to be installed, in order to sign the requests to AWS ES.
 BACKUP_ELASTICSEARCH_TYPE=
 
-# Strategy for Bitbucket home directory disaster recovery:
-#  - zfs                - ZFS snapshot strategy for home directory replication.
-#  - none               - Do not attempt to replicate the home directory.
-STANDBY_HOME_TYPE=zfs
+# Strategy for Bitbucket disk disaster recovery:
+#  - zfs                - ZFS snapshot strategy for disk replication.
+#  - none               - Do not attempt to replicate data on disk.
+STANDBY_DISK_TYPE=zfs
 
 # Strategy for replicating the database:
 #  - amazon-rds         - Amazon RDS Read replica
@@ -68,7 +73,7 @@ STANDBY_HOME_TYPE=zfs
 #  - none               - Do not attempt to replicate the database.
 STANDBY_DATABASE_TYPE=postgresql
 
-# If BACKUP_ZERO_DOWNTIME is set to true, the home directory and database will be backed up WITHOUT locking Bitbucket
+# If BACKUP_ZERO_DOWNTIME is set to true, data on disk and the database will be backed up WITHOUT locking Bitbucket
 # in maintenance mode. NOTE: This can NOT be used with Bitbucket Server versions older than 4.8. For more information,
 # see https://confluence.atlassian.com/display/BitbucketServer/Using+Bitbucket+Zero+Downtime+Backup.
 # Make sure you read and understand this document before uncommenting this variable.
@@ -81,25 +86,36 @@ if [ "${BACKUP_ZERO_DOWNTIME}" != "true" ]; then
     BITBUCKET_BACKUP_PASS=
 fi
 
-# Sub-options for each home directory backup strategy
-case ${BACKUP_HOME_TYPE} in
+# Sub-options for each disk backup strategy
+case ${BACKUP_DISK_TYPE} in
     amazon-ebs)
-        # The mount point for the home directory volume
-        HOME_DIRECTORY_MOUNT_POINT=/media/atl
-        # The device name to which the home directory volume is attached, as it appears in your Amazon console
-        HOME_DIRECTORY_DEVICE_NAME=/dev/xvdf
+        # The mount point and device name for each attached EBS volume. This should include the volume containing the
+        # home directory, as well as the volumes for each data store (if data stores are attached to the instance).
+        # Entries should be of the format MOUNT_POINT:DEVICE_NAME
+        # Note: this config var should contain the mount point and device name that were previously in
+        #       HOME_DIRECTORY_MOUNT_POINT and HOME_DIRECTORY_DEVICE_NAME.
+        EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES=(/media/atl:/dev/xvdf)
 
-        # The type of volume to create when restoring the home directory
-        RESTORE_HOME_DIRECTORY_VOLUME_TYPE=gp2
-        # Required if RESTORE_HOME_DIRECTORY_VOLUME_TYPE has been set to 'io1'. Ignored otherwise.
+        HOME_DIRECTORY_MOUNT_POINT=/media/atl
+
+
+        # The type of volume to create when restoring the ebs volumes (home directory and data stores)
+        # Note: this config var was previously named RESTORE_HOME_DIRECTORY_VOLUME_TYPE
+        RESTORE_DISK_VOLUME_TYPE=gp2
+        # Required if RESTORE_DISK_VOLUME_TYPE has been set to 'io1'. Ignored otherwise.
         # The IOPS that should be provisioned for the new volume. Note: Maximum IOPS to volume size ratio is 30
-        RESTORE_HOME_DIRECTORY_IOPS=1000
+        # Note: this config var was previously named RESTORE_HOME_DIRECTORY_IOPS
+        RESTORE_DISK_IOPS=1000
 
         # === Optionals ===
         # Set FILESYSTEM_TYPE=zfs to run ZFS specific commands on backup and restore of EBS snapshots.
         FILESYSTEM_TYPE=ext4
         if [ "${FILESYSTEM_TYPE}" = "zfs" ]; then
-            ZFS_HOME_TANK_NAME=$(run sudo zfs list -H -o name,mountpoint | grep "${HOME_DIRECTORY_MOUNT_POINT}" | cut -f1)
+            ZFS_FILESYSTEM_NAMES=()
+            for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES}"; do
+                mount_point="$(echo "${volume}" | cut -d ":" -f1)"
+                ZFS_FILESYSTEM_NAMES+=($(run sudo zfs list -H -o name,mountpoint | grep "${mount_point}" | cut -f1))
+            done
         fi
         ;;
     rsync)
@@ -107,9 +123,11 @@ case ${BACKUP_HOME_TYPE} in
         BITBUCKET_BACKUP_EXCLUDE_REPOS=()
         ;;
     zfs)
-        # The tank name that holds the file server data.
-        # This must be the same name on the standby if using replication.
-        ZFS_HOME_TANK_NAME=tank/atlassian-home
+        # The name of each filesystem that holds file server data for Bitbucket Server. This should, at a minimum,
+        # include the home directory filesystem, and if configured, the filesystems for each data store.
+        # This must be the same name(s) on the standby if using replication.
+        # Note: this config var should contain the value previously in ZFS_HOME_TANK_NAME
+        ZFS_FILESYSTEM_NAMES=(tank/atlassian-home)
 
         # ==== DISASTER RECOVERY VARS ====
 
@@ -210,6 +228,7 @@ case ${BACKUP_ARCHIVE_TYPE} in
         BITBUCKET_BACKUP_ROOT=
         BITBUCKET_BACKUP_DB=${BITBUCKET_BACKUP_ROOT}/bitbucket-db/
         BITBUCKET_BACKUP_HOME=${BITBUCKET_BACKUP_ROOT}/bitbucket-home/
+        BITBUCKET_BACKUP_DATA_STORES=${BITBUCKET_BACKUP_ROOT}/bitbucket-data-stores/
 
         # The path to where the backup archives are stored
         BITBUCKET_BACKUP_ARCHIVE_ROOT=
@@ -224,7 +243,7 @@ CURL_OPTIONS="-L -s -f"
 
 
 # === AWS Variables ===
-if [ "amazon-ebs" = "${BACKUP_HOME_TYPE}" -o "amazon-rds" = "${BACKUP_DATABASE_TYPE}" ]; then
+if [ "amazon-ebs" = "${BACKUP_DISK_TYPE}" -o "amazon-rds" = "${BACKUP_DATABASE_TYPE}" ]; then
 
     AWS_INFO=$(curl ${CURL_OPTIONS} http://169.254.169.254/latest/dynamic/instance-identity/document)
 
@@ -244,7 +263,7 @@ if [ "amazon-ebs" = "${BACKUP_HOME_TYPE}" -o "amazon-rds" = "${BACKUP_DATABASE_T
     # Example: AWS_ADDITIONAL_TAGS='{"Key":"example_key", "Value":"example_value"}'
     AWS_ADDITIONAL_TAGS=
 
-    # Ensure we fsfreeze while snapshots of the home volume are taken
+    # Ensure we fsfreeze while snapshots of ebs volumes are taken
     FSFREEZE=true
 fi
 
@@ -310,3 +329,6 @@ esac
 # Example for PostgreSQL running in Amazon RDS
 #           jdbc:postgres://${RDS_ENDPOINT}/${BITBUCKET_DB}
 STANDBY_JDBC_URL=
+
+# The name of the ZFS filesystem containing the shared home directory
+ZFS_HOME_FILESYSTEM=

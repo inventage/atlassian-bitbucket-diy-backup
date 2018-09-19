@@ -12,18 +12,18 @@ block level snapshots of the home directory.
 
 ### Strategies ###
 
-In order to use these example scripts you must specify a `BACKUP_HOME_TYPE` and `BACKUP_DATABASE_TYPE` strategy, and optionally a `BACKUP_ARCHIVE_TYPE` and/or `BACKUP_ELASTICSEARCH_TYPE` strategy.
+In order to use these example scripts you must specify a `BACKUP_DISK_TYPE` and `BACKUP_DATABASE_TYPE` strategy, and optionally a `BACKUP_ARCHIVE_TYPE` and/or `BACKUP_ELASTICSEARCH_TYPE` strategy.
 These strategies can be set within the `bitbucket.diy-backup.vars.sh`.
 
-For each `BACKUP_HOME_TYPE`, `BACKUP_DATABASE_TYPE`, `BACKUP_ARCHIVE_TYPE` and `BACKUP_ELASTICSEARCH_TYPE` strategy,
+For each `BACKUP_DISK_TYPE`, `BACKUP_DATABASE_TYPE`, `BACKUP_ARCHIVE_TYPE` and `BACKUP_ELASTICSEARCH_TYPE` strategy,
 additional variables need to be set in `bitbucket.diy-backup.vars.sh` to configure the details of your Bitbucket instance's home directory, database, and other options.
 Refer to `bitbucket.diy-backup.vars.sh.example` for a complete description of all the various variables and their definitions.
 
-`BACKUP_HOME_TYPE` Strategy for backing up the Bitbucket home directory, valid values are:
+`BACKUP_DISK_TYPE` Strategy for backing up the Bitbucket home directory and any configured data stores, valid values are:
 
-* `amazon-ebs`          - Amazon EBS snapshots of the volume containing the home directory.
-* `rsync`               - "rsync" of the home directory contents to a temporary location. **NOTE:** This can NOT be used with `BACKUP_ZERO_DOWNTIME=true`.
-* `zfs`                 - ZFS snapshot strategy for home directory backups.
+* `amazon-ebs`          - Amazon EBS snapshots of the volume(s) containing the home directory and data stores.
+* `rsync`               - "rsync" of the home directory and data store contents to a temporary location. **NOTE:** This can NOT be used with `BACKUP_ZERO_DOWNTIME=true`.
+* `zfs`                 - ZFS snapshot strategy for home directory and data store backups.
 
 `BACKUP_DATABASE_TYPE` Strategy for backing up the database, valid values are:
 
@@ -48,8 +48,8 @@ Refer to `bitbucket.diy-backup.vars.sh.example` for a complete description of al
 * `s3`                  - Amazon S3 bucket - requires the Elasticsearch Cloud plugin to be installed. See https://www.elastic.co/guide/en/elasticsearch/plugins/2.3/cloud-aws.html
 * `fs`                  - Shared filesystem - requires all data and master nodes to mount a shared file system to the same mount point and that it is configured in the elasticsearch.yml file. See https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-snapshots.html
 
-`STANDBY_HOME_TYPE` Strategy for Bitbucket home directory disaster recovery, valid values are:
-*  `zfs`                - ZFS snapshot strategy for home directory replication.
+`STANDBY_DISK_TYPE` Strategy for Bitbucket home directory disaster recovery, valid values are:
+*  `zfs`                - ZFS snapshot strategy for disk replication.
 
 `STANDBY_DATABASE_TYPE` Strategy for replicating the database, valid values are:
 *  `amazon-rds`         - Amazon RDS Read replica
