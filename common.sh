@@ -50,7 +50,7 @@ function lock_bitbucket {
             Could not find 'unlockToken' in response '${lock_response}'"
     fi
 
-    add_cleanup_routine bitbucket_unlock
+    add_cleanup_routine unlock_bitbucket
 
     info "Bitbucket has been locked for maintenance.  It can be unlocked with:"
     info "    curl -u ... -X DELETE -H 'Content-type:application/json' '${BITBUCKET_URL}/mvc/maintenance/lock?token=${BITBUCKET_LOCK_TOKEN}'"
@@ -189,7 +189,7 @@ function unlock_bitbucket {
         return
     fi
 
-    remove_cleanup_routine bitbucket_unlock
+    remove_cleanup_routine unlock_bitbucket
 
     run curl ${CURL_OPTIONS} -u "${BITBUCKET_BACKUP_USER}:${BITBUCKET_BACKUP_PASS}" -X DELETE -H "Accept: application/json" \
         -H "Content-type: application/json" "${BITBUCKET_URL}/mvc/maintenance/lock?token=${BITBUCKET_LOCK_TOKEN}"
