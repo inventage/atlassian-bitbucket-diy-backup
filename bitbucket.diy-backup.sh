@@ -15,7 +15,6 @@ set -e
 SCRIPT_DIR=$(dirname "$0")
 source "${SCRIPT_DIR}/utils.sh"
 source "${SCRIPT_DIR}/common.sh"
-make_config_vars_backwards_compatible
 source_archive_strategy
 source_database_strategy
 source_disk_strategy

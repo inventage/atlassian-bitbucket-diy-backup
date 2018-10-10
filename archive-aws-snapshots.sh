@@ -18,9 +18,9 @@ function archive_backup {
     # Optionally copy/share the EBS snapshot to another region and/or account.
     # This is useful to retain a cross region/account copy of the backup.
     local device_name=
-    for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES}"; do
-        device_name="$(echo "${volume}" | cut -d ":" -f2)"
-        if [ "${BACKUP_DISK_TYPE}" = "amazon-ebs" ] && [ -n "${BACKUP_DEST_REGION}" ]; then
+    if [ "${BACKUP_DISK_TYPE}" = "amazon-ebs" ] && [ -n "${BACKUP_DEST_REGION}" ]; then
+        for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
+            device_name="$(echo "${volume}" | cut -d ":" -f2)"
             local backup_ebs_snapshot_id=$(run aws ec2 describe-snapshots --filters Name=tag-key,Values="${SNAPSHOT_TAG_KEY}" \
                 Name=tag-value,Values="${SNAPSHOT_TAG_VALUE}" Name=tag:${SNAPSHOT_DEVICE_TAG_KEY},Values="${device_name}" \
                 --query 'Snapshots[0].SnapshotId' --output text)
@@ -32,8 +32,8 @@ function archive_backup {
                 # Copy EBS snapshot to BACKUP_DEST_REGION
                 copy_ebs_snapshot "${backup_ebs_snapshot_id}" "${AWS_REGION}" "${device_name}"
             fi
-        fi
-    done
+        done
+    fi
 
     # Optionally copy/share the RDS snapshot to another region and/or account.
     if [ "${BACKUP_DATABASE_TYPE}" = "amazon-rds" ] && [ -n "${BACKUP_DEST_REGION}" ]; then

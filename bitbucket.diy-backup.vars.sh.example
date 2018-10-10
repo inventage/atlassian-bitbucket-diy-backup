@@ -96,9 +96,6 @@ case ${BACKUP_DISK_TYPE} in
         #       HOME_DIRECTORY_MOUNT_POINT and HOME_DIRECTORY_DEVICE_NAME.
         EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES=(/media/atl:/dev/xvdf)
 
-        HOME_DIRECTORY_MOUNT_POINT=/media/atl
-
-
         # The type of volume to create when restoring the ebs volumes (home directory and data stores)
         # Note: this config var was previously named RESTORE_HOME_DIRECTORY_VOLUME_TYPE
         RESTORE_DISK_VOLUME_TYPE=gp2
@@ -112,7 +109,7 @@ case ${BACKUP_DISK_TYPE} in
         FILESYSTEM_TYPE=ext4
         if [ "${FILESYSTEM_TYPE}" = "zfs" ]; then
             ZFS_FILESYSTEM_NAMES=()
-            for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES}"; do
+            for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
                 mount_point="$(echo "${volume}" | cut -d ":" -f1)"
                 ZFS_FILESYSTEM_NAMES+=($(run sudo zfs list -H -o name,mountpoint | grep "${mount_point}" | cut -f1))
             done
@@ -330,5 +327,6 @@ esac
 #           jdbc:postgres://${RDS_ENDPOINT}/${BITBUCKET_DB}
 STANDBY_JDBC_URL=
 
-# The name of the ZFS filesystem containing the shared home directory
+# The name of the ZFS filesystem containing the shared home directory. This is needed for disaster recovery so that the
+# home directory can be promoted.
 ZFS_HOME_FILESYSTEM=

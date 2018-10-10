@@ -149,10 +149,10 @@ function source_disk_strategy {
         bail "Please update the configuration in '${BACKUP_VARS_FILE}'"
     fi
 
-    if [ -e "${SCRIPT_DIR}/home-${BACKUP_DISK_TYPE}.sh" ]; then
-        source "${SCRIPT_DIR}/home-${BACKUP_DISK_TYPE}.sh"
+    if [ -e "${SCRIPT_DIR}/disk-${BACKUP_DISK_TYPE}.sh" ]; then
+        source "${SCRIPT_DIR}/disk-${BACKUP_DISK_TYPE}.sh"
     else
-        error "BACKUP_DISK_TYPE=${BACKUP_DISK_TYPE} is not implemented, '${SCRIPT_DIR}/home-${BACKUP_DISK_TYPE}.sh' does not exist"
+        error "BACKUP_DISK_TYPE=${BACKUP_DISK_TYPE} is not implemented, '${SCRIPT_DIR}/disk-${BACKUP_DISK_TYPE}.sh' does not exist"
         bail "Please update BACKUP_DISK_TYPE in '${BACKUP_VARS_FILE}'"
     fi
 }

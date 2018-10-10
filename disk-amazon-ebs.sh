@@ -31,7 +31,7 @@ function backup_disk {
     for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
         local device_name="$(echo "${volume}" | cut -d ":" -f2)"
         local volume_id="$(find_attached_ebs_volume "${device_name}")"
-        snapshot_ebs_volume "${volume_id}" "Perform backup: ${PRODUCT} data store directory snapshot" "${device_name}"
+        snapshot_ebs_volume "${volume_id}" "Perform backup: ${PRODUCT} EBS volume snapshot for ${device_name}" "${device_name}"
     done
 
     # Unfreeze the filesystems as soon as the EBS snapshots have been taken
@@ -123,7 +123,7 @@ function cleanup_disk_backups {
     local device_name=
     if [ "${KEEP_BACKUPS}" -gt 0 ]; then
         info "Cleaning up any old EBS snapshots and retaining only the most recent ${KEEP_BACKUPS}"
-        for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES}"; do
+        for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
             device_name="$(echo "${volume}" | cut -d ":" -f2)"
             for ebs_snapshot_id in $(list_old_ebs_snapshot_ids "${AWS_REGION}" "${device_name}"); do
                 run aws ec2 delete-snapshot --snapshot-id "${ebs_snapshot_id}" > /dev/null
