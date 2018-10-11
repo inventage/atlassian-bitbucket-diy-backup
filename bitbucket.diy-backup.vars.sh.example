@@ -5,13 +5,6 @@ INSTANCE_NAME=bitbucket
 # The base URL of the Bitbucket instance to be backed up. It cannot end on a '/'.
 BITBUCKET_URL=http://localhost:7990
 
-# The path to the Bitbucket home directory (with trailing /)
-BITBUCKET_HOME=/var/atlassian/application-data/bitbucket/
-
-# Paths to all configured data stores (with trailing /)
-# Only required if one or more data stores is attached to the instance.
-BITBUCKET_DATA_STORES=()
-
 # Owner and group of ${BITBUCKET_HOME}:
 BITBUCKET_UID=atlbitbucket
 BITBUCKET_GID=atlbitbucket
@@ -94,7 +87,9 @@ case ${BACKUP_DISK_TYPE} in
         # Entries should be of the format MOUNT_POINT:DEVICE_NAME
         # Note: this config var should contain the mount point and device name that were previously in
         #       HOME_DIRECTORY_MOUNT_POINT and HOME_DIRECTORY_DEVICE_NAME.
-        EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES=(/media/atl:/dev/xvdf)
+        EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES=(/media/atl:/dev/xvdf /media/data-store-1:/dev/xvdg)
+        # The mount point for the home directory.
+        HOME_DIRECTORY_MOUNT_POINT=/media/atl
 
         # The type of volume to create when restoring the ebs volumes (home directory and data stores)
         # Note: this config var was previously named RESTORE_HOME_DIRECTORY_VOLUME_TYPE
@@ -116,6 +111,11 @@ case ${BACKUP_DISK_TYPE} in
         fi
         ;;
     rsync)
+        # The path to the Bitbucket home directory (with trailing /)
+        BITBUCKET_HOME=/var/atlassian/application-data/bitbucket/
+        # Paths to all configured data stores (with trailing /)
+        # Only required if one or more data stores is attached to the instance.
+        BITBUCKET_DATA_STORES=()
         # Optional list of repo IDs which should be excluded from the backup. For example: (2 5 88)
         BITBUCKET_BACKUP_EXCLUDE_REPOS=()
         ;;

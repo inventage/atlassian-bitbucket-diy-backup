@@ -39,16 +39,11 @@ function backup_disk {
 }
 
 function prepare_restore_disk {
-    check_config_var "BITBUCKET_HOME"
+    check_config_var "HOME_DIRECTORY_MOUNT_POINT"
     check_config_var "EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES"
     check_config_var "BITBUCKET_UID"
     check_config_var "AWS_AVAILABILITY_ZONE"
     check_config_var "RESTORE_DISK_VOLUME_TYPE"
-
-    if ! (( ${#EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]} == ${#BITBUCKET_DATA_STORES[@]} + 1 )); then
-        error "Mismatch between the number of data stores specified in BITBUCKET_DATA_STORES and in EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES."
-        bail "Please update '${BACKUP_VARS_FILE}'"
-    fi
 
     local snapshot_tag="$1"
 
@@ -95,9 +90,12 @@ function restore_disk {
 
     remount_ebs_volumes
 
-    cleanup_repository_locks "${BITBUCKET_HOME}/shared/data/repositories"
-    for data_store in "${BITBUCKET_DATA_STORES[@]}"; do
-        cleanup_repository_locks "${data_store}/repositories/*/*"
+    cleanup_repository_locks "${HOME_DIRECTORY_MOUNT_POINT}/data/repositories"
+    for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
+        mount_point="$(echo "${volume}" | cut -d ":" -f1)"
+        if [ "${mount_point}" != "${HOME_DIRECTORY_MOUNT_POINT}" ]; then
+            cleanup_repository_locks "${mount_point}/repositories/*/*"
+        fi
     done
 }
 

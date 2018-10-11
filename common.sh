@@ -336,8 +336,8 @@ function cleanup_repository_locks {
     shopt -s globstar
 
     # Remove lock files in the repositories
-    run sudo -u "${BITBUCKET_UID}" rm -f "${path}/*/{HEAD,config,index,gc,packed-refs,stash-packed-refs}.{pid,lock}"
-    run sudo -u "${BITBUCKET_UID}" rm -f "${path}/*/refs/**/*.lock"
-    run sudo -u "${BITBUCKET_UID}" rm -f "${path}/*/stash-refs/**/*.lock"
-    run sudo -u "${BITBUCKET_UID}" rm -f "${path}/*/logs/**/*.lock"
+    run sudo rm -f "${path}/*/{HEAD,config,index,gc,packed-refs,stash-packed-refs}.{pid,lock}"
+    run sudo rm -f "${path}/*/refs/**/*.lock"
+    run sudo rm -f "${path}/*/stash-refs/**/*.lock"
+    run sudo rm -f "${path}/*/logs/**/*.lock"
 }
