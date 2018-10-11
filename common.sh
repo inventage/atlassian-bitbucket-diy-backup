@@ -251,8 +251,8 @@ function remount_ebs_volumes {
         local mount_point=
         local device_name=
         for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
-            mount_point="$(echo "${store}" | cut -d ":" -f1)"
-            device_name="$(echo "${store}" | cut -d ":" -f2)"
+            mount_point="$(echo "${volume}" | cut -d ":" -f1)"
+            device_name="$(echo "${volume}" | cut -d ":" -f2)"
             run sudo mount "${device_name}" "${mount_point}"
         done
         ;;
@@ -276,7 +276,7 @@ function unmount_ebs_volumes {
     *)
         local mount_point=
         for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
-            mount_point="$(echo "${store}" | cut -d ":" -f1)"
+            mount_point="$(echo "${volume}" | cut -d ":" -f1)"
             run sudo umount "${mount_point}"
         done
         ;;
@@ -313,12 +313,12 @@ function run_cleanup {
     done
 }
 
-# Remove files like config.lock, index.lock, gc.pid, and refs/heads/*.lock from the provided home directory
+# Remove files like config.lock, index.lock, gc.pid, and refs/heads/*.lock from the provided path
 #
-# $1 = the home directory to clean
+# path = the path to clean
 #
-function cleanup_home_locks {
-    local home_directory="$1"
+function cleanup_repository_locks {
+    local path="$1"
 
     # From the shopt man page:
     # globstar
@@ -327,28 +327,8 @@ function cleanup_home_locks {
     shopt -s globstar
 
     # Remove lock files in the repositories
-    run sudo -u "${BITBUCKET_UID}" rm -f "${home_directory}/shared/data/repositories/*/{HEAD,config,index,gc,packed-refs,stash-packed-refs}.{pid,lock}"
-    run sudo -u "${BITBUCKET_UID}" rm -f "${home_directory}/shared/data/repositories/*/refs/**/*.lock"
-    run sudo -u "${BITBUCKET_UID}" rm -f "${home_directory}/shared/data/repositories/*/stash-refs/**/*.lock"
-    run sudo -u "${BITBUCKET_UID}" rm -f "${home_directory}/shared/data/repositories/*/logs/**/*.lock"
-}
-
-# Remove files like config.lock, index.lock, gc.pid, and refs/heads/*.lock from the provided data store directory
-#
-# $1 = the data store directory to clean
-#
-function cleanup_data_store_locks {
-    local data_store="$1"
-
-    # From the shopt man page:
-    # globstar
-    #           If set, the pattern ‘**’ used in a filename expansion context will match all files and zero or
-    #           more directories and subdirectories. If the pattern is followed by a ‘/’, only directories and subdirectories match.
-    shopt -s globstar
-
-    # Remove lock files in the repositories
-    run sudo -u "${BITBUCKET_UID}" rm -f "${data_store}/repositories/*/*/*/{HEAD,config,index,gc,packed-refs,stash-packed-refs}.{pid,lock}"
-    run sudo -u "${BITBUCKET_UID}" rm -f "${data_store}/repositories/*/*/*/refs/**/*.lock"
-    run sudo -u "${BITBUCKET_UID}" rm -f "${data_store}/repositories/*/*/*/stash-refs/**/*.lock"
-    run sudo -u "${BITBUCKET_UID}" rm -f "${data_store}/repositories/*/*/*/logs/**/*.lock"
+    run sudo -u "${BITBUCKET_UID}" rm -f "${path}/*/{HEAD,config,index,gc,packed-refs,stash-packed-refs}.{pid,lock}"
+    run sudo -u "${BITBUCKET_UID}" rm -f "${path}/*/refs/**/*.lock"
+    run sudo -u "${BITBUCKET_UID}" rm -f "${path}/*/stash-refs/**/*.lock"
+    run sudo -u "${BITBUCKET_UID}" rm -f "${path}/*/logs/**/*.lock"
 }

@@ -76,6 +76,7 @@ function prepare_restore_disk {
 function restore_disk {
     unmount_ebs_volumes
 
+    local snapshot_tag="$1"
     local volume_id=
     local snapshot_id=
     local device_name=
@@ -84,7 +85,7 @@ function restore_disk {
         mount_point="$(echo "${volume}" | cut -d ":" -f1)"
         device_name="$(echo "${volume}" | cut -d ":" -f2)"
         volume_id="$(find_attached_ebs_volume "${device_name}")"
-        snapshot_id="$(retrieve_ebs_snapshot_id "${snapshot_tag}")"
+        snapshot_id="$(retrieve_ebs_snapshot_id "${snapshot_tag}" "${device_name}")"
 
         detach_volume "${volume_id}"
         info "Restoring data from snapshot '${snapshot_id}' into a '${RESTORE_DISK_VOLUME_TYPE}' volume at mount point '${mount_point}'"
@@ -94,9 +95,9 @@ function restore_disk {
 
     remount_ebs_volumes
 
-    cleanup_home_locks "${BITBUCKET_HOME}"
+    cleanup_repository_locks "${BITBUCKET_HOME}/shared/data/repositories"
     for data_store in "${BITBUCKET_DATA_STORES[@]}"; do
-        cleanup_data_store_locks "${data_store}"
+        cleanup_repository_locks "${data_store}/repositories/*/*"
     done
 }
 

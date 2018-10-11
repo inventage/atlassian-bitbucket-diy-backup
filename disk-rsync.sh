@@ -13,11 +13,13 @@ function prepare_backup_disk {
         check_var "BITBUCKET_BACKUP_DATA_STORES"
     fi
 
+    # Perform an initial rsync whilst the application is live to limit time the application needs to be locked for
     perform_rsync_home_directory
     perform_rsync_data_stores
 }
 
 function backup_disk {
+    # Now the application is locked, rsync again to ensure we have a consistent view of the filesystem
     perform_rsync_home_directory
     perform_rsync_data_stores
 }

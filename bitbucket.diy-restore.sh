@@ -48,7 +48,7 @@ fi
 info "Restoring disk (home directory and data stores) and database"
 
 # Restore the filesystem
-restore_disk
+restore_disk "${1}"
 
 # Restore the database
 restore_db
