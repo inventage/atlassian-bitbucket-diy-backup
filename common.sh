@@ -255,6 +255,10 @@ function remount_ebs_volumes {
             device_name="$(echo "${volume}" | cut -d ":" -f2)"
             run sudo mount "${device_name}" "${mount_point}"
         done
+
+        # Start up NFS daemon and export via NFS
+        run sudo service nfs start
+        run sudo exportfs -ar
         ;;
     esac
 }
@@ -274,6 +278,11 @@ function unmount_ebs_volumes {
         run sudo zpool export tank
         ;;
     *)
+        # Un-export via NFS and stop the NFS daemon
+        run sudo exportfs -au
+        run sudo service nfs stop
+
+        # Unmount each EBS volume
         local mount_point=
         for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
             mount_point="$(echo "${volume}" | cut -d ":" -f1)"
