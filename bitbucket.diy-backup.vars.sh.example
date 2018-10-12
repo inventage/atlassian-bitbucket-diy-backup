@@ -230,7 +230,7 @@ case ${BACKUP_ARCHIVE_TYPE} in
         # The path to where the backup archives are stored
         BITBUCKET_BACKUP_ARCHIVE_ROOT=
 
-        # Options for the tar-gpg archive type
+        # Options for the gpg-zip archive type
         BITBUCKET_BACKUP_GPG_RECIPIENT=
         ;;
 esac
