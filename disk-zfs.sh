@@ -51,7 +51,7 @@ function restore_disk {
     done
 }
 
-function cleanup_store_disk {
+function cleanup_disk_backups {
     for fs in "${ZFS_FILESYSTEM_NAMES[@]}"; do
         cleanup_zfs_backups "${fs}"
     done
@@ -227,7 +227,7 @@ function cleanup_zfs_backups {
     if [ "${KEEP_BACKUPS}" -gt 0 ]; then
         # Cleanup all ZFS snapshots except latest ${KEEP_BACKUPS}
         debug "Getting a list of ZFS snapshots to delete"
-        local old_snapshots=$(run sudo zfs list -H -t snapshot -o name -S creation ${fs} | grep ${fs} | tail -n +${KEEP_BACKUPS})
+        local old_snapshots=$(run sudo zfs list -H -r -t snapshot -o name -S creation ${fs} | grep ${fs} | tail -n +$(( ${KEEP_BACKUPS} + 1)))
         if [ -n "${old_snapshots}" ]; then
             debug "Destroying snapshots: ${old_snapshots}"
             echo "${old_snapshots}" | xargs -n 1 sudo zfs destroy
