@@ -31,26 +31,6 @@ function prepare_restore_archive {
         exit 99
     fi
 
-    # Check BITBUCKET_HOME and BITBUCKET_DATA_STORES
-    if [ -e "${BITBUCKET_HOME}" ]; then
-        bail "Cannot restore over existing contents of '${BITBUCKET_HOME}'. Please rename or delete this first."
-    fi
-
-    for data_store in "${BITBUCKET_DATA_STORES[@]}"; do
-        if [ -e "${data_store}" ]; then
-            bail "Cannot restore over existing contents of '${data_store}'. Please rename or delete this first."
-        fi
-    done
-
-    # Create BITBUCKET_HOME and BITBUCKET_DATA_STORES
-    mkdir -p "${BITBUCKET_HOME}"
-    chown "${BITBUCKET_UID}":"${BITBUCKET_GID}" "${BITBUCKET_HOME}"
-
-    for data_store in "${BITBUCKET_DATA_STORES[@]}"; do
-        mkdir -p "${data_store}"
-        chown "${BITBUCKET_UID}":"${BITBUCKET_GID}" "${data_store}"
-    done
-
     # Setup restore paths
     BITBUCKET_RESTORE_ROOT=$(mktemp -d /tmp/bitbucket.diy-restore.XXXXXX)
     BITBUCKET_RESTORE_DB="${BITBUCKET_RESTORE_ROOT}/bitbucket-db"

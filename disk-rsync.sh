@@ -32,6 +32,23 @@ function prepare_restore_disk {
     if [ -n "${BITBUCKET_DATA_STORES}" ]; then
         check_var "BITBUCKET_RESTORE_DATA_STORES"
     fi
+
+    # Check BITBUCKET_HOME and BITBUCKET_DATA_STORES are empty
+    ensure_empty_directory "${BITBUCKET_HOME}"
+    for data_store in "${BITBUCKET_DATA_STORES[@]}"; do
+        ensure_empty_directory "${data_store}"
+    done
+
+    # Create BITBUCKET_HOME and BITBUCKET_DATA_STORES
+    check_config_var "BITBUCKET_UID"
+    check_config_var "BITBUCKET_GID"
+    run mkdir -p "${BITBUCKET_HOME}"
+    run chown "${BITBUCKET_UID}":"${BITBUCKET_GID}" "${BITBUCKET_HOME}"
+
+    for data_store in "${BITBUCKET_DATA_STORES[@]}"; do
+        run mkdir -p "${data_store}"
+        run chown "${BITBUCKET_UID}":"${BITBUCKET_GID}" "${data_store}"
+    done
 }
 
 function restore_disk {
