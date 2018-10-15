@@ -204,6 +204,63 @@ function create_and_attach_volume {
     attach_volume "${volume_id}" "${device_name}"
 }
 
+# Remount the previously mounted ebs volumes
+function remount_ebs_volumes {
+    remove_cleanup_routine remount_ebs_volumes
+
+    case ${FILESYSTEM_TYPE} in
+    zfs)
+        run sudo zpool import tank
+        run sudo zfs mount -a
+        run sudo zfs share -a
+        ;;
+    *)
+        local mount_point=
+        local device_name=
+        for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
+            mount_point="$(echo "${volume}" | cut -d ":" -f1)"
+            device_name="$(echo "${volume}" | cut -d ":" -f2)"
+            run sudo mount "${device_name}" "${mount_point}"
+        done
+
+        # Start up NFS daemon and export via NFS
+        run sudo service nfs start
+        run sudo exportfs -ar
+        ;;
+    esac
+}
+
+# Unmount the currently mounted ebs volumes
+function unmount_ebs_volumes {
+    case ${FILESYSTEM_TYPE} in
+    zfs)
+        local shared=
+        for fs_name in "${ZFS_FILESYSTEM_NAMES[@]}"; do
+            shared=$(run sudo zfs get -o value -H sharenfs "${fs_name}")
+            if [ "${shared}" = "on" ]; then
+                run sudo zfs unshare "${fs_name}"
+            fi
+            run sudo zfs unmount "${fs_name}"
+        done
+        run sudo zpool export tank
+        ;;
+    *)
+        # Un-export via NFS and stop the NFS daemon
+        run sudo exportfs -au
+        run sudo service nfs stop
+
+        # Unmount each EBS volume
+        local mount_point=
+        for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
+            mount_point="$(echo "${volume}" | cut -d ":" -f1)"
+            run sudo umount "${mount_point}"
+        done
+        ;;
+    esac
+
+    add_cleanup_routine remount_ebs_volumes
+}
+
 # Validate the existence of a EBS snapshot
 #
 # snapshot_tag = The tag used to retrieve the EBS snapshot ID

@@ -28,6 +28,7 @@ BACKUP_DISK_TYPE=rsync
 BACKUP_DATABASE_TYPE=postgresql
 
 # Strategy for archiving backups and/or copying them to an offsite location:
+#  - <leave blank>      - Do not use an archiving strategy
 #  - aws-snapshots      - AWS EBS and/or RDS snapshots, with optional copy to another region
 #  - gpg-zip            - "gpg-zip" archive
 #  - tar                - Unix "tar" archive
@@ -85,10 +86,11 @@ case ${BACKUP_DISK_TYPE} in
         # The mount point and device name for each attached EBS volume. This should include the volume containing the
         # home directory, as well as the volumes for each data store (if data stores are attached to the instance).
         # Entries should be of the format MOUNT_POINT:DEVICE_NAME
-        # Note: this config var should contain the mount point and device name that were previously in
+        # Note: this config var should contain the details for the home directory that were previously configured in
         #       HOME_DIRECTORY_MOUNT_POINT and HOME_DIRECTORY_DEVICE_NAME.
         EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES=(/media/atl:/dev/xvdf /media/data-store-1:/dev/xvdg)
-        # The mount point for the home directory.
+        # The mount point for the home directory. Must be configured here as well as in the variable above so that the
+        # home directory can be identified.
         HOME_DIRECTORY_MOUNT_POINT=/media/atl
 
         # The type of volume to create when restoring the ebs volumes (home directory and data stores)
@@ -127,6 +129,10 @@ case ${BACKUP_DISK_TYPE} in
         ZFS_FILESYSTEM_NAMES=(tank/atlassian-home)
 
         # ==== DISASTER RECOVERY VARS ====
+
+        # The name of the ZFS filesystem containing the shared home directory. This is needed for disaster recovery so
+        # that the home directory can be promoted.
+        ZFS_HOME_FILESYSTEM=
 
         # The user for SSH when running replication commands on the standby file server.
         # Note this user needs password-less sudo on the standby to run zfs commands and password-less ssh from
@@ -326,7 +332,3 @@ esac
 # Example for PostgreSQL running in Amazon RDS
 #           jdbc:postgres://${RDS_ENDPOINT}/${BITBUCKET_DB}
 STANDBY_JDBC_URL=
-
-# The name of the ZFS filesystem containing the shared home directory. This is needed for disaster recovery so that the
-# home directory can be promoted.
-ZFS_HOME_FILESYSTEM=

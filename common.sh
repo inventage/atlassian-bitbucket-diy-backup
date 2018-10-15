@@ -146,7 +146,8 @@ function source_disk_strategy {
     # Fail if it looks like the scripts are being run with an old backup vars file.
     if [ -n "${BACKUP_HOME_TYPE}" ]; then
         error "Configuration is out of date."
-        bail "Please update the configuration in '${BACKUP_VARS_FILE}'"
+        error "Please update the configuration in '${BACKUP_VARS_FILE}'"
+        bail "The 'Upgrading' section of the README contains a list of considerations when upgrading."
     fi
 
     if [ -e "${SCRIPT_DIR}/disk-${BACKUP_DISK_TYPE}.sh" ]; then
@@ -235,63 +236,6 @@ function unfreeze_mount_point {
     if [ "${FSFREEZE}" = "true" ]; then
         run sudo fsfreeze -u "${1}"
     fi
-}
-
-# Remount the previously mounted ebs volumes
-function remount_ebs_volumes {
-    remove_cleanup_routine remount_ebs_volumes
-
-    case ${FILESYSTEM_TYPE} in
-    zfs)
-        run sudo zpool import tank
-        run sudo zfs mount -a
-        run sudo zfs share -a
-        ;;
-    *)
-        local mount_point=
-        local device_name=
-        for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
-            mount_point="$(echo "${volume}" | cut -d ":" -f1)"
-            device_name="$(echo "${volume}" | cut -d ":" -f2)"
-            run sudo mount "${device_name}" "${mount_point}"
-        done
-
-        # Start up NFS daemon and export via NFS
-        run sudo service nfs start
-        run sudo exportfs -ar
-        ;;
-    esac
-}
-
-# Unmount the currently mounted ebs volumes
-function unmount_ebs_volumes {
-    case ${FILESYSTEM_TYPE} in
-    zfs)
-        local shared=
-        for fs_name in "${ZFS_FILESYSTEM_NAMES[@]}"; do
-            shared=$(run sudo zfs get -o value -H sharenfs "${fs_name}")
-            if [ "${shared}" = "on" ]; then
-                run sudo zfs unshare "${fs_name}"
-            fi
-            run sudo zfs unmount "${fs_name}"
-        done
-        run sudo zpool export tank
-        ;;
-    *)
-        # Un-export via NFS and stop the NFS daemon
-        run sudo exportfs -au
-        run sudo service nfs stop
-
-        # Unmount each EBS volume
-        local mount_point=
-        for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
-            mount_point="$(echo "${volume}" | cut -d ":" -f1)"
-            run sudo umount "${mount_point}"
-        done
-        ;;
-    esac
-
-    add_cleanup_routine remount_ebs_volumes
 }
 
 # Add a argument-less callback to the list of cleanup routines.
