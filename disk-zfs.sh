@@ -154,10 +154,10 @@ jdbc.url=${STANDBY_JDBC_URL}
 disaster.recovery=true
 EOF
 )
-    info "Modifying '${mount_point}/bitbucket/shared/bitbucket.properties'. This also prevents ZFS disk replication from the primary."
-    sudo bash -c "echo '${settings}' >> '${mount_point}/bitbucket/shared/bitbucket.properties'"
+    info "Modifying '${mount_point}/bitbucket.properties'. This also prevents ZFS disk replication from the primary."
+    sudo bash -c "echo '${settings}' >> '${mount_point}/bitbucket.properties'"
     print
-    print "The following has been appended to your '${mount_point}/bitbucket/shared/bitbucket.properties' file:"
+    print "The following has been appended to your '${mount_point}/bitbucket.properties' file:"
     print
     print "${settings}"
     print
