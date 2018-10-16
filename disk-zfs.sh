@@ -18,9 +18,8 @@ function prepare_backup_disk {
 }
 
 function backup_disk {
-    local new_snapshot=
     for fs in "${ZFS_FILESYSTEM_NAMES[@]}"; do
-        new_snapshot="${fs}@${SNAPSHOT_TAG_VALUE}"
+        local new_snapshot="${fs}@${SNAPSHOT_TAG_VALUE}"
         debug "Creating snapshot with name '${new_snapshot}' for ZFS filesystem '${fs}'"
         run sudo zfs snapshot "${new_snapshot}"
     done
@@ -103,11 +102,9 @@ function setup_disk_replication {
 
 function replicate_disk {
     debug "Getting the latest ZFS snapshots on the standby instance '${STANDBY_SSH_HOST}'"
-    local standby_last_snapshot=
-    local primary_last_snapshot=
 
     for filesystem in "${ZFS_FILESYSTEM_NAMES[@]}"; do
-        standby_last_snapshot=$(run ssh ${STANDBY_SSH_OPTIONS} "${STANDBY_SSH_USER}@${STANDBY_SSH_HOST}" \
+        local standby_last_snapshot=$(run ssh ${STANDBY_SSH_OPTIONS} "${STANDBY_SSH_USER}@${STANDBY_SSH_HOST}" \
             "sudo zfs list -H -t snapshot -o name -S creation | grep -m1 '${filesystem}'")
         check_var "standby_last_snapshot" \
             "No ZFS snapshot of '${filesystem}' found on standby instance '${STANDBY_SSH_HOST}'" \
@@ -118,9 +115,9 @@ function replicate_disk {
     backup_disk
 
     for filesystem in "${ZFS_FILESYSTEM_NAMES[@]}"; do
-        standby_last_snapshot=$(run ssh ${STANDBY_SSH_OPTIONS} "${STANDBY_SSH_USER}@${STANDBY_SSH_HOST}" \
+        local standby_last_snapshot=$(run ssh ${STANDBY_SSH_OPTIONS} "${STANDBY_SSH_USER}@${STANDBY_SSH_HOST}" \
             "sudo zfs list -H -t snapshot -o name -S creation | grep -m1 '${filesystem}'")
-        primary_last_snapshot=$(get_latest_snapshot "${filesystem}")
+        local primary_last_snapshot=$(get_latest_snapshot "${filesystem}")
         debug "Sending incremental ZFS snapshot of '${filesystem}' before replicating to ${STANDBY_SSH_HOST}"
         run sudo zfs send -R -i "${standby_last_snapshot}" "${primary_last_snapshot}" \
             | run ssh ${STANDBY_SSH_OPTIONS} "${STANDBY_SSH_USER}@${STANDBY_SSH_HOST}" sudo zfs receive "${filesystem}"

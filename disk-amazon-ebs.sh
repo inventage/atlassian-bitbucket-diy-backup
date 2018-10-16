@@ -59,28 +59,24 @@ function prepare_restore_disk {
             volume type for EBS volumes"
     fi
 
-    local device_name=
     # Validate EBS volumes by finding the EBS volume ID and snapshot ID for each volume specified
     for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
-        device_name="$(echo "${volume}" | cut -d ":" -f2)"
+        local device_name="$(echo "${volume}" | cut -d ":" -f2)"
         find_attached_ebs_volume "${device_name}"
         retrieve_ebs_snapshot_id "${snapshot_tag}" "${device_name}"
     done
 }
 
 function restore_disk {
+    local snapshot_tag="$1"
+
     unmount_ebs_volumes
 
-    local snapshot_tag="$1"
-    local volume_id=
-    local snapshot_id=
-    local device_name=
-    local mount_point=
     for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
-        mount_point="$(echo "${volume}" | cut -d ":" -f1)"
-        device_name="$(echo "${volume}" | cut -d ":" -f2)"
-        volume_id="$(find_attached_ebs_volume "${device_name}")"
-        snapshot_id="$(retrieve_ebs_snapshot_id "${snapshot_tag}" "${device_name}")"
+        local mount_point="$(echo "${volume}" | cut -d ":" -f1)"
+        local device_name="$(echo "${volume}" | cut -d ":" -f2)"
+        local volume_id="$(find_attached_ebs_volume "${device_name}")"
+        local snapshot_id="$(retrieve_ebs_snapshot_id "${snapshot_tag}" "${device_name}")"
 
         detach_volume "${volume_id}"
         info "Restoring data from snapshot '${snapshot_id}' into a '${RESTORE_DISK_VOLUME_TYPE}' volume at mount point '${mount_point}'"
@@ -119,11 +115,10 @@ function unfreeze_directories {
 }
 
 function cleanup_disk_backups {
-    local device_name=
     if [ "${KEEP_BACKUPS}" -gt 0 ]; then
         info "Cleaning up any old EBS snapshots and retaining only the most recent ${KEEP_BACKUPS}"
         for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
-            device_name="$(echo "${volume}" | cut -d ":" -f2)"
+            local device_name="$(echo "${volume}" | cut -d ":" -f2)"
             for ebs_snapshot_id in $(list_old_ebs_snapshot_ids "${AWS_REGION}" "${device_name}"); do
                 run aws ec2 delete-snapshot --snapshot-id "${ebs_snapshot_id}" > /dev/null
             done

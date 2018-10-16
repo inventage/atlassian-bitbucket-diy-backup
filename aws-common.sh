@@ -215,11 +215,9 @@ function remount_ebs_volumes {
         run sudo zfs share -a
         ;;
     *)
-        local mount_point=
-        local device_name=
         for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
-            mount_point="$(echo "${volume}" | cut -d ":" -f1)"
-            device_name="$(echo "${volume}" | cut -d ":" -f2)"
+            local mount_point="$(echo "${volume}" | cut -d ":" -f1)"
+            local device_name="$(echo "${volume}" | cut -d ":" -f2)"
             run sudo mount "${device_name}" "${mount_point}"
         done
 
@@ -250,9 +248,8 @@ function unmount_ebs_volumes {
         run sudo service nfs stop
 
         # Unmount each EBS volume
-        local mount_point=
         for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
-            mount_point="$(echo "${volume}" | cut -d ":" -f1)"
+            local mount_point="$(echo "${volume}" | cut -d ":" -f1)"
             run sudo umount "${mount_point}"
         done
         ;;

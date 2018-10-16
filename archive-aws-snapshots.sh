@@ -17,10 +17,9 @@ function archive_backup {
 
     # Optionally copy/share the EBS snapshot to another region and/or account.
     # This is useful to retain a cross region/account copy of the backup.
-    local device_name=
     if [ "${BACKUP_DISK_TYPE}" = "amazon-ebs" ] && [ -n "${BACKUP_DEST_REGION}" ]; then
         for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
-            device_name="$(echo "${volume}" | cut -d ":" -f2)"
+            local device_name="$(echo "${volume}" | cut -d ":" -f2)"
             local backup_ebs_snapshot_id=$(run aws ec2 describe-snapshots --filters Name=tag-key,Values="${SNAPSHOT_TAG_KEY}" \
                 Name=tag-value,Values="${SNAPSHOT_TAG_VALUE}" Name=tag:${SNAPSHOT_DEVICE_TAG_KEY},Values="${device_name}" \
                 --query 'Snapshots[0].SnapshotId' --output text)
@@ -150,9 +149,8 @@ function copy_rds_snapshot {
 
 function cleanup_old_offsite_ebs_snapshots {
     # Delete old EBS snapshots in region BACKUP_DEST_REGION
-    local device_name=
     for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
-        device_name="$(echo "${volume}" | cut -d ":" -f2)"
+        local device_name="$(echo "${volume}" | cut -d ":" -f2)"
         for ebs_snapshot_id in $(list_old_ebs_snapshot_ids ${BACKUP_DEST_REGION} ${device_name}); do
             info "Deleting old cross-region EBS snapshot '${ebs_snapshot_id}' in ${BACKUP_DEST_REGION}"
             run aws ec2 delete-snapshot --region "${BACKUP_DEST_REGION}" --snapshot-id "${ebs_snapshot_id}" > /dev/null
@@ -268,10 +266,8 @@ function cleanup_old_offsite_ebs_snapshots_in_backup_account {
     local aws_secret_access_key=$(echo ${credentials} | jq -r .Credentials.SecretAccessKey)
     local aws_session_token=$(echo ${credentials} | jq -r .Credentials.SessionToken)
 
-    local old_backup_account_ebs_snapshots=
-    local device_name=
     for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
-        device_name="$(echo "${volume}" | cut -d ":" -f2)"
+        local device_name="$(echo "${volume}" | cut -d ":" -f2)"
 
         # Query for EBS snapshots using the assumed credentials
         local old_backup_account_ebs_snapshots="$(AWS_ACCESS_KEY_ID="${aws_access_key_id}" \
