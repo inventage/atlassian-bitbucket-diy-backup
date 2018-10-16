@@ -4,7 +4,7 @@
 # The Disaster Recovery script to configure Bitbucket Data Center home replication for DR
 #
 # Ensure you are using this script in accordance with the following document:
-# https://confluence.atlassian.com/display/BitbucketServer/Bitbucket+Data+Center+disaster+recovery
+# https://confluence.atlassian.com/display/BitbucketServer/Disaster+recovery+guide+for+Bitbucket+Data+Center
 #
 # It requires the following configuration file:
 #   bitbucket.diy-backup.vars.sh

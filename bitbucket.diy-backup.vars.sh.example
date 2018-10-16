@@ -168,7 +168,7 @@ case ${BACKUP_DATABASE_TYPE} in
 
         # In standby instances using RDS read replicas, set this variable to the RDS read replica instance id.
         # Only used on a Disaster Recovery standby system that has been configured with an RDS read replica of your primary system's RDS database.
-        # See https://confluence.atlassian.com/display/BitbucketServer/Bitbucket+Data+Center+disaster+recovery for more information.
+        # See https://confluence.atlassian.com/display/BitbucketServer/Disaster+recovery+guide+for+Bitbucket+Data+Center for more information.
         DR_RDS_READ_REPLICA=
         ;;
     mysql)
@@ -319,7 +319,7 @@ esac
 # ==== DISASTER RECOVERY VARS ====
 
 # Only used on a Bitbucket Data Center primary instance which has been configured with a Disaster Recovery standby system.
-# See https://confluence.atlassian.com/display/BitbucketServer/Bitbucket+Data+Center+disaster+recovery for more information.
+# See https://confluence.atlassian.com/display/BitbucketServer/Disaster+recovery+guide+for+Bitbucket+Data+Center for more information.
 # The JDBC URL for the STANDBY database server.
 # WARNING: It is imperative that you set this to the correct JDBC URL for your STANDBY database.
 # During fail-over, 'promote-home.sh' will write this to your 'bitbucket.properties' file so that
