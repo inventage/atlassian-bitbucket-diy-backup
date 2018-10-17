@@ -106,7 +106,7 @@ changes have been noted in `bitbucket.diy-backup.vars.sh.example`.
 * `ZFS_HOME_TANK_NAME` has been replaced with `ZFS_FILESYSTEM_NAMES`, an array containing filesystem names for the 
   shared home, as well as any data stores. This is only required if `FILESYSTEM_TYPE` is set to `zfs`.
 
-**Note:** EBS snapshots are now tagged with the device name they are a snapshot of. If snapshots were taken previous, 
+**Note:** EBS snapshots are now tagged with the device name they are a snapshot of. If snapshots were taken previously, 
 they will not have this tag, and as a result:
 * Old ebs snapshots without a "Device" tag won't be cleaned up automatically
 * Restoring from an old ebs snapshot without a "Device" tag will fail
