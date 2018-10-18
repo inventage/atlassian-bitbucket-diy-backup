@@ -5,7 +5,7 @@
 # to replicate the file system to the standby.
 #
 # Ensure you are using this script in accordance with the following document:
-# https://confluence.atlassian.com/display/BitbucketServer/Bitbucket+Data+Center+disaster+recovery
+# https://confluence.atlassian.com/display/BitbucketServer/Disaster+recovery+guide+for+Bitbucket+Data+Center
 #
 # It requires a properly configured bitbucket.diy-backup.vars.sh file,
 # which can be copied and customized from bitbucket.diy-backup.vars.sh.example.
@@ -17,7 +17,7 @@ set -e
 SCRIPT_DIR=$(dirname "$0")
 source "${SCRIPT_DIR}/utils.sh"
 source "${SCRIPT_DIR}/common.sh"
-source_disaster_recovery_home_strategy
+source_disaster_recovery_disk_strategy
 
 ##########################################################
 REPLICATE_LOCK_FILE="/tmp/replicate-lock.pid"
@@ -45,4 +45,4 @@ function release_replicate_lock {
 acquire_replicate_lock
 add_cleanup_routine release_replicate_lock
 
-replicate_home
+replicate_disk

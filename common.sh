@@ -120,6 +120,7 @@ function source_archive_strategy {
         # Only the "latest snapshot" (i.e., the working folder used by the backup process) is available.
         BITBUCKET_RESTORE_DB="${BITBUCKET_BACKUP_DB}"
         BITBUCKET_RESTORE_HOME="${BITBUCKET_BACKUP_HOME}"
+        BITBUCKET_RESTORE_DATA_STORES="${BITBUCKET_BACKUP_DATA_STORES}"
     fi
 }
 
@@ -141,21 +142,28 @@ function source_elasticsearch_strategy {
     fi
 }
 
-function source_home_strategy {
-    if [ -e "${SCRIPT_DIR}/home-${BACKUP_HOME_TYPE}.sh" ]; then
-        source "${SCRIPT_DIR}/home-${BACKUP_HOME_TYPE}.sh"
+function source_disk_strategy {
+    # Fail if it looks like the scripts are being run with an old backup vars file.
+    if [ -n "${BACKUP_HOME_TYPE}" ]; then
+        error "Configuration is out of date."
+        error "Please update the configuration in '${BACKUP_VARS_FILE}'"
+        bail "The 'Upgrading' section of the README contains a list of considerations when upgrading."
+    fi
+
+    if [ -e "${SCRIPT_DIR}/disk-${BACKUP_DISK_TYPE}.sh" ]; then
+        source "${SCRIPT_DIR}/disk-${BACKUP_DISK_TYPE}.sh"
     else
-        error "BACKUP_HOME_TYPE=${BACKUP_HOME_TYPE} is not implemented, '${SCRIPT_DIR}/home-${BACKUP_HOME_TYPE}.sh' does not exist"
-        bail "Please update BACKUP_HOME_TYPE in '${BACKUP_VARS_FILE}'"
+        error "BACKUP_DISK_TYPE=${BACKUP_DISK_TYPE} is not implemented, '${SCRIPT_DIR}/disk-${BACKUP_DISK_TYPE}.sh' does not exist"
+        bail "Please update BACKUP_DISK_TYPE in '${BACKUP_VARS_FILE}'"
     fi
 }
 
-function source_disaster_recovery_home_strategy {
-    if [ -e "${SCRIPT_DIR}/home-${STANDBY_HOME_TYPE}.sh" ]; then
-        source "${SCRIPT_DIR}/home-${STANDBY_HOME_TYPE}.sh"
+function source_disaster_recovery_disk_strategy {
+    if [ -e "${SCRIPT_DIR}/disk-${STANDBY_DISK_TYPE}.sh" ]; then
+        source "${SCRIPT_DIR}/disk-${STANDBY_DISK_TYPE}.sh"
     else
-        error "STANDBY_HOME_TYPE=${STANDBY_HOME_TYPE} is not implemented, '${SCRIPT_DIR}/home-${STANDBY_HOME_TYPE}.sh' does not exist"
-        bail "Please update DR_HOME_TYPE in '${BACKUP_VARS_FILE}'"
+        error "STANDBY_DISK_TYPE=${STANDBY_DISK_TYPE} is not implemented, '${SCRIPT_DIR}/disk-${STANDBY_DISK_TYPE}.sh' does not exist"
+        bail "Please update STANDBY_DISK_TYPE in '${BACKUP_VARS_FILE}'"
     fi
 }
 
@@ -230,42 +238,6 @@ function unfreeze_mount_point {
     fi
 }
 
-# Remount the previously mounted home directory
-function remount_device {
-    remove_cleanup_routine remount_device
-
-    case ${FILESYSTEM_TYPE} in
-    zfs)
-        run sudo zpool import tank
-        run sudo zfs mount -a
-        run sudo zfs share -a
-        ;;
-    *)
-        run sudo mount "${HOME_DIRECTORY_DEVICE_NAME}" "${HOME_DIRECTORY_MOUNT_POINT}"
-        ;;
-    esac
-}
-
-# Unmount the currently mounted home directory
-function unmount_device {
-    case ${FILESYSTEM_TYPE} in
-    zfs)
-        local shared=$(run sudo zfs get -o value -H sharenfs "${ZFS_HOME_TANK_NAME}")
-
-        if [ "${shared}" = "on" ]; then
-            run sudo zfs unshare "${ZFS_HOME_TANK_NAME}"
-        fi
-        run sudo zfs unmount "${ZFS_HOME_TANK_NAME}"
-        run sudo zpool export tank
-        ;;
-    *)
-        run sudo umount "${HOME_DIRECTORY_MOUNT_POINT}"
-        ;;
-    esac
-
-    add_cleanup_routine remount_device
-}
-
 # Add a argument-less callback to the list of cleanup routines.
 #
 # $1 = a argument-less function
@@ -294,12 +266,12 @@ function run_cleanup {
     done
 }
 
-# Remove files like config.lock, index.lock, gc.pid, and refs/heads/*.lock from the provided directory
+# Remove files like config.lock, index.lock, gc.pid, and refs/heads/*.lock from the provided path
 #
-# $1 = the home directory to clean
+# path = the path to clean
 #
-function cleanup_locks {
-    local home_directory="$1"
+function cleanup_repository_locks {
+    local path="$1"
 
     # From the shopt man page:
     # globstar
@@ -308,8 +280,8 @@ function cleanup_locks {
     shopt -s globstar
 
     # Remove lock files in the repositories
-    run sudo -u "${BITBUCKET_UID}" rm -f "${home_directory}/shared/data/repositories/*/{HEAD,config,index,gc,packed-refs,stash-packed-refs}.{pid,lock}"
-    run sudo -u "${BITBUCKET_UID}" rm -f "${home_directory}/shared/data/repositories/*/refs/**/*.lock"
-    run sudo -u "${BITBUCKET_UID}" rm -f "${home_directory}/shared/data/repositories/*/stash-refs/**/*.lock"
-    run sudo -u "${BITBUCKET_UID}" rm -f "${home_directory}/shared/data/repositories/*/logs/**/*.lock"
+    run sudo rm -f "${path}/*/{HEAD,config,index,gc,packed-refs,stash-packed-refs}.{pid,lock}"
+    run sudo rm -f "${path}/*/refs/**/*.lock"
+    run sudo rm -f "${path}/*/stash-refs/**/*.lock"
+    run sudo rm -f "${path}/*/logs/**/*.lock"
 }

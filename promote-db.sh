@@ -4,7 +4,7 @@
 # The Disaster Recovery script to promote a standby Bitbucket Data Center database server.
 #
 # Ensure you are using this script in accordance with the following document:
-# https://confluence.atlassian.com/display/BitbucketServer/Bitbucket+Data+Center+disaster+recovery
+# https://confluence.atlassian.com/display/BitbucketServer/Disaster+recovery+guide+for+Bitbucket+Data+Center
 #
 # It requires the following configuration file:
 #   bitbucket.diy-backup.vars.sh

@@ -44,15 +44,18 @@ export AWS_DEFAULT_REGION=${AWS_REGION}
 export AWS_DEFAULT_OUTPUT=json
 
 SNAPSHOT_TAG_KEY="Name"
+SNAPSHOT_DEVICE_TAG_KEY="Device"
 
 # Create a snapshot of an EBS volume
 #
 # volume_id = The volume to snapshot
 # description = The description of the snapshot
+# device_name = The device containing the volume
 #
 function snapshot_ebs_volume {
     local volume_id="$1"
     local description="$2"
+    local device_name="$3"
 
     # Bail after 10 Minutes
     local max_wait_time=600
@@ -79,7 +82,8 @@ function snapshot_ebs_volume {
     if [ -n "${AWS_ADDITIONAL_TAGS}" ]; then
         comma=', '
     fi
-    local aws_tags="[{\"Key\":\"${SNAPSHOT_TAG_KEY}\",\"Value\":\"${SNAPSHOT_TAG_VALUE}\"}${comma}${AWS_ADDITIONAL_TAGS}]"
+    local aws_tags="[{\"Key\":\"${SNAPSHOT_TAG_KEY}\",\"Value\":\"${SNAPSHOT_TAG_VALUE}\"}, \
+        {\"Key\":\"${SNAPSHOT_DEVICE_TAG_KEY}\",\"Value\":\"${device_name}\"}${comma}${AWS_ADDITIONAL_TAGS}]"
 
     run aws ec2 create-tags --resources "${ebs_snapshot_id}" --tags "$aws_tags" > /dev/null
     debug "Tagged EBS snapshot '${ebs_snapshot_id}' with '${aws_tags}'"
@@ -128,15 +132,13 @@ function attach_volume {
     wait_attached_volume "${volume_id}"
 }
 
-# Detach the currently attached EBS volume
+# Detach a currently attached EBS volume
+#
+# volume_id = The volume id to detach
+#
 function detach_volume {
-    run aws ec2 detach-volume --volume-id "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" > /dev/null
-}
-
-# Re-attach the previously attached EBS volume.
-function reattach_old_volume {
-    remove_cleanup_routine reattach_old_volume
-    attach_volume "${BACKUP_HOME_DIRECTORY_VOLUME_ID}" "${HOME_DIRECTORY_DEVICE_NAME}"
+    local volume_id="$1"
+    run aws ec2 detach-volume --volume-id "${volume_id}" > /dev/null
 }
 
 # Wait for an EBS volume to attach
@@ -202,15 +204,71 @@ function create_and_attach_volume {
     attach_volume "${volume_id}" "${device_name}"
 }
 
+# Remount the previously mounted ebs volumes
+function remount_ebs_volumes {
+    remove_cleanup_routine remount_ebs_volumes
+
+    case ${FILESYSTEM_TYPE} in
+    zfs)
+        run sudo zpool import tank
+        run sudo zfs mount -a
+        run sudo zfs share -a
+        ;;
+    *)
+        for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
+            local mount_point="$(echo "${volume}" | cut -d ":" -f1)"
+            local device_name="$(echo "${volume}" | cut -d ":" -f2)"
+            run sudo mount "${device_name}" "${mount_point}"
+        done
+
+        # Start up NFS daemon and export via NFS
+        run sudo service nfs start
+        run sudo exportfs -ar
+        ;;
+    esac
+}
+
+# Unmount the currently mounted ebs volumes
+function unmount_ebs_volumes {
+    case ${FILESYSTEM_TYPE} in
+    zfs)
+        local shared=
+        for fs_name in "${ZFS_FILESYSTEM_NAMES[@]}"; do
+            shared=$(run sudo zfs get -o value -H sharenfs "${fs_name}")
+            if [ "${shared}" = "on" ]; then
+                run sudo zfs unshare "${fs_name}"
+            fi
+            run sudo zfs unmount "${fs_name}"
+        done
+        run sudo zpool export tank
+        ;;
+    *)
+        # Un-export via NFS and stop the NFS daemon
+        run sudo exportfs -au
+        run sudo service nfs stop
+
+        # Unmount each EBS volume
+        for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
+            local mount_point="$(echo "${volume}" | cut -d ":" -f1)"
+            run sudo umount "${mount_point}"
+        done
+        ;;
+    esac
+
+    add_cleanup_routine remount_ebs_volumes
+}
+
 # Validate the existence of a EBS snapshot
 #
 # snapshot_tag = The tag used to retrieve the EBS snapshot ID
+# device_name = The device to retrieve an EBS snapshot for
 #
 function retrieve_ebs_snapshot_id {
     local snapshot_tag="$1"
+    local device_name="$2"
 
-    local snapshot_description=$(run aws ec2 describe-snapshots --filters Name=tag-key,Values="${SNAPSHOT_TAG_KEY}" \
-        Name=tag-value,Values="${snapshot_tag}")
+    local snapshot_description=$(run aws ec2 describe-snapshots --filters Name=tag:${SNAPSHOT_TAG_KEY},Values="${snapshot_tag}" \
+        Name=tag:${SNAPSHOT_DEVICE_TAG_KEY},Values="${device_name}")
 
     local snapshot_id=$(echo "${snapshot_description}" | jq -r '.Snapshots[0]?.SnapshotId')
     if [ -z "${snapshot_id}" -o "${snapshot_id}" = "null" ]; then
@@ -324,7 +382,7 @@ function retrieve_rds_snapshot_id {
 function list_available_ebs_snapshots {
     local available_ebs_snapshots=$(run aws ec2 describe-snapshots \
         --filters Name=tag-key,Values="Name" Name=tag-value,Values="${SNAPSHOT_TAG_PREFIX}*"\
-        | jq -r ".Snapshots[].Tags[] | select(.Key == \"Name\") | .Value" | sort -r)
+        | jq -r ".Snapshots[].Tags[] | select(.Key == \"Name\") | .Value" | sort -ru)
     if [ -z "${available_ebs_snapshots}" -o "${available_ebs_snapshots}" = "null" ]; then
         error "Could not find 'Snapshots' with 'Tags' with 'Value' in response '${snapshot_description}'"
         bail "Unable to retrieve list of available EBS snapshots"
@@ -360,8 +418,14 @@ function list_old_rds_snapshot_ids {
 }
 
 # List all EBS snapshots older than the most recent ${KEEP_BACKUPS}
+#
+# region = The AWS region to list snapshots from
+# device_name = The device to list snapshots for
+#
 function list_old_ebs_snapshot_ids {
     local region=$1
-    run aws ec2 describe-snapshots --region="${region}" --filters "Name=tag:Name,Values=${SNAPSHOT_TAG_PREFIX}*" | \
+    local device_name=$2
+    run aws ec2 describe-snapshots --region="${region}" --filters "Name=tag:Name,Values=${SNAPSHOT_TAG_PREFIX}*" \
+        "Name=tag:${SNAPSHOT_DEVICE_TAG_KEY},Values=${device_name}" | \
         jq -r ".Snapshots | sort_by(.StartTime) | reverse | .[${KEEP_BACKUPS}:] | map(.SnapshotId)[]"
 }

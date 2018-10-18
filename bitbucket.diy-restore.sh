@@ -17,7 +17,7 @@ source "${SCRIPT_DIR}/utils.sh"
 source "${SCRIPT_DIR}/common.sh"
 source_archive_strategy
 source_database_strategy
-source_home_strategy
+source_disk_strategy
 source_elasticsearch_strategy
 
 # Ensure we know which user:group things should be owned as
@@ -37,7 +37,7 @@ fi
 
 info "Preparing for restore"
 
-prepare_restore_home "${1}"
+prepare_restore_disk "${1}"
 prepare_restore_db "${1}"
 prepare_restore_elasticsearch "${1}"
 
@@ -45,10 +45,10 @@ if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then
     restore_archive
 fi
 
-info "Restoring home directory and database"
+info "Restoring disk (home directory and data stores) and database"
 
 # Restore the filesystem
-restore_home
+restore_disk "${1}"
 
 # Restore the database
 restore_db

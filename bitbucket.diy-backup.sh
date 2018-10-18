@@ -17,13 +17,13 @@ source "${SCRIPT_DIR}/utils.sh"
 source "${SCRIPT_DIR}/common.sh"
 source_archive_strategy
 source_database_strategy
-source_home_strategy
+source_disk_strategy
 source_elasticsearch_strategy
 
 # Ensure compatibility if BACKUP_ZERO_DOWNTIME is set
 if [ "${BACKUP_ZERO_DOWNTIME}" = "true" ]; then
-    if [ "${BACKUP_HOME_TYPE}" = "rsync" ]; then
-        error "BACKUP_HOME_TYPE=rsync cannot be used with BACKUP_ZERO_DOWNTIME=true"
+    if [ "${BACKUP_DISK_TYPE}" = "rsync" ]; then
+        error "BACKUP_DISK_TYPE=rsync cannot be used with BACKUP_ZERO_DOWNTIME=true"
         bail "Please update ${BACKUP_VARS_FILE}"
     fi
     version=($(bitbucket_version))
@@ -46,7 +46,7 @@ check_command "jq"
 
 info "Preparing for backup"
 prepare_backup_db
-prepare_backup_home
+prepare_backup_disk
 
 # If necessary, lock Bitbucket, start an external backup and wait for instance readiness
 lock_bitbucket
@@ -59,7 +59,7 @@ backup_wait
 
 info "Backing up the database and filesystem in parallel"
 (backup_db && update_backup_progress 50) &
-(backup_home && update_backup_progress 50) &
+(backup_disk && update_backup_progress 50) &
 
 # Wait until home and database backups are complete
 wait $(jobs -p)
@@ -72,7 +72,7 @@ success "Successfully completed the backup of your ${PRODUCT} instance"
 
 # Cleanup backups retaining the latest $KEEP_BACKUPS
 cleanup_db_backups
-cleanup_home_backups
+cleanup_disk_backups
 cleanup_elasticsearch_backups
 
 if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then

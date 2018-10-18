@@ -17,17 +17,21 @@ function archive_backup {
 
     # Optionally copy/share the EBS snapshot to another region and/or account.
     # This is useful to retain a cross region/account copy of the backup.
-    if [ "${BACKUP_HOME_TYPE}" = "amazon-ebs" ] && [ -n "${BACKUP_DEST_REGION}" ]; then
-        local backup_ebs_snapshot_id=$(run aws ec2 describe-snapshots --filters Name=tag-key,Values="${SNAPSHOT_TAG_KEY}" \
-            Name=tag-value,Values="${SNAPSHOT_TAG_VALUE}" --query 'Snapshots[0].SnapshotId' --output text)
+    if [ "${BACKUP_DISK_TYPE}" = "amazon-ebs" ] && [ -n "${BACKUP_DEST_REGION}" ]; then
+        for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
+            local device_name="$(echo "${volume}" | cut -d ":" -f2)"
+            local backup_ebs_snapshot_id=$(run aws ec2 describe-snapshots --filters Name=tag-key,Values="${SNAPSHOT_TAG_KEY}" \
+                Name=tag-value,Values="${SNAPSHOT_TAG_VALUE}" Name=tag:${SNAPSHOT_DEVICE_TAG_KEY},Values="${device_name}" \
+                --query 'Snapshots[0].SnapshotId' --output text)
 
-        if [ -n "${BACKUP_DEST_AWS_ACCOUNT_ID}" -a -n "${BACKUP_DEST_AWS_ROLE}" ]; then
-            # Copy to BACKUP_DEST_REGION & share with BACKUP_DEST_AWS_ACCOUNT_ID
-            copy_and_share_ebs_snapshot "${backup_ebs_snapshot_id}" "${AWS_REGION}"
-        else
-            # Copy EBS snapshot to BACKUP_DEST_REGION
-            copy_ebs_snapshot "${backup_ebs_snapshot_id}" "${AWS_REGION}"
-        fi
+            if [ -n "${BACKUP_DEST_AWS_ACCOUNT_ID}" -a -n "${BACKUP_DEST_AWS_ROLE}" ]; then
+                # Copy to BACKUP_DEST_REGION & share with BACKUP_DEST_AWS_ACCOUNT_ID
+                copy_and_share_ebs_snapshot "${backup_ebs_snapshot_id}" "${AWS_REGION}" "${device_name}"
+            else
+                # Copy EBS snapshot to BACKUP_DEST_REGION
+                copy_ebs_snapshot "${backup_ebs_snapshot_id}" "${AWS_REGION}" "${device_name}"
+            fi
+        done
     fi
 
     # Optionally copy/share the RDS snapshot to another region and/or account.
@@ -64,7 +68,7 @@ function cleanup_old_archives {
                 if [ "${BACKUP_DATABASE_TYPE}" = "amazon-rds" ]; then
                     cleanup_old_offsite_rds_snapshots_in_backup_account
                 fi
-                if [ "${BACKUP_HOME_TYPE}" = "amazon-ebs" ]; then
+                if [ "${BACKUP_DISK_TYPE}" = "amazon-ebs" ]; then
                     cleanup_old_offsite_ebs_snapshots_in_backup_account
                 fi
             fi
@@ -73,7 +77,7 @@ function cleanup_old_archives {
             if [ "${BACKUP_DATABASE_TYPE}" = "rds" ]; then
                 cleanup_old_offsite_rds_snapshots
             fi
-            if [ "${BACKUP_HOME_TYPE}" = "amazon-ebs" ]; then
+            if [ "${BACKUP_DISK_TYPE}" = "amazon-ebs" ]; then
                 cleanup_old_offsite_ebs_snapshots
             fi
         fi
@@ -86,6 +90,7 @@ function cleanup_old_archives {
 function copy_ebs_snapshot {
     local source_ebs_snapshot_id="$1"
     local source_region="$2"
+    local device_name="$3"
 
     debug "Attempting to copy EBS snapshot '${source_ebs_snapshot_id}' to '${source_region}'"
 
@@ -111,7 +116,8 @@ function copy_ebs_snapshot {
     if [ -n "${AWS_ADDITIONAL_TAGS}" ]; then
         comma=', '
     fi
-    local aws_tags="[{\"Key\":\"${SNAPSHOT_TAG_KEY}\",\"Value\":\"${SNAPSHOT_TAG_VALUE}\"}${comma}${AWS_ADDITIONAL_TAGS}]"
+    local aws_tags="[{\"Key\":\"${SNAPSHOT_TAG_KEY}\",\"Value\":\"${SNAPSHOT_TAG_VALUE}\"}, \
+        {\"Key\":\"${SNAPSHOT_DEVICE_TAG_KEY}\",\"Value\":\"${device_name}\"}${comma}${AWS_ADDITIONAL_TAGS}]"
 
     # Add tags to copied snapshot
     run aws ec2 create-tags --region "${BACKUP_DEST_REGION}" --resources "${dest_snapshot_id}" --tags "${aws_tags}"
@@ -143,9 +149,12 @@ function copy_rds_snapshot {
 
 function cleanup_old_offsite_ebs_snapshots {
     # Delete old EBS snapshots in region BACKUP_DEST_REGION
-    for ebs_snapshot_id in $(list_old_ebs_snapshot_ids ${BACKUP_DEST_REGION}); do
-        info "Deleting old cross-region EBS snapshot '${ebs_snapshot_id}' in ${BACKUP_DEST_REGION}"
-        run aws ec2 delete-snapshot --region "${BACKUP_DEST_REGION}" --snapshot-id "${ebs_snapshot_id}" > /dev/null
+    for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
+        local device_name="$(echo "${volume}" | cut -d ":" -f2)"
+        for ebs_snapshot_id in $(list_old_ebs_snapshot_ids ${BACKUP_DEST_REGION} ${device_name}); do
+            info "Deleting old cross-region EBS snapshot '${ebs_snapshot_id}' in ${BACKUP_DEST_REGION}"
+            run aws ec2 delete-snapshot --region "${BACKUP_DEST_REGION}" --snapshot-id "${ebs_snapshot_id}" > /dev/null
+        done
     done
 }
 
@@ -163,6 +172,7 @@ function cleanup_old_offsite_rds_snapshots {
 function copy_and_share_ebs_snapshot {
     local source_ebs_snapshot_id="$1"
     local source_region="$2"
+    local device_name="$3"
 
     info "Waiting for EBS snapshot '${source_ebs_snapshot_id}' to become available in '${source_region}'" \
         "before copying to '${BACKUP_DEST_REGION}'"
@@ -190,7 +200,8 @@ function copy_and_share_ebs_snapshot {
     if [ -n "${AWS_ADDITIONAL_TAGS}" ]; then
         comma=', '
     fi
-    local aws_tags="[{\"Key\":\"${SNAPSHOT_TAG_KEY}\",\"Value\":\"${SNAPSHOT_TAG_VALUE}\"}${comma}${AWS_ADDITIONAL_TAGS}]"
+    local aws_tags="[{\"Key\":\"${SNAPSHOT_TAG_KEY}\",\"Value\":\"${SNAPSHOT_TAG_VALUE}\"}, \
+        {\"Key\":\"${SNAPSHOT_DEVICE_TAG_KEY}\",\"Value\":\"${device_name}\"}${comma}${AWS_ADDITIONAL_TAGS}]"
     run aws ec2 create-tags --region "${BACKUP_DEST_REGION}" --resources "${dest_snapshot_id}" --tags "$aws_tags"
 
     # Assume destination AWS account role
@@ -255,18 +266,23 @@ function cleanup_old_offsite_ebs_snapshots_in_backup_account {
     local aws_secret_access_key=$(echo ${credentials} | jq -r .Credentials.SecretAccessKey)
     local aws_session_token=$(echo ${credentials} | jq -r .Credentials.SessionToken)
 
-    # Query for EBS snapshots using the assumed credentials
-    local old_backup_account_ebs_snapshots="$(AWS_ACCESS_KEY_ID="${aws_access_key_id}" \
-        AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}" AWS_SESSION_TOKEN="${aws_session_token}" \
-        run aws ec2 describe-snapshots --filters "Name=tag:Name,Values=${SNAPSHOT_TAG_PREFIX}*" | \
-        jq -r ".Snapshots | sort_by(.StartTime) | reverse | .[${KEEP_BACKUPS}:] | map(.SnapshotId)[]")"
+    for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
+        local device_name="$(echo "${volume}" | cut -d ":" -f2)"
 
-    # Delete old EBS snapshots from BACKUP_DEST_AWS_ACCOUNT_ID in region BACKUP_DEST_REGION
-    for ebs_snapshot_id in ${old_backup_account_ebs_snapshots}; do
-        info "Deleting old cross-account EBS snapshot '${ebs_snapshot_id}'"
-        AWS_ACCESS_KEY_ID="${aws_access_key_id}" AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}" \
-            AWS_SESSION_TOKEN="${aws_session_token}" run aws ec2 delete-snapshot --region "${BACKUP_DEST_REGION}" \
-            --snapshot-id "${ebs_snapshot_id}" > /dev/null
+        # Query for EBS snapshots using the assumed credentials
+        local old_backup_account_ebs_snapshots="$(AWS_ACCESS_KEY_ID="${aws_access_key_id}" \
+            AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}" AWS_SESSION_TOKEN="${aws_session_token}" \
+            run aws ec2 describe-snapshots --filters "Name=tag:Name,Values=${SNAPSHOT_TAG_PREFIX}*" \
+            "Name=tag:${SNAPSHOT_DEVICE_TAG_KEY},Values=${device_name}" | \
+            jq -r ".Snapshots | sort_by(.StartTime) | reverse | .[${KEEP_BACKUPS}:] | map(.SnapshotId)[]")"
+
+        # Delete old EBS snapshots from BACKUP_DEST_AWS_ACCOUNT_ID in region BACKUP_DEST_REGION
+        for ebs_snapshot_id in ${old_backup_account_ebs_snapshots}; do
+            info "Deleting old cross-account EBS snapshot '${ebs_snapshot_id}' of device '${device_name}'"
+            AWS_ACCESS_KEY_ID="${aws_access_key_id}" AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}" \
+                AWS_SESSION_TOKEN="${aws_session_token}" run aws ec2 delete-snapshot --region "${BACKUP_DEST_REGION}" \
+                --snapshot-id "${ebs_snapshot_id}" > /dev/null
+        done
     done
 }
 

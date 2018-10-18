@@ -70,6 +70,15 @@ function check_var {
     fi
 }
 
+# Checks that the directory is empty - ignoring dot files and linux's lost+found directory
+function ensure_empty_directory {
+    local dir="$1"
+
+    if [ -n "$(ls "${dir}" | grep -v "lost+found")" ]; then
+        bail "Cannot restore over existing contents of '${dir}'. Please rename/delete the folder or delete its contents."
+    fi
+}
+
 # A function with no side effects. Normally called when a callback does not need to do any work
 function no_op {
     echo > /dev/null
