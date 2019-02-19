@@ -70,9 +70,11 @@ description of all the various variables and their definitions.
                           https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-snapshots.html
 
 `STANDBY_DISK_TYPE` Strategy for Bitbucket home directory disaster recovery, valid values are:
+
 *  `zfs`                - ZFS snapshot strategy for disk replication.
 
 `STANDBY_DATABASE_TYPE` Strategy for replicating the database, valid values are:
+
 *  `amazon-rds`         - Amazon RDS Read replica
 *  `postgresql`         - PostgreSQL replication
 
@@ -92,6 +94,7 @@ Make sure you read and understand this document before uncommenting this variabl
 In order to support Bitbucket Server 6.0, significant changes have been made to these scripts. If moving from an older 
 version of the DIY scripts, you will need to change certain variables in the `bitbucket.diy-backup.vars.sh` file. These
 changes have been noted in `bitbucket.diy-backup.vars.sh.example`.
+
 * `BACKUP_HOME_TYPE` has been renamed to `BACKUP_DISK_TYPE`
 * `STANDBY_HOME_TYPE` has been renamed to `STANDBY_DISK_TYPE`
 
@@ -108,6 +111,7 @@ changes have been noted in `bitbucket.diy-backup.vars.sh.example`.
 
 **Note:** EBS snapshots are now tagged with the device name they are a snapshot of. If snapshots were taken previously, 
 they will not have this tag, and as a result:
+
 * Old ebs snapshots without a "Device" tag won't be cleaned up automatically
 * Restoring from an old ebs snapshot without a "Device" tag will fail
 
