@@ -3,14 +3,29 @@
 This repository contains a set of example scripts that demonstrate best practices for backing up a Bitbucket Server/Data
 Center instance using a curated set of vendor technologies.
 
-The scripts contained within this repository enable two categories of backup:
+## For example only
 
-* Backups with downtime. This is the only type of backup available if your Bitbucket instance is older than 4.8 or if
-  you are using the ``rsync`` strategy (described below)
+These scripts are provided as a _working example_, which should be extended/enhanced/optimized as necessary based on the
+environment in which they will be used. These examples are intended as a jumping off point for you to create _your own_
+backup strategy; they are not a drop-in solution for all potential configurations of Bitbucket Server/Data Center.
+
+System administrators are expected to know their environment, and what technology is in use in that environment, and to
+use these example scripts to help them build their own backup solution that makes the best use of the available tools.
+
+To report bugs in the examples, [create a support request](https://support.atlassian.com/servicedesk/customer/portal/24).
+
+To report suggestions for how the examples could be improved, [create a suggestion](https://jira.atlassian.com/browse/BSERV).
+
+## About these scripts
+
+The scripts contained within this repository demonstrate two types of backup:
+
+* Backups with downtime. This is the only type of backup available if your Bitbucket Server/Data Center instance is
+  older than 4.8, or if you are using the ``rsync`` strategy (described below)
 * Zero downtime backups. To enable Zero Downtime Backup, you will need to set the variable `BACKUP_ZERO_DOWNTIME` to
   `true`. If true, this variable will backup the filesystem and database **without** locking the application.
-  **NOTE:** This is only available from version 4.8 of Bitbucket Server/Data Center, and requires a compatible strategy
-  for taking atomic block level snapshots of the home directory.
+  **NOTE:** This is only supported when used with Bitbucket Server/Data Center 4.8 or newer, and requires a compatible
+  strategy for taking atomic block level snapshots of the home directory.
 
 These scripts have been changed significantly with the release of Bitbucket 6.0. If updating from an older version of
 the scripts, a number of configured variables will need updating. See the **Updating** section below for a list of
@@ -132,15 +147,6 @@ EBS volume holding the shared home directory (e.g. `"Device" : "/dev/xvdf"`).
 * If using these scripts for disaster recovery, a new variable `ZFS_HOME_FILESYSTEM` needs to be set. This should
   contain the name of the ZFS filesystem storing the shared home directory - the same value that was previously stored
   in `ZFS_HOME_TANK_NAME`.
-
-### Bugs and Suggestions ###
-
-Please report any bugs through [normal support channels](https://support.atlassian.com/servicedesk/customer/portal/24).
-
-Report suggestions in the [Bitbucket Server issue tracker](https://jira.atlassian.com/browse/BSERV).
-
-Please note that DIY Backup is intended as a jumping off point for your to create your _own_ back up strategy, and we 
-don't intend to create a solution for all potential configurations of Bitbucket Server.
 
 ### Further reading ###
 * [Zero Downtime Backup](https://confluence.atlassian.com/display/BitbucketServer/Using+Bitbucket+Zero+Downtime+Backup)
