@@ -12,7 +12,7 @@ backup strategy; they are not a drop-in solution for all potential configuration
 System administrators are expected to know their environment, and what technology is in use in that environment, and to
 use these example scripts to help them build their own backup solution that makes the best use of the available tools.
 
-To report bugs in the examples, [create a support request](https://support.atlassian.com/servicedesk/customer/portal/24).
+To report bugs in the examples, [create a support request](https://support.atlassian.com/bitbucket-server/).
 
 To report suggestions for how the examples could be improved, [create a suggestion](https://jira.atlassian.com/browse/BSERV).
 
@@ -24,8 +24,8 @@ The scripts contained within this repository demonstrate two types of backup:
   older than 4.8, or if you are using the ``rsync`` strategy (described below)
 * Zero downtime backups. To enable Zero Downtime Backup, you will need to set the variable `BACKUP_ZERO_DOWNTIME` to
   `true`. If true, this variable will backup the filesystem and database **without** locking the application.
-  **NOTE:** This is only supported when used with Bitbucket Server/Data Center 4.8 or newer, and requires a compatible
-  strategy for taking atomic block level snapshots of the home directory.
+  **NOTE:** This is only supported when used with Bitbucket Server/Data Center 4.8 or newer. It also requires a
+  compatible strategy for taking atomic block level snapshots of the home directory.
 
 These scripts have been changed significantly with the release of Bitbucket 6.0. If updating from an older version of
 the scripts, a number of configured variables will need updating. See the **Updating** section below for a list of
