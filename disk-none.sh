@@ -19,7 +19,11 @@ function restore_disk {
     no_op
 }
 
-function cleanup_disk_backups {
+function cleanup_incomplete_disk_backup {
+    no_op
+}
+
+function cleanup_old_disk_backups {
     no_op
 }
 

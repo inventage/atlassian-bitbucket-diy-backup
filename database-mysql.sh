@@ -37,7 +37,12 @@ function restore_db {
     run mysql ${MYSQL_HOST_CMD} -u "${MYSQL_USERNAME}" -p"${MYSQL_PASSWORD}" < "${BITBUCKET_RESTORE_DB}"
 }
 
-function cleanup_db_backups {
+function cleanup_incomplete_db_backup {
+    info "Cleaning up DB backup created as part of failed/incomplete backup"
+    rm -r "${BITBUCKET_BACKUP_DB}"
+}
+
+function cleanup_old_db_backups {
     # Not required as old backups with this strategy are typically cleaned up in the archiving strategy.
     no_op
 }

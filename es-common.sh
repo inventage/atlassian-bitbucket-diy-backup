@@ -174,6 +174,9 @@ EOF
         bail "Unable to create snapshot '${snapshot_name}' on instance '${ELASTICSEARCH_HOST}'. Elasticsearch returned: ${es_response}"
     fi
 
+    # Used to clean up the Elasticsearch snapshot created as part of a failed backup
+    CREATED_ES_SNAPSHOT="${snapshot_name}"
+
     success "Elasticsearch snapshot '${snapshot_name}' created"
 }
 
@@ -250,6 +253,15 @@ function cleanup_es_snapshots {
         fi
 
         success "Elasticsearch snapshot cleanup successful"
+    fi
+}
+
+function cleanup_es_snapshot {
+    if [ -n "${CREATED_ES_SNAPSHOT}" ]; then
+        info "Cleaning up Elasticsearch snapshot '${CREATED_ES_SNAPSHOT}' created as part of failed/incomplete backup"
+        delete_es_snapshot "${CREATED_ES_SNAPSHOT}"
+    else
+        debug "No Elasticsearch snapshot to clean up"
     fi
 }
 

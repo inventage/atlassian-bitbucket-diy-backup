@@ -16,7 +16,11 @@ function backup_elasticsearch {
     create_es_snapshot
 }
 
-function cleanup_elasticsearch_backups {
+function cleanup_incomplete_elasticsearch_backup {
+    cleanup_es_snapshot
+}
+
+function cleanup_old_elasticsearch_backups {
     cleanup_es_snapshots
 }
 

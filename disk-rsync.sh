@@ -111,7 +111,12 @@ function perform_rsync_home_directory {
         "${BITBUCKET_HOME}" "${BITBUCKET_BACKUP_HOME}"
 }
 
-function cleanup_disk_backups {
+function cleanup_incomplete_disk_backup {
+    # Not required because rsync backup is an incremental and idempotent process.
+    no_op
+}
+
+function cleanup_old_disk_backups {
      # Not required as old backups with this strategy are typically cleaned up in the archiving strategy.
     no_op
 }
