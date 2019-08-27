@@ -98,7 +98,17 @@ function rename_rds_instance {
     fi
 }
 
-function cleanup_db_backups {
+function cleanup_incomplete_db_backup {
+    # SNAPSHOT_TAG_VALUE is used as the unique identifier when creating the snapshot
+    if [ -n "${SNAPSHOT_TAG_VALUE}" ]; then
+        info "Cleaning up RDS snapshot '${SNAPSHOT_TAG_VALUE}' created as part of failed/incomplete backup"
+        run aws rds delete-db-snapshot --db-snapshot-identifier "${SNAPSHOT_TAG_VALUE}" > /dev/null
+    else
+        debug "No RDS snapshot to clean up"
+    fi
+}
+
+function cleanup_old_db_backups {
     if [ "${KEEP_BACKUPS}" -gt 0 ]; then
         info "Cleaning up any old RDS snapshots and retaining only the most recent ${KEEP_BACKUPS}"
         for snapshot_id in $(list_old_rds_snapshot_ids "${AWS_REGION}"); do

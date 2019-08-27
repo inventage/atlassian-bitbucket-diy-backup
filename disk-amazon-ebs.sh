@@ -114,7 +114,19 @@ function unfreeze_directories {
     done
 }
 
-function cleanup_disk_backups {
+function cleanup_incomplete_disk_backup {
+    if (( ${#CREATED_EBS_SNAPSHOTS[@]} )); then
+        info "Cleaning up EBS snapshots created as part of failed/incomplete backup"
+        for snapshot in "${CREATED_EBS_SNAPSHOTS[@]}"; do
+            debug "Deleting EBS snapshot '${snapshot}'"
+            run aws ec2 delete-snapshot --snapshot-id "${snapshot}" > /dev/null
+        done
+    else
+        debug "No EBS snapshots to clean up"
+    fi
+}
+
+function cleanup_old_disk_backups {
     if [ "${KEEP_BACKUPS}" -gt 0 ]; then
         info "Cleaning up any old EBS snapshots and retaining only the most recent ${KEEP_BACKUPS}"
         for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do

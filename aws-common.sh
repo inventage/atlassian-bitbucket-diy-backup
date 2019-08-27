@@ -46,6 +46,9 @@ export AWS_DEFAULT_OUTPUT=json
 SNAPSHOT_TAG_KEY="Name"
 SNAPSHOT_DEVICE_TAG_KEY="Device"
 
+# Used for cleaning up the EBS volume snapshots created as part of a failed/incomplete backup
+declare -a CREATED_EBS_SNAPSHOTS
+
 # Create a snapshot of an EBS volume
 #
 # volume_id = The volume to snapshot
@@ -87,6 +90,8 @@ function snapshot_ebs_volume {
 
     run aws ec2 create-tags --resources "${ebs_snapshot_id}" --tags "$aws_tags" > /dev/null
     debug "Tagged EBS snapshot '${ebs_snapshot_id}' with '${aws_tags}'"
+
+    CREATED_EBS_SNAPSHOTS+=("${ebs_snapshot_id}")
 }
 
 # Create a EBS volume from a snapshot

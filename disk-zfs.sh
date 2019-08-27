@@ -17,11 +17,15 @@ function prepare_backup_disk {
     done
 }
 
+# Used for cleaning up ZFS snapshots created as part of a failed backup
+declare -a CREATED_ZFS_SNAPSHOTS
+
 function backup_disk {
     for fs in "${ZFS_FILESYSTEM_NAMES[@]}"; do
         local new_snapshot="${fs}@${SNAPSHOT_TAG_VALUE}"
         debug "Creating snapshot with name '${new_snapshot}' for ZFS filesystem '${fs}'"
         run sudo zfs snapshot "${new_snapshot}"
+        CREATED_ZFS_SNAPSHOTS+=("${new_snapshot}")
     done
 }
 
@@ -50,7 +54,19 @@ function restore_disk {
     done
 }
 
-function cleanup_disk_backups {
+function cleanup_incomplete_disk_backup {
+    if (( ${#CREATED_ZFS_SNAPSHOTS[@]} )); then
+        info "Cleaning up ZFS snapshots created as part of failed/incomplete backup"
+        for snapshot in "${CREATED_ZFS_SNAPSHOTS[@]}"; do
+            debug "Deleting ZFS snapshot '${snapshot}'"
+            sudo zfs destroy "${snapshot}"
+        done
+    else
+        debug "No ZFS snapshots to clean up"
+    fi
+}
+
+function cleanup_old_disk_backups {
     for fs in "${ZFS_FILESYSTEM_NAMES[@]}"; do
         cleanup_zfs_backups "${fs}"
     done

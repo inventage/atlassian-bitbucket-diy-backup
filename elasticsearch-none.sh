@@ -10,7 +10,11 @@ function backup_elasticsearch {
     no_op
 }
 
-function cleanup_elasticsearch_backups {
+function cleanup_incomplete_elasticsearch_backup {
+    no_op
+}
+
+function cleanup_old_elasticsearch_backups {
     no_op
 }
 

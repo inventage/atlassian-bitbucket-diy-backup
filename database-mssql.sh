@@ -23,7 +23,12 @@ function restore_db {
     no_op
 }
 
-function cleanup_db_backups {
+function cleanup_incomplete_db_backup {
+    # Not required as old backups with this strategy are typically cleaned up in the archiving strategy.
+    no_op
+}
+
+function cleanup_old_db_backups {
     # Not required as old backups with this strategy are typically cleaned up in the archiving strategy.
     no_op
 }

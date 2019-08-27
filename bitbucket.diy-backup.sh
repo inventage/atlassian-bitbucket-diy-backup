@@ -44,6 +44,68 @@ check_command "jq"
 
 ##########################################################
 
+readonly DB_BACKUP_JOB_NAME="Database backup"
+readonly DISK_BACKUP_JOB_NAME="Disk backup"
+readonly ES_BACKUP_JOB_NAME="Elasticsearch backup"
+
+# Started background jobs
+declare -A BG_JOBS
+# Successfully completed background jobs
+declare -a COMPLETED_BG_JOBS
+# Failed background jobs
+declare -A FAILED_BG_JOBS
+
+# Run a command in the background and record its PID so we can wait for its completion
+function run_in_bg {
+    ($1) &
+    local PID=$!
+    BG_JOBS["$2"]=${PID}
+    debug "Started $2 (PID=${PID})"
+}
+
+# Wait for all tracked background jobs (i.e. jobs recorded in 'BG_JOBS') to finish. If one or more jobs return a
+# non-zero exit code, we log an error for each and return a non-zero value to fail the backup.
+function wait_for_bg_jobs {
+    for bg_job_name in "${!BG_JOBS[@]}"; do
+        local PID=${BG_JOBS[${bg_job_name}]}
+        debug "Waiting for ${bg_job_name} (PID=${PID})"
+        {
+            wait ${PID}
+        } &&  {
+            debug "${bg_job_name} finished successfully (PID=${PID})"
+            COMPLETED_BG_JOBS+=("${bg_job_name}")
+        } || {
+            FAILED_BG_JOBS["${bg_job_name}"]=$?
+        }
+    done
+
+    if (( ${#FAILED_BG_JOBS[@]} )); then
+        for bg_job_name in "${!FAILED_BG_JOBS[@]}"; do
+            error "${bg_job_name} failed with status ${FAILED_BG_JOBS[${bg_job_name}]} (PID=${PID})"
+        done
+        return 1
+    fi
+}
+
+# Clean up after a failed backup
+function cleanup_incomplete_backup {
+    debug "Cleaning up after failed backup"
+    for bg_job_name in "${COMPLETED_BG_JOBS[@]}"; do
+        case "$bg_job_name" in
+            "$ES_BACKUP_JOB_NAME")
+                cleanup_incomplete_elasticsearch_backup ;;
+            "$DB_BACKUP_JOB_NAME")
+                cleanup_incomplete_db_backup ;;
+            "$DISK_BACKUP_JOB_NAME")
+                cleanup_incomplete_disk_backup ;;
+            *)
+                error "No cleanup task defined for backup type: $bg_job_name" ;;
+        esac
+    done
+}
+
+##########################################################
+
 info "Preparing for backup"
 prepare_backup_db
 prepare_backup_disk
@@ -53,16 +115,22 @@ lock_bitbucket
 backup_start
 
 # Run Elasticsearch backup in the background (if not configured, this will be a No-Operation)
-backup_elasticsearch &
+run_in_bg backup_elasticsearch "$ES_BACKUP_JOB_NAME"
 
 backup_wait
 
 info "Backing up the database and filesystem in parallel"
-(backup_db && update_backup_progress 50) &
-(backup_disk && update_backup_progress 50) &
+run_in_bg "backup_db && update_backup_progress 50" "$DB_BACKUP_JOB_NAME"
+run_in_bg "backup_disk && update_backup_progress 50" "$DISK_BACKUP_JOB_NAME"
 
-# Wait until home and database backups are complete
-wait $(jobs -p)
+{
+    wait_for_bg_jobs
+} || {
+    unlock_bitbucket
+    cleanup_incomplete_backup || error "Failed to cleanup incomplete backup"
+    error "Backing up ${PRODUCT} failed"
+    exit 1
+}
 
 # If necessary, report 100% progress back to the application, and unlock Bitbucket
 update_backup_progress 100
@@ -71,13 +139,12 @@ unlock_bitbucket
 success "Successfully completed the backup of your ${PRODUCT} instance"
 
 # Cleanup backups retaining the latest $KEEP_BACKUPS
-cleanup_db_backups
-cleanup_disk_backups
-cleanup_elasticsearch_backups
+cleanup_old_db_backups
+cleanup_old_disk_backups
+cleanup_old_elasticsearch_backups
 
 if [ -n "${BACKUP_ARCHIVE_TYPE}" ]; then
     info "Archiving backups and cleaning up old archives"
     archive_backup
     cleanup_old_archives
 fi
-
