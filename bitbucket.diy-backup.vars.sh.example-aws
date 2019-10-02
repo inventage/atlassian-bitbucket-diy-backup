@@ -1,0 +1,46 @@
+#------------------------------------------------------------------------------------------
+# Sample bitbucket.diy-backup.vars.sh pre-configured for Bitbucket Server running on a standalone AWS EC2 instance
+# with both its home directory and database (PostgreSQL 9.3) on a single EBS volume.  This allows both the home directory
+# and database to be backed up, with zero downtime, using a single EBS snapshot.
+# Backups are not archived in the example.
+#
+# For a detailed description of each variable consult the master bitbucket.diy-backup.vars.sh.example file.
+#------------------------------------------------------------------------------------------
+
+INSTANCE_NAME=bitbucket
+BITBUCKET_URL=http://localhost:7990
+
+BITBUCKET_UID=atlbitbucket
+BITBUCKET_GID=atlbitbucket
+
+BACKUP_DISK_TYPE=amazon-ebs
+BACKUP_DATABASE_TYPE=postgresql93-fslevel
+BACKUP_ARCHIVE_TYPE=
+
+BACKUP_ZERO_DOWNTIME=true
+
+EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES=(/media/atl:/dev/sdf)
+HOME_DIRECTORY_MOUNT_POINT=/media/atl
+
+RESTORE_DISK_VOLUME_TYPE=gp2
+
+CURL_OPTIONS="-L -s -f"
+
+AWS_INFO=$(curl ${CURL_OPTIONS} http://169.254.169.254/latest/dynamic/instance-identity/document)
+AWS_ACCOUNT_ID=$(echo "${AWS_INFO}" | jq -r .accountId)
+AWS_AVAILABILITY_ZONE=$(echo "${AWS_INFO}" | jq -r .availabilityZone)
+AWS_REGION=$(echo "${AWS_INFO}" | jq -r .region)
+AWS_EC2_INSTANCE_ID=$(echo "${AWS_INFO}" | jq -r .instanceId)
+AWS_ADDITIONAL_TAGS=
+
+BITBUCKET_VERBOSE_BACKUP=true
+
+HIPCHAT_URL=https://api.hipchat.com
+HIPCHAT_ROOM=
+HIPCHAT_TOKEN=
+
+KEEP_BACKUPS=5
+FILESYSTEM_TYPE=zfs
+FSFREEZE=false
+
+ZFS_FILESYSTEM_NAMES=(tank/atlassian-home)
