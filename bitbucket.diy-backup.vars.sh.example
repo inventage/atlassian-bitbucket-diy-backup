@@ -163,6 +163,8 @@ case ${BACKUP_DATABASE_TYPE} in
         RESTORE_RDS_SUBNET_GROUP_NAME=
         # The security group to assign to the restored instance, if not set AWS will attempt to use the account default.
         RESTORE_RDS_SECURITY_GROUP=
+        # Is this RDS an Aurora cluster? If not set, we assume that this RDS instance isn't an Aurora cluster.
+        IS_AURORA=
 
         # ==== DISASTER RECOVERY VARS ====
 

@@ -12,6 +12,15 @@
 check_command "aws"
 check_command "jq"
 
+source "${SCRIPT_DIR}/aws-common.sh"
+
+if [ "$(is_aurora)" ]; then
+    source "${SCRIPT_DIR}/aws-rds-aurora-helper.sh"
+else
+    source "${SCRIPT_DIR}/aws-rds-non-aurora-helper.sh"
+fi
+
+
 function archive_backup {
     # AWS snapshots reside in AWS and do not need to be archived.
 
@@ -21,10 +30,10 @@ function archive_backup {
         for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
             local device_name="$(echo "${volume}" | cut -d ":" -f2)"
             local backup_ebs_snapshot_id=$(run aws ec2 describe-snapshots --filters Name=tag-key,Values="${SNAPSHOT_TAG_KEY}" \
-                Name=tag-value,Values="${SNAPSHOT_TAG_VALUE}" Name=tag:${SNAPSHOT_DEVICE_TAG_KEY},Values="${device_name}" \
+                Name=tag-value,Values="${SNAPSHOT_TAG_VALUE}" Name=tag:"${SNAPSHOT_DEVICE_TAG_KEY}",Values="${device_name}" \
                 --query 'Snapshots[0].SnapshotId' --output text)
 
-            if [ -n "${BACKUP_DEST_AWS_ACCOUNT_ID}" -a -n "${BACKUP_DEST_AWS_ROLE}" ]; then
+            if [ -n "${BACKUP_DEST_AWS_ACCOUNT_ID}" ] && [ -n "${BACKUP_DEST_AWS_ROLE}" ]; then
                 # Copy to BACKUP_DEST_REGION & share with BACKUP_DEST_AWS_ACCOUNT_ID
                 copy_and_share_ebs_snapshot "${backup_ebs_snapshot_id}" "${AWS_REGION}" "${device_name}"
             else
@@ -36,10 +45,9 @@ function archive_backup {
 
     # Optionally copy/share the RDS snapshot to another region and/or account.
     if [ "${BACKUP_DATABASE_TYPE}" = "amazon-rds" ] && [ -n "${BACKUP_DEST_REGION}" ]; then
-        local backup_rds_snapshot_id=$(run aws rds describe-db-snapshots --db-snapshot-identifier "${SNAPSHOT_TAG_VALUE}" \
-            --query 'DBSnapshots[*].DBSnapshotIdentifier' | jq -r '.[]')
+        local backup_rds_snapshot_id=get_rds_snapshot_id_from_tag "${SNAPSHOT_TAG_VALUE}"
 
-        if [ -n "${BACKUP_DEST_AWS_ACCOUNT_ID}" -a -n "${BACKUP_DEST_AWS_ROLE}" ]; then
+        if [ -n "${BACKUP_DEST_AWS_ACCOUNT_ID}" ] && [ -n "${BACKUP_DEST_AWS_ROLE}" ]; then
             # Copy to BACKUP_DEST_REGION & share with BACKUP_DEST_AWS_ACCOUNT_ID
             share_and_copy_rds_snapshot "${backup_rds_snapshot_id}"
         else
@@ -127,15 +135,7 @@ function copy_ebs_snapshot {
 function copy_rds_snapshot {
     local source_rds_snapshot_id="$1"
 
-    info "Waiting for RDS snapshot '${source_rds_snapshot_id}' to become available before copying to another region." \
-        "This could take some time."
-    run aws rds wait db-snapshot-completed --db-snapshot-identifier "${source_rds_snapshot_id}"
-
-    # Copy RDS snapshot to BACKUP_DEST_REGION
-    local source_rds_snapshot_arn="arn:aws:rds:${AWS_REGION}:${AWS_ACCOUNT_ID}:snapshot:${source_rds_snapshot_id}"
-    run aws rds copy-db-snapshot --region "${BACKUP_DEST_REGION}" --source-db-snapshot-identifier "${source_rds_snapshot_arn}" \
-      --target-db-snapshot-identifier "${source_rds_snapshot_id}" > /dev/null
-    info "Copied RDS Snapshot '${source_rds_snapshot_arn}' as '${source_rds_snapshot_id}' to '${BACKUP_DEST_REGION}'"
+    copy_rds_snapshot_to_region "${source_rds_snapshot_id}" "${BACKUP_DEST_REGION}"
 
     if [ -n "${AWS_ADDITIONAL_TAGS}" ]; then
         comma=', '
@@ -160,9 +160,9 @@ function cleanup_old_offsite_ebs_snapshots {
 
 function cleanup_old_offsite_rds_snapshots {
     # Delete old RDS snapshots in BACKUP_DEST_REGION
-    for rds_snapshot_id in $(list_old_rds_snapshot_ids ${BACKUP_DEST_REGION}); do
+    for rds_snapshot_id in $(list_old_rds_snapshot_ids "${BACKUP_DEST_REGION}"); do
         info "Deleting old cross-region RDS snapshot '${rds_snapshot_id}' in ${BACKUP_DEST_REGION}"
-        run aws rds --region ${BACKUP_DEST_REGION} delete-db-snapshot --db-snapshot-identifier "${rds_snapshot_id}" > /dev/null
+        delete_rds_snapshot "${rds_snapshot_id}" "${BACKUP_DEST_REGION}"
     done
 }
 
@@ -225,27 +225,21 @@ function share_and_copy_rds_snapshot {
 
     info "Waiting for RDS snapshot copy '${rds_snapshot_id}' to become available before giving AWS account: \
         '${BACKUP_DEST_AWS_ACCOUNT_ID}' permissions."
-    run aws rds wait db-snapshot-completed --db-snapshot-identifier "${rds_snapshot_id}"
+    wait_for_rds_snapshot "${rds_snapshot_id}"
 
-    # Give permission to BACKUP_DEST_AWS_ACCOUNT_ID
-    run aws rds modify-db-snapshot-attribute --db-snapshot-identifier "${rds_snapshot_id}" --attribute-name restore \
-        --values-to-add "${BACKUP_DEST_AWS_ACCOUNT_ID}" > /dev/null
-    info "Granted permissions on RDS snapshot '${rds_snapshot_id}' for AWS account: '${BACKUP_DEST_AWS_ACCOUNT_ID}'"
+    # Give permission to BACKUP_DEST_AWS_ACCOUNT_ID to restore this snapshot
+    permit_account_to_restore_rds_snapshot "${BACKUP_DEST_AWS_ACCOUNT_ID}" "${rds_snapshot_id}"
 
     # Assume BACKUP_DEST_AWS_ROLE
     local credentials=$(run aws sts assume-role --role-arn "${BACKUP_DEST_AWS_ROLE}" \
         --role-session-name "BitbucketServerDIYBackup")
-    local aws_access_key_id=$(echo ${credentials} | jq -r .Credentials.AccessKeyId)
-    local aws_secret_access_key=$(echo ${credentials} | jq -r .Credentials.SecretAccessKey)
-    local aws_session_token=$(echo ${credentials} | jq -r .Credentials.SessionToken)
+    local aws_access_key_id=$(echo "${credentials}" | jq -r .Credentials.AccessKeyId)
+    local aws_secret_access_key=$(echo "${credentials}" | jq -r .Credentials.SecretAccessKey)
+    local aws_session_token=$(echo "${credentials}" | jq -r .Credentials.SessionToken)
 
-    # Copy RDS snapshot to BACKUP_DEST_REGION in BACKUP_DEST_AWS_ACCOUNT_ID
-    local source_rds_snapshot_arn="arn:aws:rds:${AWS_REGION}:${AWS_ACCOUNT_ID}:snapshot:${rds_snapshot_id}"
-    AWS_ACCESS_KEY_ID="${aws_access_key_id}" AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}" \
-        AWS_SESSION_TOKEN="${aws_session_token}" run aws rds copy-db-snapshot --region "${BACKUP_DEST_REGION}" \
-        --source-db-snapshot-identifier "${source_rds_snapshot_arn}" --target-db-snapshot-identifier "${rds_snapshot_id}" > /dev/null
-    info "Copied RDS Snapshot '${source_rds_snapshot_arn}' as '${rds_snapshot_id}' to '${BACKUP_DEST_REGION}'"
+    copy_rds_snapshot_to_region "${rds_snapshot_id}" "${BACKUP_DEST_REGION}" "${aws_access_key_id}" "${aws_secret_access_key}" "${aws_session_token}"
 
+    # Tag snapshot in the target account
     if [ -n "${AWS_ADDITIONAL_TAGS}" ]; then
         comma=', '
     fi
@@ -254,7 +248,7 @@ function share_and_copy_rds_snapshot {
 
     AWS_ACCESS_KEY_ID="${aws_access_key_id}" AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}" \
         AWS_SESSION_TOKEN="${aws_session_token}" run aws --region "${BACKUP_DEST_REGION}" rds add-tags-to-resource \
-        --resource-name "${rds_snapshot_arn}" --tags "${aws_tags}"
+          --resource-name "${rds_snapshot_arn}" --tags "${aws_tags}"
     debug "Tagged RDS snapshot '${rds_snapshot_arn}' with '${aws_tags}'"
 }
 
@@ -262,9 +256,9 @@ function cleanup_old_offsite_ebs_snapshots_in_backup_account {
     # Assume BACKUP_DEST_AWS_ROLE
     local credentials=$(run aws sts assume-role --role-arn "${BACKUP_DEST_AWS_ROLE}" \
         --role-session-name "BitbucketServerDIYBackup")
-    local aws_access_key_id=$(echo ${credentials} | jq -r .Credentials.AccessKeyId)
-    local aws_secret_access_key=$(echo ${credentials} | jq -r .Credentials.SecretAccessKey)
-    local aws_session_token=$(echo ${credentials} | jq -r .Credentials.SessionToken)
+    local aws_access_key_id=$(echo "${credentials}" | jq -r .Credentials.AccessKeyId)
+    local aws_secret_access_key=$(echo "${credentials}" | jq -r .Credentials.SecretAccessKey)
+    local aws_session_token=$(echo "${credentials}" | jq -r .Credentials.SessionToken)
 
     for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
         local device_name="$(echo "${volume}" | cut -d ":" -f2)"
@@ -290,21 +284,15 @@ function cleanup_old_offsite_rds_snapshots_in_backup_account {
     # Assume BACKUP_DEST_AWS_ROLE
     local credentials=$(run aws sts assume-role --role-arn "${BACKUP_DEST_AWS_ROLE}" \
         --role-session-name "BitbucketServerDIYBackup")
-    local aws_access_key_id=$(echo ${credentials} | jq -r .Credentials.AccessKeyId)
-    local aws_secret_access_key=$(echo ${credentials} | jq -r .Credentials.SecretAccessKey)
-    local aws_session_token=$(echo ${credentials} | jq -r .Credentials.SessionToken)
+    local aws_access_key_id=$(echo "${credentials}" | jq -r .Credentials.AccessKeyId)
+    local aws_secret_access_key=$(echo "${credentials}" | jq -r .Credentials.SecretAccessKey)
+    local aws_session_token=$(echo "${credentials}" | jq -r .Credentials.SessionToken)
 
     # Query for RDS snapshots using the assumed credentials
-    local old_backup_account_rds_snapshots=$(AWS_ACCESS_KEY_ID="${aws_access_key_id}" \
-        AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}" AWS_SESSION_TOKEN="${aws_session_token}" \
-         run aws rds describe-db-snapshots --region "${BACKUP_DEST_REGION}" --snapshot-type manual \
-        --query "reverse(sort_by(DBSnapshots[?starts_with(DBSnapshotIdentifier,\`${SNAPSHOT_TAG_PREFIX}\`)]\
-        |[?Status==\`available\`], &SnapshotCreateTime))[${KEEP_BACKUPS}:].DBSnapshotIdentifier" | jq -r '.[]')
+    local old_backup_account_rds_snapshots=$(list_old_rds_snapshots "${BACKUP_DEST_REGION}" "${aws_access_key_id}" "${aws_secret_access_key}" "${aws_session_token}")
 
     # Delete old RDS snapshots from BACKUP_DEST_AWS_ACCOUNT_ID in region BACKUP_DEST_REGION
     for rds_snapshot_id in ${old_backup_account_rds_snapshots}; do
-        AWS_ACCESS_KEY_ID="${aws_access_key_id}" AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}" \
-            AWS_SESSION_TOKEN="${aws_session_token}" run aws rds delete-db-snapshot --region "${BACKUP_DEST_REGION}" \
-            --db-snapshot-identifier "${rds_snapshot_id}" > /dev/null
+        delete_rds_snapshot "${rds_snapshot_id}" "${BACKUP_DEST_REGION}" "${aws_access_key_id}" "${aws_secret_access_key}" "${aws_session_token}"
     done
 }

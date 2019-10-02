@@ -5,13 +5,13 @@
 check_command "aws"
 
 # Ensure the AWS region has been provided
-if [ -z "${AWS_REGION}" -o "${AWS_REGION}" = "null" ]; then
+if [ -z "${AWS_REGION}" ] || [ "${AWS_REGION}" = "null" ]; then
     error "The AWS region must be set as AWS_REGION in '${BACKUP_VARS_FILE}'"
     bail "See bitbucket.diy-aws-backup.vars.sh.example for the defaults."
 fi
 
-if [ -z "${AWS_ACCESS_KEY_ID}" -o -z "${AWS_SECRET_ACCESS_KEY}" ]; then
-    ! AWS_INSTANCE_ROLE=$(curl ${CURL_OPTIONS} http://169.254.169.254/latest/meta-data/iam/security-credentials/)
+if [ -z "${AWS_ACCESS_KEY_ID}" ] || [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then
+    ! AWS_INSTANCE_ROLE=$(curl "${CURL_OPTIONS}" http://169.254.169.254/latest/meta-data/iam/security-credentials/)
     if [ -z "${AWS_INSTANCE_ROLE}" ]; then
         error "Could not find the necessary credentials to run backup"
         error "We recommend launching the instance with an appropriate IAM role"
@@ -29,7 +29,7 @@ if [ -z "${INSTANCE_NAME}" ]; then
     error "The ${PRODUCT} instance name must be set as INSTANCE_NAME in '${BACKUP_VARS_FILE}'"
 
     bail "See 'bitbucket.diy-aws-backup.vars.sh.example' for the defaults."
-elif [ ! "${INSTANCE_NAME}" = ${INSTANCE_NAME%[[:space:]]*} ]; then
+elif [ ! "${INSTANCE_NAME}" = "${INSTANCE_NAME%[[:space:]]*}" ]; then
     error "Instance name cannot contain spaces"
 
     bail "See 'bitbucket.diy-aws-backup.vars.sh.example' for the defaults."
@@ -62,7 +62,7 @@ function snapshot_ebs_volume {
 
     # Bail after 10 Minutes
     local max_wait_time=600
-    local end_time=$(($SECONDS + max_wait_time))
+    local end_time=$((SECONDS + max_wait_time))
 
     while [ $SECONDS -lt ${end_time} ]; do
         local create_snapshot_response=$(run aws ec2 create-snapshot --volume-id "${volume_id}" --description "${description}")
@@ -72,7 +72,7 @@ function snapshot_ebs_volume {
         else
             local ebs_snapshot_id=$(echo "${create_snapshot_response}" | jq -r '.SnapshotId')
 
-            if [ -z "${ebs_snapshot_id}" -o  "${ebs_snapshot_id}" = "null" ]; then
+            if [ -z "${ebs_snapshot_id}" ] || [ "${ebs_snapshot_id}" = "null" ]; then
                 error "Could not find 'SnapshotId' in response '${create_snapshot_response}'"
                 bail "Unable to create EBS snapshot of volume '${volume_id}'"
             else
@@ -106,15 +106,15 @@ function create_volume {
     local provisioned_iops="$3"
 
     local optional_args=
-    if [ "io1" = "${volume_type}" -a -n "${provisioned_iops}" ]; then
+    if [ "io1" = "${volume_type}" ] && [ -n "${provisioned_iops}" ]; then
         optional_args="--iops ${provisioned_iops}"
     fi
 
     local create_volume_response=$(run aws ec2 create-volume --snapshot "${snapshot_id}"\
-        --availability-zone "${AWS_AVAILABILITY_ZONE}" --volume-type "${volume_type}" ${optional_args})
+        --availability-zone "${AWS_AVAILABILITY_ZONE}" --volume-type "${volume_type}" "${optional_args}")
 
     local volume_id=$(echo "${create_volume_response}" | jq -r '.VolumeId')
-    if [ -z "${volume_id}" -o "${volume_id}" = "null" ]; then
+    if [ -z "${volume_id}" ] || [ "${volume_id}" = "null" ]; then
         error "Could not find 'VolumeId' in response '${create_volume_response}'"
         bail "Error getting volume id from volume creation response"
     fi
@@ -157,7 +157,7 @@ function wait_attached_volume {
 
     # 60 Minutes
     local max_wait_time=3600
-    local end_time=$(($SECONDS + max_wait_time))
+    local end_time=$((SECONDS + max_wait_time))
 
     local attachment_state='attaching'
     while [ $SECONDS -lt ${end_time} ]; do
@@ -167,7 +167,7 @@ function wait_attached_volume {
         local volume_description=$(run aws ec2 describe-volumes --volume-ids "${volume_id}")
 
         attachment_state=$(echo "${volume_description}" | jq -r '.Volumes[0].Attachments[0].State')
-        if [ -z "${attachment_state}" -o "${attachment_state}" = "null" ]; then
+        if [ -z "${attachment_state}" ] || [ "${attachment_state}" = "null" ]; then
             error "Could not find 'Volume' with 'Attachment' with 'State' in response '${volume_description}'"
             bail "Unable to get volume state for volume '${volume_id}'"
         fi
@@ -276,7 +276,7 @@ function retrieve_ebs_snapshot_id {
         Name=tag:${SNAPSHOT_DEVICE_TAG_KEY},Values="${device_name}")
 
     local snapshot_id=$(echo "${snapshot_description}" | jq -r '.Snapshots[0]?.SnapshotId')
-    if [ -z "${snapshot_id}" -o "${snapshot_id}" = "null" ]; then
+    if [ -z "${snapshot_id}" ] || [ "${snapshot_id}" = "null" ]; then
         error "Could not find a 'Snapshot' with 'SnapshotId' in response '${snapshot_description}'"
         # Get the list of available snapshot tags to assist with selecting a valid one
         list_available_ebs_snapshots
@@ -285,65 +285,7 @@ function retrieve_ebs_snapshot_id {
     echo "${snapshot_id}"
 }
 
-# Create a snapshot of a RDS instance
-#
-# instance_id = The RDS instance to snapshot
-#
-function snapshot_rds_instance {
-    local instance_id="$1"
-    local comma=
-    if [ -n "${AWS_ADDITIONAL_TAGS}" ]; then
-        comma=', '
-    fi
 
-    local aws_tags="[{\"Key\":\"${SNAPSHOT_TAG_KEY}\",\"Value\":\"${SNAPSHOT_TAG_VALUE}\"}${comma}${AWS_ADDITIONAL_TAGS}]"
-
-    # Ensure RDS instance is available before attempting to snapshot
-    wait_for_available_rds_instance "${instance_id}"
-
-    # We use SNAPSHOT_TAG_VALUE as the snapshot identifier because it is unique and allows pairing of an EBS snapshot to an RDS snapshot by tag
-    run aws rds create-db-snapshot --db-instance-identifier "${instance_id}" \
-        --db-snapshot-identifier "${SNAPSHOT_TAG_VALUE}" --tags "${aws_tags}" > /dev/null
-
-    # Wait until the database has completed the backup
-    info "Waiting for instance '${instance_id}' to complete backup. This could take some time"
-    wait_for_available_rds_instance "${instance_id}"
-}
-
-# Waits for a RDS instance to become available
-#
-# instance_id = The RDS instance to query
-#
-function wait_for_available_rds_instance {
-    local instance_id=$1
-
-    # Bail after 10 Minutes
-    local max_wait_time=600
-    local end_time=$(($SECONDS + max_wait_time))
-
-    while [ $SECONDS -lt ${end_time} ]; do
-        local instance_description=$(run aws rds describe-db-instances --db-instance-identifier "${instance_id}")
-        local db_instance_status=$(echo "${instance_description}" | jq -r '.DBInstances[0].DBInstanceStatus')
-
-        case "${db_instance_status}" in
-            "" | "null")
-                error "Could not find a 'DBInstance' with 'DBInstanceStatus' in response '${instance_description}'"
-                bail "Please make sure you have selected an existing RDS instance"
-                ;;
-            "available")
-                break
-                ;;
-            *)
-                debug "The RDS instance '${instance_id}' status is '${db_instance_status}', expected 'available'"
-                ;;
-        esac
-        sleep 10
-    done
-
-    if [ "${db_instance_status}" != "available" ]; then
-        bail "RDS instance '${instance_id}' did not become available after '${max_wait_time}' seconds"
-    fi
-}
 
 # Output the id of the currently attached EBS Volume
 #
@@ -355,32 +297,12 @@ function find_attached_ebs_volume {
         --filter Name=attachment.instance-id,Values="${AWS_EC2_INSTANCE_ID}" Name=attachment.device,Values="${device_name}")
 
     local ebs_volume=$(echo "${volume_description}" | jq -r '.Volumes[0].VolumeId')
-    if [ -z "${ebs_volume}" -o "${ebs_volume}" = "null" ]; then
+    if [ -z "${ebs_volume}" ] || [ "${ebs_volume}" = "null" ]; then
         error "Could not find 'Volume' with 'VolumeId' in response '${volume_description}'"
         bail "Unable to retrieve volume information for device '${device_name}'"
     fi
 
     echo "${ebs_volume}"
-}
-
-# Verify the existence of a RDS snapshot
-#
-# snapshot_tag = The tag used to retrieve the RDS snapshot ID
-#
-function retrieve_rds_snapshot_id {
-    local snapshot_tag="$1"
-    local db_snapshot_description=$(run aws rds describe-db-snapshots \
-     --db-snapshot-identifier "${snapshot_tag}")
-
-    local rds_snapshot_id=$(echo "${db_snapshot_description}" | jq -r '.DBSnapshots[0]?.DBSnapshotIdentifier')
-    if [ -z "${rds_snapshot_id}" -o "${rds_snapshot_id}" = "null" ]; then
-        error "Could not find a 'DBSnapshot' with 'DBSnapshotIdentifier' in response '${db_snapshot_description}'"
-        # To assist the with locating snapshot tags list the available EBS snapshot tags, and then bail
-        list_available_rds_snapshots
-        bail "Please select a restore point"
-    fi
-
-    echo "${rds_snapshot_id}"
 }
 
 # List available EBS restore points
@@ -397,30 +319,6 @@ function list_available_ebs_snapshots {
     print "${available_ebs_snapshots}"
 }
 
-# List available RDS restore points
-function list_available_rds_snapshots {
-    local available_rds_snapshots=$(run aws rds describe-db-snapshots | jq -r '.DBSnapshots[] | \
-        select(.DBSnapshotIdentifier | startswith(("'${SNAPSHOT_TAG_PREFIX}'") ) | .DBSnapshotIdentifier' | sort -r)
-    if [ -z "${available_rds_snapshots}" -o "${available_rds_snapshots}" = "null" ]; then
-        error "Failed to retrieve RDS snapshots in response '${available_rds_snapshots}'"
-        bail "Unable to retrieve list of available RDS restore points"
-    fi
-
-    print "Available RDS snapshots:"
-    print "${available_rds_snapshots}"
-}
-
-# List all RDS DB snapshots older than the most recent ${KEEP_BACKUPS}
-#
-# region = The AWS region to search
-#
-function list_old_rds_snapshot_ids {
-    local region=$1
-    local old_rds_snapshot_ids=$(run aws rds describe-db-snapshots --region "${region}" --snapshot-type manual \
-      --query "reverse(sort_by(DBSnapshots[?starts_with(DBSnapshotIdentifier, \`${SNAPSHOT_TAG_PREFIX}\`)]|\
-      [?Status==\`available\`], &SnapshotCreateTime))[${KEEP_BACKUPS}:].DBSnapshotIdentifier" | jq -r '.[]')
-      print "${old_rds_snapshot_ids}"
-}
 
 # List all EBS snapshots older than the most recent ${KEEP_BACKUPS}
 #
@@ -433,4 +331,14 @@ function list_old_ebs_snapshot_ids {
     run aws ec2 describe-snapshots --region="${region}" --filters "Name=tag:Name,Values=${SNAPSHOT_TAG_PREFIX}*" \
         "Name=tag:${SNAPSHOT_DEVICE_TAG_KEY},Values=${device_name}" | \
         jq -r ".Snapshots | sort_by(.StartTime) | reverse | .[${KEEP_BACKUPS}:] | map(.SnapshotId)[]"
+}
+
+# Returns "true" if Aurora cluster, "false" otherwise
+#
+function is_aurora {
+    if [ -n "${IS_AURORA}" ]; then
+        print "true"
+    else
+        print "false"
+    fi
 }
