@@ -45,7 +45,7 @@ function archive_backup {
 
     # Optionally copy/share the RDS snapshot to another region and/or account.
     if [ "${BACKUP_DATABASE_TYPE}" = "amazon-rds" ] && [ -n "${BACKUP_DEST_REGION}" ]; then
-        local backup_rds_snapshot_id=get_rds_snapshot_id_from_tag "${SNAPSHOT_TAG_VALUE}"
+        local backup_rds_snapshot_id=$(get_rds_snapshot_id_from_tag "${SNAPSHOT_TAG_VALUE}")
 
         if [ -n "${BACKUP_DEST_AWS_ACCOUNT_ID}" ] && [ -n "${BACKUP_DEST_AWS_ROLE}" ]; then
             # Copy to BACKUP_DEST_REGION & share with BACKUP_DEST_AWS_ACCOUNT_ID
