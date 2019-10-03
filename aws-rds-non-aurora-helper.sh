@@ -266,9 +266,9 @@ function wait_for_rds_snapshot {
     local ignored=$2
 
     if run aws rds wait db-snapshot-available --db-snapshot-identifier "${snapshot_id}" ; then
-      info "RDS snapshot '${snapshot_id}" is now available
+      info "RDS snapshot '${snapshot_id}' is now available"
     else
-      bail "RDS snapshot '${snapshot_id}' did not become available after '${duration}' minute(s)"
+      bail "RDS snapshot '${snapshot_id}' did not become available"
     fi
 }
 
