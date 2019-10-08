@@ -177,16 +177,21 @@ function delete_rds_snapshot {
     local aws_secret_access_key=$4
     local aws_session_token=$5
 
-    local custom_aws_creds=
-    if [ -n "${aws_access_key_id}" ] && [ -n "${aws_secret_access_key}" ] && [ -n "${aws_session_token}" ]; then
-        custom_aws_creds="AWS_ACCESS_KEY_ID=${aws_access_key_id} AWS_SECRET_ACCESS_KEY=${aws_secret_access_key} AWS_SESSION_TOKEN=${aws_session_token} "
-    fi
-
     if [ -z "${region}" ]; then
       region="${AWS_REGION}"
     fi
+    if [ -z "${aws_access_key_id}" ]; then
+      aws_access_key_id="${AWS_ACCESS_KEY_ID}"
+    fi
+    if [ -z "${aws_secret_access_key}" ]; then
+      aws_secret_access_key="${AWS_SECRET_ACCESS_KEY}"
+    fi
+    if [ -z "${aws_session_token}" ]; then
+      aws_session_token="${AWS_SESSION_TOKEN}"
+    fi
 
-    run "${custom_aws_creds}"aws rds --region "${region}" delete-db-snapshot --db-snapshot-identifier "${snapshot_id}" > /dev/null
+    AWS_ACCESS_KEY_ID="${aws_access_key_id}" AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}"\
+    AWS_SESSION_TOKEN="${aws_session_token}" run aws rds --region "${region}" delete-db-snapshot --db-snapshot-identifier "${snapshot_id}" > /dev/null
 }
 
 # Get id of RDS snapshot having a given tag
@@ -230,7 +235,7 @@ function permit_account_to_restore_rds_snapshot {
 
 # Copy an RDS snapshot in ${AWS_REGION} under ${AWS_ACCOUNT_ID} to another region
 # Gets AWS credentials from the environment if not passed in
-# 
+#
 # snapshot_id = Snapshot id to copy over
 # target_region = Region to copy the snapshot over to
 # aws_access_key_id = Key ID to use for this operation
@@ -245,15 +250,25 @@ function copy_rds_snapshot_to_region {
     local aws_session_token=$5
 
     local source_rds_snapshot_arn="arn:aws:rds:${AWS_REGION}:${AWS_ACCOUNT_ID}:snapshot:${snapshot_id}"
-    local custom_aws_creds=
-    if [ -n "${aws_access_key_id}" ] && [ -n "${aws_secret_access_key}" ] && [ -n "${aws_session_token}" ]; then
-        custom_aws_creds="AWS_ACCESS_KEY_ID=${aws_access_key_id} AWS_SECRET_ACCESS_KEY=${aws_secret_access_key} AWS_SESSION_TOKEN=${aws_session_token} "
+
+    if [ -z "${aws_access_key_id}" ]; then
+      aws_access_key_id="${AWS_ACCESS_KEY_ID}"
+    fi
+    if [ -z "${aws_secret_access_key}" ]; then
+      aws_secret_access_key="${AWS_SECRET_ACCESS_KEY}"
+    fi
+    if [ -z "${aws_session_token}" ]; then
+      aws_session_token="${AWS_SESSION_TOKEN}"
     fi
 
-    run "${custom_aws_creds}"aws rds copy-db-snapshot --region "${target_region}" \
-        --source-db-snapshot-identifier "${source_rds_snapshot_arn}" --target-db-snapshot-identifier "${snapshot_id}" > /dev/null
+    if AWS_ACCESS_KEY_ID="${aws_access_key_id}" AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}"\
+           AWS_SESSION_TOKEN="${aws_session_token}" run aws rds copy-db-snapshot --region "${target_region}" \
+        --source-db-snapshot-identifier "${source_rds_snapshot_arn}" --target-db-snapshot-identifier "${snapshot_id}" > /dev/null; then
+      info "Copied RDS Snapshot '${source_rds_snapshot_arn}' as '${snapshot_id}' to '${target_region}'"
+    else
+      error "Failed to copy RDS Snapshot ${source_rds_snapshot_arn} to ${target_region}"
+    fi
 
-    info "Copied RDS Snapshot '${source_rds_snapshot_arn}' as '${snapshot_id}' to '${target_region}'"
 }
 
 # Wait for an RDS snapshot to become available.
@@ -320,12 +335,18 @@ function list_old_rds_snapshots {
     local aws_secret_access_key=$3
     local aws_session_token=$4
 
-    local custom_aws_creds=
-    if [ -n "${aws_access_key_id}" ] && [ -n "${aws_secret_access_key}" ] && [ -n "${aws_session_token}" ]; then
-        custom_aws_creds="AWS_ACCESS_KEY_ID=${aws_access_key_id} AWS_SECRET_ACCESS_KEY=${aws_secret_access_key} AWS_SESSION_TOKEN=${aws_session_token} "
+    if [ -z "${aws_access_key_id}" ]; then
+      aws_access_key_id="${AWS_ACCESS_KEY_ID}"
+    fi
+    if [ -z "${aws_secret_access_key}" ]; then
+      aws_secret_access_key="${AWS_SECRET_ACCESS_KEY}"
+    fi
+    if [ -z "${aws_session_token}" ]; then
+      aws_session_token="${AWS_SESSION_TOKEN}"
     fi
 
-    local old_rds_snapshot_ids=$(run "${custom_aws_creds}"aws rds describe-db-snapshots --region "${region}" --snapshot-type manual \
+    local old_rds_snapshot_ids=$(AWS_ACCESS_KEY_ID="${aws_access_key_id}" AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}"\
+           AWS_SESSION_TOKEN="${aws_session_token}" run aws rds describe-db-snapshots --region "${region}" --snapshot-type manual \
         --query "reverse(sort_by(DBSnapshots[?starts_with(DBSnapshotIdentifier, \`${SNAPSHOT_TAG_PREFIX}\`)]|\
         [?Status==\`available\`], &SnapshotCreateTime))[${KEEP_BACKUPS}:].DBSnapshotIdentifier" | jq -r '.[]')
     print "${old_rds_snapshot_ids}"
