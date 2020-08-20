@@ -74,6 +74,7 @@ function wait_for_bg_jobs {
         } &&  {
             debug "${bg_job_name} finished successfully (PID=${PID})"
             COMPLETED_BG_JOBS+=("${bg_job_name}")
+            update_backup_progress 50
         } || {
             FAILED_BG_JOBS["${bg_job_name}"]=$?
         }
@@ -120,8 +121,8 @@ run_in_bg backup_elasticsearch "$ES_BACKUP_JOB_NAME"
 backup_wait
 
 info "Backing up the database and filesystem in parallel"
-run_in_bg "backup_db && update_backup_progress 50" "$DB_BACKUP_JOB_NAME"
-run_in_bg "backup_disk && update_backup_progress 50" "$DISK_BACKUP_JOB_NAME"
+run_in_bg backup_db "$DB_BACKUP_JOB_NAME"
+run_in_bg backup_disk "$DISK_BACKUP_JOB_NAME"
 
 {
     wait_for_bg_jobs
