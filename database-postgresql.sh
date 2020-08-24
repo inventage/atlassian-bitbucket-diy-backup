@@ -21,13 +21,8 @@ function prepare_backup_db {
 }
 
 function backup_db {
-  if [ -d "${BITBUCKET_BACKUP_DB}" ]; then
-    # Clean out the BITBUCKET_BACKUP_DB folder 
-    rm -r "${BITBUCKET_BACKUP_DB}"
-  else
-    # BITBUCKET_BACKUP_DB must pre-exist, as the pg_dump command will not create this folder
+    [ -d "${BITBUCKET_BACKUP_DB}" ] && rm -r "${BITBUCKET_BACKUP_DB}"
     mkdir -p "${BITBUCKET_BACKUP_DB}"
-  fi
     run pg_dump -U "${POSTGRES_USERNAME}" -h "${POSTGRES_HOST}" --port=${POSTGRES_PORT} ${PG_PARALLEL} -Fd \
         -d "${BITBUCKET_DB}" ${PG_SNAPSHOT_OPT} -f "${BITBUCKET_BACKUP_DB}"
 }
