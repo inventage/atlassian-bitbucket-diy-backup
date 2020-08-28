@@ -223,7 +223,9 @@ function remount_ebs_volumes {
         for volume in "${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}"; do
             local mount_point="$(echo "${volume}" | cut -d ":" -f1)"
             local device_name="$(echo "${volume}" | cut -d ":" -f2)"
-            run sudo mount "${device_name}" "${mount_point}"
+            if ! mountpoint -q "${mount_point}"; then
+                run sudo mount "${device_name}" "${mount_point}"
+            fi
         done
 
         # Start up NFS daemon and export via NFS
