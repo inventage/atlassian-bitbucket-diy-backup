@@ -102,6 +102,7 @@ function perform_rsync_home_directory {
         --exclude=/search/data/ \
         --exclude=/shared/search/data/ \
         --exclude=/export/ \
+        --exclude=/shared/export/ \
         --exclude=/log/ \
         --exclude=/plugins/.*/ \
         --exclude=/tmp \
