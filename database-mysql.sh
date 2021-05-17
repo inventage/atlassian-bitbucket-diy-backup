@@ -20,9 +20,16 @@ function prepare_backup_db {
 }
 
 function backup_db {
-    rm -r "${BITBUCKET_BACKUP_DB}"
-    run mysqldump ${MYSQL_HOST_CMD} ${MYSQL_BACKUP_OPTIONS} -u "${MYSQL_USERNAME}" -p"${MYSQL_PASSWORD}" \
-        --databases "${BITBUCKET_DB}" > "${BITBUCKET_BACKUP_DB}"
+    if [ ${BITBUCKET_BACKUP_DB: -1} == '/' ]; then
+	    BITBUCKET_BACKUP_DB_FILE=${BITBUCKET_BACKUP_DB}backup-db.sql
+    else
+	    BITBUCKET_BACKUP_DB_FILE=${BITBUCKET_BACKUP_DB}/backup-db.sql
+    fi
+    if [ -f "${BITBUCKET_BACKUP_DB_FILE}" ]; then
+        rm -r "${BITBUCKET_BACKUP_DB_FILE}"
+    fi
+    run mysqldump --no-tablespaces ${MYSQL_HOST_CMD} ${MYSQL_BACKUP_OPTIONS} -u "${MYSQL_USERNAME}" -p"${MYSQL_PASSWORD}" \
+        --databases "${BITBUCKET_DB}" > "${BITBUCKET_BACKUP_DB_FILE}"
 }
 
 function prepare_restore_db {
@@ -30,16 +37,25 @@ function prepare_restore_db {
     check_var "BITBUCKET_RESTORE_DB"
     check_config_var "MYSQL_USERNAME"
     check_config_var "MYSQL_PASSWORD"
-    run mysqlshow ${MYSQL_HOST_CMD} -u "${MYSQL_USERNAME}" -p"${MYSQL_PASSWORD}" "${BITBUCKET_DB}"
+    #run mysqlshow ${MYSQL_HOST_CMD} -u "${MYSQL_USERNAME}" -p"${MYSQL_PASSWORD}" "${BITBUCKET_DB}"
+    info "Prepared restore of ${BITBUCKET_DB}"
 }
 
 function restore_db {
-    run mysql ${MYSQL_HOST_CMD} -u "${MYSQL_USERNAME}" -p"${MYSQL_PASSWORD}" < "${BITBUCKET_RESTORE_DB}"
+    BITBUCKET_RESTORE_DB_FILE=${BITBUCKET_RESTORE_DB}/backup-db.sql
+    run mysql ${MYSQL_HOST_CMD} -u "${MYSQL_USERNAME}" -p"${MYSQL_PASSWORD}" < "${BITBUCKET_RESTORE_DB_FILE}"
 }
 
 function cleanup_incomplete_db_backup {
     info "Cleaning up DB backup created as part of failed/incomplete backup"
-    rm -r "${BITBUCKET_BACKUP_DB}"
+     if [ ${BITBUCKET_BACKUP_DB: -1} == '/' ]; then
+            BITBUCKET_BACKUP_DB_FILE=${BITBUCKET_BACKUP_DB}backup-db.sql
+    else
+            BITBUCKET_BACKUP_DB_FILE=${BITBUCKET_BACKUP_DB}/backup-db.sql
+    fi
+    if [ -f "${BITBUCKET_BACKUP_DB_FILE}" ]; then
+        rm -r "${BITBUCKET_BACKUP_DB_FILE}"
+    fi
 }
 
 function cleanup_old_db_backups {
