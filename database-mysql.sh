@@ -21,12 +21,12 @@ function prepare_backup_db {
 
 function backup_db {
     if [ ${BITBUCKET_BACKUP_DB: -1} == '/' ]; then
-	    BITBUCKET_BACKUP_DB_FILE=${BITBUCKET_BACKUP_DB}backup-db.sql
+      BITBUCKET_BACKUP_DB_FILE=${BITBUCKET_BACKUP_DB}backup-db.sql
     else
-	    BITBUCKET_BACKUP_DB_FILE=${BITBUCKET_BACKUP_DB}/backup-db.sql
+      BITBUCKET_BACKUP_DB_FILE=${BITBUCKET_BACKUP_DB}/backup-db.sql
     fi
     if [ -f "${BITBUCKET_BACKUP_DB_FILE}" ]; then
-        rm -r "${BITBUCKET_BACKUP_DB_FILE}"
+      rm "${BITBUCKET_BACKUP_DB_FILE}"
     fi
     run mysqldump --no-tablespaces ${MYSQL_HOST_CMD} ${MYSQL_BACKUP_OPTIONS} -u "${MYSQL_USERNAME}" -p"${MYSQL_PASSWORD}" \
         --databases "${BITBUCKET_DB}" > "${BITBUCKET_BACKUP_DB_FILE}"
@@ -48,13 +48,13 @@ function restore_db {
 
 function cleanup_incomplete_db_backup {
     info "Cleaning up DB backup created as part of failed/incomplete backup"
-     if [ ${BITBUCKET_BACKUP_DB: -1} == '/' ]; then
-            BITBUCKET_BACKUP_DB_FILE=${BITBUCKET_BACKUP_DB}backup-db.sql
+    if [ ${BITBUCKET_BACKUP_DB: -1} == '/' ]; then
+      BITBUCKET_BACKUP_DB_FILE=${BITBUCKET_BACKUP_DB}backup-db.sql
     else
-            BITBUCKET_BACKUP_DB_FILE=${BITBUCKET_BACKUP_DB}/backup-db.sql
+      BITBUCKET_BACKUP_DB_FILE=${BITBUCKET_BACKUP_DB}/backup-db.sql
     fi
     if [ -f "${BITBUCKET_BACKUP_DB_FILE}" ]; then
-        rm -r "${BITBUCKET_BACKUP_DB_FILE}"
+      rm "${BITBUCKET_BACKUP_DB_FILE}"
     fi
 }
 
