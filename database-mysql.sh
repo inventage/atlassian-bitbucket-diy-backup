@@ -4,7 +4,6 @@
 # -------------------------------------------------------------------------------------
 
 check_command "mysqldump"
-#check_command "mysqlshow"
 check_command "mysql"
 
 #Check if BITBUCKET_BACKUP_DB is a file or directory
@@ -28,9 +27,6 @@ function prepare_backup_db {
 }
 
 function backup_db {
-  if [ -f "${BITBUCKET_BACKUP_DB_FILE}" ]; then
-    rm "${BITBUCKET_BACKUP_DB_FILE}"
-  fi
   run mysqldump --no-tablespaces ${MYSQL_HOST_CMD} ${MYSQL_BACKUP_OPTIONS} -u "${MYSQL_USERNAME}" -p"${MYSQL_PASSWORD}" \
     --databases "${BITBUCKET_DB}" >"${BITBUCKET_BACKUP_DB_FILE}"
 }
@@ -40,7 +36,6 @@ function prepare_restore_db {
   check_var "BITBUCKET_RESTORE_DB"
   check_config_var "MYSQL_USERNAME"
   check_config_var "MYSQL_PASSWORD"
-  #run mysqlshow "${MYSQL_HOST_CMD}" -u "${MYSQL_USERNAME}" -p"${MYSQL_PASSWORD}" "${BITBUCKET_DB}"
   info "Prepared restore of ${BITBUCKET_DB}"
 }
 
