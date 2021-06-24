@@ -110,20 +110,20 @@ function restore_rds_snapshot {
     wait_for_available_rds_instance "${RDS_INSTANCE_ID}" 30
 
     # While restoring an Aurora cluster from a snapshot, DBInstances are not restored automatically. Unfortunately, we lose all information
-    # about how many members there were in the cluster to start with. So we just create one and call it master.
-    info "Restoring master node in the Aurora cluster ${RDS_INSTANCE_ID}. Make sure to set up replicas after the process finishes"
+    # about how many members there were in the cluster to start with. So we just create one and call it main.
+    info "Restoring main node in the Aurora cluster ${RDS_INSTANCE_ID}. Make sure to set up replicas after the process finishes"
 
     # Bail after 10 Minutes
     local max_wait_time=600
     local end_time=$((SECONDS + max_wait_time))
-    local db_instance_name=${RDS_INSTANCE_ID}-master
+    local db_instance_name=${RDS_INSTANCE_ID}-main
     while [ $SECONDS -lt ${end_time} ]; do
         local create_result=$(run aws rds create-db-instance --db-instance-identifier "${db_instance_name}" --db-instance-class "${RESTORE_RDS_INSTANCE_CLASS}"\
         --engine "${engine}" --db-cluster-identifier "${RDS_INSTANCE_ID}")
 
         case ${create_result} in
         *"\"DBInstanceStatus\": \"creating\""*)
-            info "Created master node in '${RDS_INSTANCE_ID}' successfully"
+            info "Created main node in '${RDS_INSTANCE_ID}' successfully"
             break;
             ;;
         *DBInstanceAlreadyExists*)
@@ -136,7 +136,7 @@ function restore_rds_snapshot {
         esac
     done
 
-    info "Waiting until the master node is available. This could take some time"
+    info "Waiting until the main node is available. This could take some time"
     run aws rds wait db-instance-available --db-instance-identifier "${db_instance_name}"
 
     if [ -n "${RESTORE_RDS_SECURITY_GROUP}" ]; then
