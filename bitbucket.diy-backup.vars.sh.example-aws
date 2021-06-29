@@ -4,7 +4,7 @@
 # and database to be backed up, with zero downtime, using a single EBS snapshot.
 # Backups are not archived in the example.
 #
-# For a detailed description of each variable consult the master bitbucket.diy-backup.vars.sh.example file.
+# For a detailed description of each variable consult the main bitbucket.diy-backup.vars.sh.example file.
 #------------------------------------------------------------------------------------------
 
 INSTANCE_NAME=bitbucket

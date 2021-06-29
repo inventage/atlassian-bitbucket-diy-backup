@@ -9,7 +9,7 @@
 # downtime during backup to ensure consistency of Git repositories.
 # See https://confluence.atlassian.com/display/BitbucketServer/Data+recovery+and+backups for more information.
 #
-# For a detailed description of each variable consult the master bitbucket.diy-backup.vars.sh.example file.
+# For a detailed description of each variable consult the main bitbucket.diy-backup.vars.sh.example file.
 #------------------------------------------------------------------------------------------
 
 INSTANCE_NAME=bitbucket
