@@ -85,9 +85,11 @@ function perform_rsync_data_stores {
 
 function perform_rsync_home_directory {
     local rsync_exclude_repos=
-    for repo_id in ${BITBUCKET_BACKUP_EXCLUDE_REPOS[@]}; do
-        rsync_exclude_repos="${rsync_exclude_repos} --exclude=/shared/data/repositories/${repo_id}"
-    done
+    if [ ! "${INSTANCE_TYPE}" = "bitbucket-mesh" ]; then
+        for repo_id in "${BITBUCKET_BACKUP_EXCLUDE_REPOS[@]}"; do
+            rsync_exclude_repos="${rsync_exclude_repos} --exclude=/shared/data/repositories/${repo_id}"
+        done
+    fi
 
     local rsync_quiet=-q
     if [ "${BITBUCKET_VERBOSE_BACKUP}" = "true" ]; then
@@ -95,21 +97,31 @@ function perform_rsync_home_directory {
     fi
 
     mkdir -p "${BITBUCKET_BACKUP_HOME}"
-    run rsync -avh ${rsync_quiet} --delete --delete-excluded \
-        --exclude=/caches/ \
-        --exclude=/data/db.* \
-        --exclude=/shared/data/db.* \
-        --exclude=/search/data/ \
-        --exclude=/shared/search/data/ \
-        --exclude=/export/ \
-        --exclude=/shared/export/ \
-        --exclude=/log/ \
-        --exclude=/plugins/.*/ \
-        --exclude=/tmp \
-        --exclude=/.lock \
-        --exclude=/shared/.lock \
-        ${rsync_exclude_repos} \
-        "${BITBUCKET_HOME}" "${BITBUCKET_BACKUP_HOME}"
+
+    if [ ! "${INSTANCE_TYPE}" = "bitbucket-mesh" ]; then
+        run rsync -avh ${rsync_quiet} --delete --delete-excluded \
+                --exclude=/caches/ \
+                --exclude=/log/ \
+                --exclude=/tmp \
+                --exclude=/.lock \
+                "${BITBUCKET_HOME}" "${BITBUCKET_BACKUP_HOME}"
+    else
+        run rsync -avh ${rsync_quiet} --delete --delete-excluded \
+            --exclude=/caches/ \
+            --exclude=/data/db.* \
+            --exclude=/shared/data/db.* \
+            --exclude=/search/data/ \
+            --exclude=/shared/search/data/ \
+            --exclude=/export/ \
+            --exclude=/shared/export/ \
+            --exclude=/log/ \
+            --exclude=/plugins/.*/ \
+            --exclude=/tmp \
+            --exclude=/.lock \
+            --exclude=/shared/.lock \
+            ${rsync_exclude_repos} \
+            "${BITBUCKET_HOME}" "${BITBUCKET_BACKUP_HOME}"
+    fi
 }
 
 function cleanup_incomplete_disk_backup {
