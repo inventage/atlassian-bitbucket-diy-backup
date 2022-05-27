@@ -1,16 +1,22 @@
-# Name used to identify the Bitbucket instance being backed up. This appears in archive names and AWS snapshot tags.
+# Name used to identify the Bitbucket/Mesh instance being backed up. This appears in archive names and AWS snapshot tags.
 # It should not contain spaces and must be under 100 characters long.
 INSTANCE_NAME=bitbucket
 
-# The base URL of the Bitbucket instance to be backed up. It cannot end on a '/'.
+# Type of instance being backed up:
+# - <leave blank> or bitbucket-dc  - The instance being backed up is a Bitbucket DC instance.
+# - bitbucket-mesh                 - The instance being backed up is a Bitbucket Mesh instance.
+INSTANCE_TYPE=bitbucket-dc
+
+# The base URL of the Bitbucket instance to be backed up. It cannot end on a '/'. While backing up Mesh nodes, the URL of
+# the Bitbucket DC instance should be set.
 BITBUCKET_URL=http://localhost:7990
 
 # Owner and group of ${BITBUCKET_HOME}:
 BITBUCKET_UID=atlbitbucket
 BITBUCKET_GID=atlbitbucket
 
-# Strategy for backing up the Bitbucket home directory and data stores (if configured):
-#  - amazon-ebs         - Amazon EBS snapshots of the volumes containing data for Bitbucket Server
+# Strategy for backing up the Bitbucket/Mesh home directory and data stores (if configured):
+#  - amazon-ebs         - Amazon EBS snapshots of the volumes containing data for Bitbucket Server/Mesh
 #  - rsync              - "rsync" of the disk contents to a temporary location. NOTE: This can NOT be used
 #                         with BACKUP_ZERO_DOWNTIME=true.
 #  - zfs                - ZFS snapshot strategy for disk backups.
@@ -25,6 +31,8 @@ BACKUP_DISK_TYPE=rsync
 #  - postgresql-fslevel - PostgreSQL with data directory located in the file system volume as home directory (so
 #                         that it will be included implicitly in the home volume snapshot)
 #  - none               - Do not attempt to backup the database.
+#
+# Note: This property is ignored while backing up Mesh nodes.
 BACKUP_DATABASE_TYPE=postgresql
 
 # Strategy for archiving backups and/or copying them to an offsite location:
@@ -54,9 +62,11 @@ BACKUP_ARCHIVE_TYPE=tar
 #
 #  - amazon-es          - Amazon Elasticsearch Service - uses an S3 bucket as a snapshot repository. Requires both
 #                         python and the python boto package to be installed, in order to sign the requests to AWS ES.
+#
+# Note: This property is ignored while backing up Mesh nodes.
 BACKUP_ELASTICSEARCH_TYPE=
 
-# Strategy for Bitbucket disk disaster recovery:
+# Strategy for Bitbucket/Mesh disk disaster recovery:
 #  - zfs                - ZFS snapshot strategy for disk replication.
 #  - none               - Do not attempt to replicate data on disk.
 STANDBY_DISK_TYPE=zfs
@@ -65,6 +75,8 @@ STANDBY_DISK_TYPE=zfs
 #  - amazon-rds         - Amazon RDS Read replica
 #  - postgresql         - PostgreSQL replication
 #  - none               - Do not attempt to replicate the database.
+#
+# Note: This property is ignored while backing up Mesh nodes.
 STANDBY_DATABASE_TYPE=postgresql
 
 # If BACKUP_ZERO_DOWNTIME is set to true, data on disk and the database will be backed up WITHOUT locking Bitbucket
@@ -113,16 +125,17 @@ case ${BACKUP_DISK_TYPE} in
         fi
         ;;
     rsync)
-        # The path to the Bitbucket home directory (with trailing /)
+        # The path to the Bitbucket/Mesh home directory (with trailing /)
         BITBUCKET_HOME=/var/atlassian/application-data/bitbucket/
         # Paths to all configured data stores (with trailing /)
         # Only required if one or more data stores is attached to the instance.
         BITBUCKET_DATA_STORES=()
         # Optional list of repo IDs which should be excluded from the backup. For example: (2 5 88)
+        # Note: This property is ignored while backing up Mesh nodes.
         BITBUCKET_BACKUP_EXCLUDE_REPOS=()
         ;;
     zfs)
-        # The name of each filesystem that holds file server data for Bitbucket Server. This should, at a minimum,
+        # The name of each filesystem that holds file server data for Bitbucket Server/Mesh. This should, at a minimum,
         # include the home directory filesystem, and if configured, the filesystems for each data store.
         # This must be the same name(s) on the standby if using replication.
         # Note: this config var should contain the value previously in ZFS_HOME_TANK_NAME
@@ -148,6 +161,8 @@ case ${BACKUP_DISK_TYPE} in
 esac
 
 # Sub-options for each database backup strategy
+#
+# Note: This property is ignored while backing up Mesh nodes.
 case ${BACKUP_DATABASE_TYPE} in
     amazon-rds)
         # RDS instance ID of the database to backup
@@ -333,4 +348,6 @@ esac
 #           "jdbc:postgres://standby-db.my-company.com:${POSTGRES_PORT}/${BITBUCKET_DB}"
 # Example for PostgreSQL running in Amazon RDS
 #           jdbc:postgres://${RDS_ENDPOINT}/${BITBUCKET_DB}
+#
+# Note: This property is ignored while backing up Mesh nodes.
 STANDBY_JDBC_URL=

@@ -147,7 +147,6 @@ function replicate_disk {
 }
 
 function promote_home {
-    check_config_var "STANDBY_JDBC_URL"
     check_config_var "ZFS_HOME_FILESYSTEM"
     local latest_snapshot="$(get_latest_snapshot "${ZFS_HOME_FILESYSTEM}")"
 
@@ -159,7 +158,12 @@ function promote_home {
     local mount_point=$(run sudo zfs get mountpoint -H -o value "${ZFS_HOME_FILESYSTEM}")
     debug "ZFS filesystem '${ZFS_HOME_FILESYSTEM}' has a configured mount point of '${mount_point}'"
 
-    local settings=$(cat << EOF
+    # Standby JDBC url should be added to bitbucket.properties to prevent Bitbucket connecting to the
+    # primary's database. This shouldn't be done while restoring Mesh instances because they only connect to a
+    # local database.
+    if [ ! "${INSTANCE_TYPE}" = "bitbucket-mesh" ]; then
+        check_config_var "STANDBY_JDBC_URL"
+        local settings=$(cat << EOF
 
 # The following properties were appended during the promote-home.sh script.
 #
@@ -167,13 +171,14 @@ jdbc.url=${STANDBY_JDBC_URL}
 disaster.recovery=true
 EOF
 )
-    info "Modifying '${mount_point}/bitbucket.properties'. This also prevents ZFS disk replication from the primary."
-    sudo bash -c "echo '${settings}' >> '${mount_point}/bitbucket.properties'"
-    print
-    print "The following has been appended to your '${mount_point}/bitbucket.properties' file:"
-    print
-    print "${settings}"
-    print
+        info "Modifying '${mount_point}/bitbucket.properties'. This also prevents ZFS disk replication from the primary."
+        sudo bash -c "echo '${settings}' >> '${mount_point}/bitbucket.properties'"
+        print
+        print "The following has been appended to your '${mount_point}/bitbucket.properties' file:"
+        print
+        print "${settings}"
+        print
+    fi
 
     info "Validating that ZFS filesystem '${ZFS_HOME_FILESYSTEM}' has diverged"
     if [ -z "$(run sudo zfs diff "${latest_snapshot}" "${ZFS_HOME_FILESYSTEM}")" ]; then

@@ -17,6 +17,12 @@ set -e
 SCRIPT_DIR=$(dirname "$0")
 source "${SCRIPT_DIR}/utils.sh"
 source "${SCRIPT_DIR}/common.sh"
+
+if [ "${INSTANCE_TYPE}" = "bitbucket-mesh" ]; then
+    # Mesh nodes don't run with an external database, so a standby database isn't required while disaster recovery
+    STANDBY_DATABASE_TYPE="none"
+fi
+
 source_disaster_recovery_database_strategy
 
 ##########################################################

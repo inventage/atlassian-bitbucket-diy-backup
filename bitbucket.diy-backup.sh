@@ -15,6 +15,14 @@ set -e
 SCRIPT_DIR=$(dirname "$0")
 source "${SCRIPT_DIR}/utils.sh"
 source "${SCRIPT_DIR}/common.sh"
+
+if [ "${INSTANCE_TYPE}" = "bitbucket-mesh" ]; then
+    # Mesh nodes don't run with an external database, so it doesn't need to be backed up
+    BACKUP_DATABASE_TYPE="none"
+    # Mesh nodes don't run with an external Elasticsearch instance configured, so it doesn't need to be backed up
+    BACKUP_ELASTICSEARCH_TYPE="none"
+fi
+
 source_archive_strategy
 source_database_strategy
 source_disk_strategy
