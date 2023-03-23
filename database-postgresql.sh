@@ -9,7 +9,12 @@ check_command "pg_restore"
 # Make use of PostgreSQL 9.3+ options if available
 if [[ ${psql_majorminor} -ge 9003 ]]; then
     PG_PARALLEL="-j 5"
-    PG_SNAPSHOT_OPT="--no-synchronized-snapshots"
+    # The PostgreSQL 15 client supports server versions 9.2 and higher. The "--no-synchronized-snapshots" flag is only required when doing parallel
+    # dumps and restores for server versions prior to PostgreSQL 9.2 which don't have synchronized snapshot functionality. As such this flag was
+    # removed in PostgreSQL 15 since all server versions it supports have synchronized snapshots. 
+    if [[ ${psql_major} -lt 15 ]]; then
+        PG_SNAPSHOT_OPT="--no-synchronized-snapshots"
+    fi
 fi
 
 function prepare_backup_db {
