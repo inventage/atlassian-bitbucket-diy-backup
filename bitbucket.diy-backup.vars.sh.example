@@ -28,6 +28,8 @@ BACKUP_DISK_TYPE=rsync
 #  - amazon-rds         - Amazon RDS snapshots
 #  - mysql              - MySQL using "mysqldump" to backup and "mysql" to restore
 #  - postgresql         - PostgreSQL using "pg_dump" to backup and "pg_restore" to restore
+#  - postgresql-docker  - PostgreSQL running in a Docker container, using "pg_dump" to backup and "pg_restore" to
+#                         restore
 #  - postgresql-fslevel - PostgreSQL with data directory located in the file system volume as home directory (so
 #                         that it will be included implicitly in the home volume snapshot)
 #  - none               - Do not attempt to backup the database.

@@ -56,6 +56,8 @@ description of all the various variables and their definitions.
 * `postgresql`          - PostgreSQL using "pg_dump" to backup and "pg_restore" to restore.
 * `postgresql-fslevel`  - PostgreSQL with data directory located in the file system volume as home directory (so that
                            it will be included implicitly in the home volume snapshot).
+* `postgresql-docker`   - PostgreSQL running in a Docker container, using "pg_dump" to backup and "pg_restore" to 
+                           restore
 
 `BACKUP_ARCHIVE_TYPE`  Strategy for archiving backups and/or copying them to an offsite location, valid values are:
 
